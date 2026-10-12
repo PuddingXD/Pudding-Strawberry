@@ -51,6 +51,8 @@ export interface Backend {
   signUp(id: string, password: string, nickname: string): Promise<{ ok: boolean; error?: string }>;
   signOut(): Promise<void>;
   resetPassword(email: string): Promise<{ ok: boolean; error?: string }>;
+  /** 지금 로그인한 계정의 토큰 — /api/push 라우트가 「이 홈의 로그인 계정」인지 확인하는 데 쓴다 (웹푸시, 루넬 이식) */
+  authToken(): Promise<string | null>;
   updateProfile(patch: { nickname?: string; avatarUrl?: string | null; avatarColor?: string | null; currentPassword?: string; newPassword?: string }): Promise<{ ok: boolean; error?: string }>;
   /** 첫 계정을 이 홈의 관리자로 등록 (관리자가 아직 없을 때만) */
   claimOwner(): Promise<{ ok: boolean; error?: string }>;
@@ -61,6 +63,8 @@ export interface Backend {
 
   /* ---- 목록(콘텐츠) ---- */
   fetchList<T extends ListItem>(coll: string): Promise<T[]>;
+  /** 문서 한 건 (JN 이식 — 로그 백업 본문처럼 큰 문서가 모인 컬렉션은 목록 통째로 받으면 느리다). 없거나 읽을 권한이 없으면 null */
+  fetchOne<T extends ListItem>(coll: string, id: string): Promise<T | null>;
   syncList<T extends ListItem>(coll: string, prev: T[], next: T[], uid: string | null): Promise<void>;
   /** 이미 저장된 행의 공개범위만 다시 계산해 덮어쓴다 (v2.0) — 메뉴를 비공개로 바꾼 뒤
    *  「글에도 적용」을 누르면 돈다. 내용(data)·순서(sort)는 건드리지 않는다. */
@@ -120,9 +124,14 @@ export const COLLECTION_OF: Record<string, string> = {
   // 역극 발화 — 방 안이 아니라 자기 문서로 (v2.0). 같은 이유로, 방 안에 두면 말할 때마다
   // 방을 UPDATE 해야 해서 남이 만든 방에서 참여자가 발화할 수 없었다
   'ohome.rpmsgs.v1': 'rp_messages',
+  // 역극 입력 중 표시 (JN 이식) — 방·사람당 문서 하나(id = roomId:userId), 몇 초마다 갱신되는 임시 데이터.
+  // 발화(rp_messages)에 섞으면 표시 한 번마다 모든 참여자가 발화 전체를 다시 받게 돼 따로 둔다
+  'ohome.rptyping.v1': 'rp_typing',
   // 알림 — 기기 보관이던 것을 서버로 (v2.0 포크 제보 「알림이 안 와요」).
   // 행 주인(authorId)을 받는 사람으로 적어, 받는 사람 계정이 어느 기기에서나 받아 간다
   'ohome.notif.v1': 'notifications',
+  // 웹푸시 기기 구독 (루넬 이식) — 회원마다 기기별 한 문서, 공개범위 member (보내는 쪽이 받는 사람 구독을 읽어야 한다)
+  'ohome.pushsubs.v1': 'push_subs',
 };
 
 export const CONTENT_COLLECTIONS = Object.values(COLLECTION_OF);

@@ -16,6 +16,7 @@ import { DocTitle } from '@/components/shell/DocTitle';
 import { DocIcon } from '@/components/shell/DocIcon';
 import { SettingSync } from '@/components/shell/SettingSync';
 import { ListSync } from '@/components/shell/ListSync';
+import { MsgSound } from '@/components/shell/MsgSound';
 import { UploadBusy } from '@/components/shell/UploadBusy';
 import { SpellCheck } from '@/components/shell/SpellCheck';
 import { PageFrame } from '@/lib/pageRefresh';
@@ -35,9 +36,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    // 탭 아이콘 (v2.0 사용자 요청) — 지정했으면 기본 favicon.ico 대신 그것을 쓴다.
-    // 지정이 없으면 icons를 아예 넣지 않아 Next의 기본 파일 처리를 그대로 둔다
-    ...(favicon ? { icons: { icon: favicon } } : {}),
+    // 탭 아이콘 (v2.0 사용자 요청) — 지정했으면 기본 favicon.ico 대신 그것을 쓴다 (지정이 없으면 icon은 넣지 않아 Next의 기본 파일 처리 그대로).
+    // 홈 화면 아이콘(apple-touch-icon)은 늘 둔다 — 아이폰 「홈 화면에 추가」·웹푸시용 (루넬 이식). 탭 아이콘을 지정했으면 그것으로
+    icons: { ...(favicon ? { icon: favicon } : {}), apple: favicon || '/icon-192.png' },
+    manifest: '/manifest.webmanifest',
+    // 아이폰에서 홈 화면 웹앱(standalone)으로 열리게 — 그래야 웹푸시를 받을 수 있다
+    appleWebApp: { capable: true, title: title.replace(/ — 개인홈$/, ''), statusBarStyle: 'default' },
     openGraph: { title, description, type: 'website' },
     twitter: { card: 'summary', title, description },
   };
@@ -104,6 +108,8 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                   <SettingSync />
                   {/* 글·댓글 저장이 거부됐을 때 이유를 알림 (v2.0) — 조용히 되돌리면 스스로 사라진 것처럼 보인다 */}
                   <ListSync />
+                  {/* 역극 메시지 알림음 (JN 이식) — 남의 새 발화가 오면 짧게 (역극 페이지의 종 버튼·알림 메뉴에서 끌 수 있다) */}
+                  <MsgSound />
                   {/* 이미지 올리는 중 표시 (v2.0) — 느린 업로드를 다시 누르지 않게 */}
                   <UploadBusy />
                   {/* 맞춤법 검사 밑줄 숨김 — 디자인 탭 (v2.0) */}
