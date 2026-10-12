@@ -16,8 +16,8 @@ import { DiaryPost, DIARY_SEED } from '@/lib/diaryStore';
 import { newId } from '@/lib/postStore';
 import { useCommSettings, badgeStyle, CommBadge, CommSettings } from '@/lib/commStore';
 import {
-  useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf,
-  useBoards, Board, BoardSkin, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID,
+  useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf, feedCatsOf, roadCatsOf,
+  useBoards, Board, BoardSkin, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref,
 } from '@/lib/boardStore';
 import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle, threadCats, threadCatsPatch } from '@/lib/threadStore';
 import { useTrpgSettings, DOTORI_STATUS_KEYS, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
@@ -25,11 +25,11 @@ import { useMemoSettings } from '@/lib/memoStore';
 import {
   useMenuSettings, MenuSettings, MenuPerm, MenuVis, PLAYLOG_COLS,
   MenuGroupNode, MenuLeaf, defaultTree, newGroupId, menuLabelFor, extraBoardHref, boardEntries,
-  IMG_PROTECT_AREAS,
+  IMG_PROTECT_AREAS, writeKeyOf, writeDefaultOf,
 } from '@/lib/menuStore';
 import { FEATURES } from '@/lib/menu';
 import { SectionsBlock } from '@/components/settings/SectionList';
-import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection } from '@/lib/sectionStore';
+import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection, SECTION_META, SectionKind } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
 import { useSiteDraft } from '@/lib/siteStore';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -41,7 +41,7 @@ import { parseAni } from '@/lib/aniCursor';
 import { fileDrop } from '@/lib/dnd';
 import { Character, CHAR_SEED, Relation, REL_SEED } from '@/lib/charStore';
 import { useLocalList } from '@/lib/postStore';
-import { Mood, MOOD_SEED, moodTint } from '@/lib/diaryStore';
+import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat } from '@/lib/diaryStore';
 import {
   TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor,
 } from '@/components/main/widgetEditors';
@@ -62,7 +62,7 @@ import { SCHEMA_SQL } from '@/lib/schemaSql';
 
 const CATEGORIES = [
   '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', '커미션', 'TRPG', '감상타래', '메모장',
-  '폰트', '마우스 커서', 'BGM', '무드 리스트', '회원/보안', '데이터 백업',
+  '폰트', '마우스 커서', 'BGM', '다이어리', '회원/보안', '데이터 백업',
 ] as const;
 
 /** 색 항목 한 쌍 렌더 헬퍼 */
@@ -652,6 +652,8 @@ function BoardPane() {
   const {
     st, patchSystem, patchGallery,
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
+    patchFeedCat, addFeedCat, removeFeedCat, setFeedCats,
+    patchRoadCat, addRoadCat, removeRoadCat, setRoadCats,
   } = useBoardSettings();
   const { boards, setBoards, patchBoard } = useBoards();
   const [catBoard, setCatBoard] = useState(MAIN_BOARD_ID);   // 말머리 편집 대상 게시판
@@ -662,6 +664,13 @@ function BoardPane() {
   const [galSecSel, setGalSec] = useState(MAIN_SEC);
   const galSec = galSecs.some(s2 => s2.id === galSecSel) ? galSecSel : MAIN_SEC;
   const galCats = galleryCatsOf(st, galSec);
+  // 큰 그림 게시판 · 로드비 말머리 (v2.1) — 갤러리와 같은 방식으로 게시판마다
+  const feedSecs = secList('feed');
+  const [feedSecSel, setFeedSec] = useState(MAIN_SEC);
+  const feedSec = feedSecs.some(s2 => s2.id === feedSecSel) ? feedSecSel : MAIN_SEC;
+  const roadSecs = secList('roadview');
+  const [roadSecSel, setRoadSec] = useState(MAIN_SEC);
+  const roadSec = roadSecs.some(s2 => s2.id === roadSecSel) ? roadSecSel : MAIN_SEC;
   const del = useConfirmDelete();
 
   const sel = boards.find(b => b.id === catBoard) ?? boards[0];
@@ -824,6 +833,55 @@ function BoardPane() {
         )} />
       <button className="btn btn-ghost" style={{ marginTop: 8, padding: '7px 14px', fontSize: 11 }}
         onClick={() => addGalleryCat(galSec)}>＋ 말머리 추가</button>
+
+      {/* 큰 그림 게시판 · 로드비 말머리 (v2.1 사용자 요청 — 말머리별로 모아보기) — 갤러리 말머리와 같은 모양 */}
+      {([
+        {
+          title: '큰 그림 말머리', desc: '큰 그림 게시판 글쓰기에서 고르는 말머리 — 목록 위 탭으로도 나옵니다',
+          secs: feedSecs, sec: feedSec, setSec: setFeedSec, cats: feedCatsOf(st, feedSec),
+          set: setFeedCats, patch: patchFeedCat, add: addFeedCat, remove: removeFeedCat,
+        },
+        {
+          title: '로드비 말머리', desc: '로드비에 그림을 올릴 때 고르는 말머리 — 목록 위 탭으로 모아 볼 수 있습니다 · 하나도 없으면 탭 없이 지금처럼',
+          secs: roadSecs, sec: roadSec, setSec: setRoadSec, cats: roadCatsOf(st, roadSec),
+          set: setRoadCats, patch: patchRoadCat, add: addRoadCat, remove: removeRoadCat,
+        },
+      ] as const).map(blk => (
+        <React.Fragment key={blk.title}>
+          <h3 style={{ marginTop: 20 }}>{blk.title}</h3>
+          <div className="d">
+            {blk.desc}
+            {blk.secs.length > 1 && <><br />게시판마다 따로 정합니다 — <b>손대기 전까지는 기본 게시판의 말머리를 그대로 씁니다</b></>}
+          </div>
+          {blk.secs.length > 1 && (
+            <div className="mini-seg" style={{ flexWrap: 'wrap', marginBottom: 10 }}>
+              {blk.secs.map(s2 => (
+                <button key={s2.id} className={blk.sec === s2.id ? 'on' : ''} onClick={() => blk.setSec(s2.id)}>{s2.name}</button>
+              ))}
+            </div>
+          )}
+          <DragList items={blk.cats} keyOf={c => c.id} onReorder={next => blk.set(blk.sec, next)}
+            render={c => (
+              <div className="set-row" style={{ width: '100%' }}>
+                <div className="l" style={{ display: 'flex', gap: 11, alignItems: 'center' }}>
+                  <span className="drag-h">⠿</span>
+                  <span style={boardBadgeStyle(c)}>{c.label || '말머리'}</span>
+                </div>
+                <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
+                  <KInput value={c.label} onChange={e => blk.patch(blk.sec, c.id, { label: e.target.value })}
+                    style={{ width: 100, textAlign: 'right' }} />
+                  {colorCells(c, p => blk.patch(blk.sec, c.id, p))}
+                  <span className="fx" data-tip="말머리 삭제"
+                    onClick={() => del.ask(`말머리 「${c.label}」를 삭제하시겠습니까?`,
+                      () => blk.remove(blk.sec, c.id),
+                      '이미 이 말머리로 등록된 글은 그대로 남습니다.')}>✕</span>
+                </div>
+              </div>
+            )} />
+          <button className="btn btn-ghost" style={{ marginTop: 8, padding: '7px 14px', fontSize: 11 }}
+            onClick={() => blk.add(blk.sec)}>＋ 말머리 추가</button>
+        </React.Fragment>
+      ))}
 
       <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
       {/* 갤러리·다이어리 등도 여러 개로 (v2.0 사용자 요청) — 목록이 몇 개인지는 여기 한곳에서 */}
@@ -1347,6 +1405,63 @@ function MoodPane() {
           onClick={() => setMoods([...moods, { id: newId(), name: '새 무드', icon: '✦', color: '#8a8f98' }])}>
           ＋ ADD MOOD
         </button>
+      </div>
+      {del.element}
+    </div>
+  );
+}
+
+/** 다이어리 구분 탭 (v2.1 사용자 요청 — 「탭을 여러 개 만들 수 있는 형식」).
+ *  탭마다 자관이나 AU를 연동한다 — 연동한 탭은 그 자관/AU의 일기(탭 머리에 그 모습의 캐릭터, 그 자관 캐릭터에
+ *  권한을 받은 회원도 그 탭에 씀), 연동하지 않으면 오너의 일기. 이름 · ⠿ 순서 · 삭제 */
+function DiaryCatPane() {
+  const [dset, patch] = useDiarySettings();
+  const [diaries] = useLocalList<DiaryPost>('ohome.diary.v1', DIARY_SEED);
+  const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const del = useConfirmDelete();
+  const setCats = (cats: DiaryCat[]) => patch({ cats });
+  // 연동 선택지 — 자관 원본(relId:base)과 그 자관의 AU들(relId:auId)
+  const linkOptions = [
+    { value: '', label: '연동 없음 — 오너의 일기' },
+    ...rels.flatMap(r => [
+      { value: `${r.id}:base`, label: r.name },
+      ...r.aus.filter(a => a.id !== 'base').map(a => ({ value: `${r.id}:${a.id}`, label: `${r.name} · ${a.label}` })),
+    ]),
+  ];
+  return (
+    <div className="set-sec" style={{ marginTop: 26 }}>
+      <h3>구분 탭</h3>
+      <div className="d">
+        다이어리 위쪽에 탭으로 나오는 구분 — 일기를 쓸 때 고릅니다 · ⠿ 드래그로 순서
+        <br />
+        탭마다 <b>자관이나 AU를 연동</b>하면 그 탭은 그 자관/AU의 일기가 됩니다 — 탭 머리에 그 모습의 캐릭터가 보이고,
+        그 자관 캐릭터에 권한을 받은 회원도 그 탭에 일기를 씁니다. 연동하지 않으면 오너의 일기
+      </div>
+      <DragList items={dset.cats} keyOf={c => c.id} onReorder={setCats}
+        render={c => (
+          <div className="set-row" style={{ width: '100%' }}>
+            <div className="l" style={{ display: 'flex', gap: 11, alignItems: 'center' }}>
+              <span className="drag-h">⠿</span>
+              <KInput value={c.name} onChange={e => setCats(dset.cats.map(x => (x.id === c.id ? { ...x, name: e.target.value } : x)))}
+                style={{ width: 160 }} />
+            </div>
+            <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
+              <KSelect minWidth={190} value={c.link ?? ''}
+                onChange={v => setCats(dset.cats.map(x => (x.id === c.id ? { ...x, link: v || undefined } : x)))}
+                options={linkOptions} />
+              <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>일기 {diaries.filter(d => d.catId === c.id).length}개</small>
+              <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                onClick={() => {
+                  const used = diaries.filter(d => d.catId === c.id).length;
+                  del.ask(`구분 「${c.name}」를 삭제하시겠습니까?`, () => setCats(dset.cats.filter(x => x.id !== c.id)),
+                    used > 0 ? `이 구분의 일기 ${used}개는 지워지지 않고 「구분 없음」으로 보입니다.` : undefined);
+                }}>DELETE</button>
+            </div>
+          </div>
+        )} />
+      <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+          onClick={() => setCats([...dset.cats, { id: newId(), name: '새 구분' }])}>＋ ADD TAB</button>
       </div>
       {del.element}
     </div>
@@ -2180,6 +2295,67 @@ function MenuPane() {
         { value: 'admin', label: `${label}: 관리자` },
       ]} />
   );
+  /* 게시판 글쓰기 권한 (v2.1 사용자 요청 — 갤러리에만 있던 「가입자/관리자 + 글쓰기 멤버」를 모든 게시판에).
+     값은 게시판마다 다른 곳에 산다 — 리스트는 게시판 설정 permWrite, 로드비 기본 페이지는 roadUpload,
+     나머지(다이어리·감상타래·캐릭터·TRPG 캐릭터·도토리·플레이기록·추가 로드비)는 메뉴 설정 writePerm[키] —
+     멤버 선택은 전부 writeMembers[키] */
+  const setWriteMembers = (key: string, n: string[]) => {
+    const next = { ...ms.writeMembers };
+    if (n.length) next[key] = n; else delete next[key];
+    return next;
+  };
+  /** 「글쓰기 멤버」 버튼 — 가입자 권한일 때만. 체크한 회원(+관리자)만 쓰게 좁힌다 */
+  const writeMembersBtn = (key: string, perm: MenuPerm, what: string) => {
+    if (perm === 'admin') return null;
+    const ids = ms.writeMembers?.[key];
+    return (
+      <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+        onClick={() => setMemAsk({
+          ids: ids ?? [],
+          desc: `체크한 회원(그리고 관리자)만 이 게시판에 ${what}할 수 있습니다 — 비우면 로그인한 모든 회원`,
+          apply: n => patch({ writeMembers: setWriteMembers(key, n) }),
+        })}>
+        {ids?.length ? `${what} 멤버 ${ids.length}명` : `${what} 멤버`}
+      </button>
+    );
+  };
+  /** 멤버 버튼 + 가입자/관리자 셀렉트. 관리자 전용으로 바꾸면 멤버 선택은 함께 지운다 — 몰래 남아 있지 않게 (갤러리와 같은 규칙) */
+  const writePermUI = (key: string, perm: MenuPerm, setPerm: (v: MenuPerm) => void, what: string) => (
+    <>
+      {writeMembersBtn(key, perm, what)}
+      <KSelect minWidth={110} value={perm}
+        onChange={v => {
+          if (v === 'admin' && ms.writeMembers?.[key]) patch({ writeMembers: setWriteMembers(key, []) });
+          setPerm(v as MenuPerm);
+        }}
+        options={[
+          { value: 'member', label: `${what}: 가입자` },
+          { value: 'admin', label: `${what}: 관리자` },
+        ]} />
+    </>
+  );
+  /** 메뉴 주소 → 글쓰기 권한 저장 키·지금 값·기본값 (writePerm에 사는 게시판만 · 아니면 null) */
+  const writePermOf = (href: string): { key: string; perm: MenuPerm; what: string } | null => {
+    const [path, query = ''] = href.split('?');
+    const sq = new URLSearchParams(query).get('s');
+    let secId = MAIN_SEC;
+    if (sq) {
+      // 메뉴 주소에는 별명(slug)이 적혀 있을 수 있다 — id로 통일해 저장
+      const kind = (Object.keys(SECTION_META) as SectionKind[]).find(k => SECTION_META[k].href === path);
+      const sec = kind ? sectionsOf(secMap, kind).find(s2 => s2.id === sq || s2.slug === sq) : undefined;
+      if (!sec) return null;
+      secId = sec.id;
+    }
+    const inWritePerm = ['/feed', '/diary', '/threads', '/chars', '/tchars', '/dotori', '/playlog'].includes(path)
+      // 추가 로드비 — 기본 페이지의 공통값(roadUpload)을 따르되 따로 정할 수 있다 (기본 페이지는 아래 /loadb 가지에서)
+      || (path === '/loadb' && secId !== MAIN_SEC);
+    if (!inWritePerm) return null;
+    const def: MenuPerm = path === '/loadb' ? (ms.roadUpload === 'admin' ? 'admin' : 'member') : writeDefaultOf(path);
+    const key = writeKeyOf(path, secId);
+    const what = path === '/loadb' ? '업로드' : ['/tchars', '/chars', '/playlog', '/dotori'].includes(path) ? '등록' : '글쓰기';
+    return { key, perm: ms.writePerm?.[key] ?? def, what };
+  };
+
   // 메뉴별 부속 설정 — 기본 탭용 (표시 방식 등)
   const extraFor = (href: string) => {
     switch (href) {
@@ -2223,12 +2399,8 @@ function MenuPane() {
       if (!bd) return null;
       return (
         <>
-          <KSelect minWidth={110} value={bd.permWrite}
-            onChange={v => patchBoard(bd.id, { permWrite: v as BoardPerm })}
-            options={[
-              { value: 'member', label: '글쓰기: 가입자' },
-              { value: 'admin', label: '글쓰기: 관리자' },
-            ]} />
+          {/* 글쓰기 — 게시판 설정 permWrite + 「글쓰기 멤버」 (v2.1) */}
+          {writePermUI(boardHref(bd.id), bd.permWrite, v => patchBoard(bd.id, { permWrite: v as BoardPerm }), '글쓰기')}
           <KSelect minWidth={110} value={bd.permComment}
             onChange={v => patchBoard(bd.id, { permComment: v as BoardPerm })}
             options={[
@@ -2242,7 +2414,9 @@ function MenuPane() {
     if (href === '/loadb') {
       return (
         <>
-          {permSel('업로드', ms.roadUpload, v => patch({ roadUpload: v }))}
+          {/* 업로드 멤버 (v2.1) — 기본 로드비는 공통값 roadUpload에 「업로드 멤버」만 얹는다 */}
+          {writeMembersBtn('/loadb', ms.roadUpload, '업로드')}
+          {permSel('업로드', ms.roadUpload, v => patch({ roadUpload: v, ...(v === 'admin' ? { writeMembers: setWriteMembers('/loadb', []) } : {}) }))}
           {permSel('댓글', ms.roadComment, v => patch({ roadComment: v }))}
         </>
       );
@@ -2285,6 +2459,9 @@ function MenuPane() {
         </>
       );
     }
+    // 그 밖의 게시판 (다이어리·감상타래·캐릭터·TRPG 캐릭터·도토리·플레이기록·추가 로드비) — 메뉴 설정 writePerm (v2.1 사용자 요청)
+    const wp = writePermOf(href);
+    if (wp) return writePermUI(wp.key, wp.perm, v => patch({ writePerm: { ...ms.writePerm, [wp.key]: v } }), wp.what);
     return null;
   };
 
@@ -2344,6 +2521,8 @@ function MenuPane() {
         <div>
           <div className="d">
             공개범위는 메뉴 노출을 정합니다(전부 보임 / 비로그인 숨김 / 관리자만) — SAVE를 눌러야 반영 · 글쓰기·댓글 권한은 즉시 반영
+            <br />
+            글쓰기 권한은 게시판마다(갤러리·큰 그림·리스트·로드비·다이어리·감상타래·캐릭터·TRPG 캐릭터·도토리·플레이기록) 가입자/관리자로 — <b>글쓰기 멤버</b>로 특정 회원만 쓰게 좁힐 수 있습니다
             <br />
             「비로그인 숨김」 옆 <b>멤버 선택</b>으로 특정 회원에게만 보이게 좁힐 수 있습니다 — 비우면 로그인한 모든 회원
             <br />
@@ -3336,8 +3515,9 @@ function SettingsInner() {
             <ThreadPane />
           ) : tab === '메모장' ? (
             <MemoPane />
-          ) : tab === '무드 리스트' ? (
-            <MoodPane />
+          ) : tab === '다이어리' ? (
+            /* 무드 리스트 + 구분 탭 (v2.1) — 다이어리 설정을 한 탭에 */
+            <><MoodPane /><DiaryCatPane /></>
           ) : tab === 'BGM' ? (
             <BgmPane />
           ) : tab === '폰트' ? (
