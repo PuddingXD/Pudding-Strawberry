@@ -22,6 +22,8 @@ export interface RoadItem {
   fold: { type: FoldType; label?: string } | null;
   comments: Comment[];
   no?: number;               // 그림 번호 (v1.9 — 제목 대신 번호로 식별, 알림도 번호 기준)
+  /** 말머리 (v2.1 사용자 요청 — 말머리별로 모아보기) · 환경설정 > 게시판 관리의 로드비 말머리 중 하나, 없으면 없음 */
+  category?: string;
 }
 
 export const ROAD_SEED: RoadItem[] = [];
@@ -49,6 +51,11 @@ export interface BackupPost {
 }
 
 export const BACKUP_SEED: BackupPost[] = [];
+
+/** 큰 그림 게시판 (v2.1 사용자 요청) — 글은 갤러리 글(BackupPost)과 같은 모양이지만 자기 자리에 쌓인다.
+ *  목록이 한 줄에 글 하나·큰 이미지로 나오는 것이 다르다 (유형은 늘 세로 나열) */
+export const FEED_KEY = 'ohome.feed.v1';
+export const FEED_SEED: BackupPost[] = [];
 
 export const BACKUP_CATEGORIES = ['합작', '낙서', '커미션', '설정화'];
 
@@ -221,6 +228,8 @@ export interface DotoriItem {
   thumbCrop?: CropValue;
   ph: string;                // 이미지 없을 때 플레이스홀더
   date: string;              // 등록일 ISO (정렬용)
+  /** 등록한 회원 (v2.1 — 일반 회원도 등록할 수 있게 되면서) · 수정·삭제는 본인과 관리자 */
+  authorId?: string;
 }
 
 export const DOTORI_SEED: DotoriItem[] = [];
@@ -229,6 +238,8 @@ export const DOTORI_SEED: DotoriItem[] = [];
 export interface PlayRecord {
   /** 소속 섹션 (v2.0) — 여러 개로 만들었을 때. 없으면 기본 섹션 */
   secId?: string;
+  /** 등록한 회원 (v2.1 — 일반 회원도 등록할 수 있게 되면서) · 수정·삭제는 본인과 관리자 */
+  authorId?: string;
   id: string;
   date?: string;             // Date (optional — 비우면 표 맨 아래)
   scenario: string;          // Scenario (필수)
