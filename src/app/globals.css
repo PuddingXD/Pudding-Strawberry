@@ -198,11 +198,13 @@ a{color:inherit;text-decoration:none}
 .mmenu{display:none}
 @media (max-width:620px){
   .mmenu{display:block}
-  .mmenu-btn{position:fixed;right:8px;bottom:calc(max(var(--bgm-h,0px),40px)/2 - 14px);z-index:72;width:30px;height:28px;border-radius:9px;
-    display:grid;place-items:center;font-size:18px;line-height:1;color:var(--bgm-fg,var(--ink));background:var(--bgm-bg,var(--panel-solid));
-    border:1px solid var(--line-dark);box-shadow:var(--sh-sm);backdrop-filter:blur(10px)}
+  /* 버튼은 BGM 바의 오른쪽 칸 — 바와 같은 높이(36px)·배경, 왼쪽에 칸 선만 (v2.1 사용자 요청: 따로 떠 있는 버튼이 아니라 한 줄로).
+     BGM 바가 없으면 바닥 오른쪽 끝에 같은 모양의 작은 칸으로 남는다 */
+  .mmenu-btn{position:fixed;right:0;bottom:0;z-index:72;width:40px;height:max(var(--bgm-h,0px),36px);border-radius:0;
+    display:grid;place-items:center;font-size:20px;line-height:1;color:var(--bgm-fg,var(--ink));background:var(--bgm-bg,var(--panel-solid));
+    border:1px solid var(--line-dark);border-right:0;border-bottom:0;backdrop-filter:blur(10px)}
   .mmenu-ov{position:fixed;inset:0;z-index:71;background:rgba(0,0,0,.18)}
-  .mmenu-pop{position:fixed;right:8px;bottom:calc(max(var(--bgm-h,0px),40px) + 8px);z-index:72;width:min(260px,calc(100vw - 16px));max-height:70vh;overflow:auto;
+  .mmenu-pop{position:fixed;right:8px;bottom:calc(max(var(--bgm-h,0px),36px) + 8px);z-index:72;width:min(260px,calc(100vw - 16px));max-height:70vh;overflow:auto;
     background:var(--panel-solid,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-dd);padding:6px}
   .mmenu-pop button{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:10px 12px;border-radius:8px;
     font-size:calc(13px*var(--fs,1));color:var(--ink);background:transparent;border:0}
@@ -1428,11 +1430,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dy-tabhd .dy-cf+.dy-cf{margin-left:-10px}
 
 /* ---------- 큰 그림 게시판 (v2.1 사용자 요청) — 한 줄에 글 하나, 큰 이미지 + 말머리·제목·날짜 ---------- */
-.feed-list{display:grid;gap:18px;max-width:960px;margin:0 auto}
+.feed-list{display:grid;gap:18px;max-width:672px;margin:0 auto} /* 960의 70% — 패널째 줄인다 (v2.1 사용자 요청: 흰 배경도 이미지에 딱 맞게) */
 .feed-item{padding:0;overflow:hidden;cursor:var(--cur-pointer,pointer);transition:.15s}
 .feed-item:hover{transform:translateY(-2px)}
 .feed-item .art{position:relative;background:var(--panel-solid);min-height:120px;overflow:hidden}
-.feed-item .art img{display:block;max-width:70%;height:auto;margin:0 auto} /* 가로 70% (v2.1 사용자 요청 — 지나치게 커 보였다) */
+.feed-item .art img{display:block;max-width:100%;height:auto;margin:0 auto} /* 패널(70% 폭)을 꽉 채운다 (v2.1 사용자 요청) */
 .feed-item .art.veil img{filter:blur(18px)}
 .feed-item .art .cover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:rgba(127,127,127,.15)}
 .feed-item .art .cover b{display:block;font-size:calc(13px*var(--fs,1))}
@@ -1652,6 +1654,20 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .tagin-list button:hover,.tagin-list button.on{background:color-mix(in srgb,var(--accent) 9%,#fff);color:var(--accent)}
 
 /* ---------- TRPG 리뷰 (v2.1 사용자 요청) — 별점 + 한줄 평 목록 ---------- */
+/* 3:4 타일 그리드 (v2.1 사용자 요청 — 캐릭터 게시판처럼 타일이 쭉) */
+.rv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1080px){.rv-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:620px){.rv-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+.rv-card{cursor:var(--cur-pointer,pointer)}
+.rv-card .rv-img{aspect-ratio:3/4;position:relative;overflow:hidden}
+.rv-card .rv-img .ph{position:absolute;inset:0}
+.rv-card .rv-badge{position:absolute;left:8px;top:8px;z-index:2}
+.rv-card .bd .rv-stars{justify-content:flex-start;gap:6px 10px;margin-top:6px}
+.rv-detail-panel{display:grid;grid-template-columns:1fr;gap:18px;align-items:start}
+.rv-detail-panel:has(.rv-detail-img){grid-template-columns:280px 1fr}
+.rv-detail-img{position:relative;aspect-ratio:3/4;border-radius:var(--radius-s);overflow:hidden}
+.rv-detail-img .ph{position:absolute;inset:0}
+@media(max-width:720px){.rv-detail-panel:has(.rv-detail-img){grid-template-columns:1fr}.rv-detail-img{max-width:280px}}
 .rv-list{display:grid;gap:10px}
 .rv-row{padding:14px 18px;cursor:var(--cur-pointer,pointer);transition:.15s;display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:center}
 .rv-row:hover{transform:translateY(-2px)}
@@ -1904,8 +1920,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .bgm.folded .ctrl{display:flex}
   /* 모바일 BGM은 더 납작하게 — 레코드판(디스크) 없이 제목+컨트롤 한 줄 (v1.9 사용자 요청) */
   .bgm .disc,.bgm.folded .disc{display:none}
-  /* 오른쪽 끝은 메뉴 버튼(.mmenu-btn) 자리 — BGM 컨트롤을 그만큼 왼쪽으로 (v2.1 사용자 요청) */
-  .bgm,.bgm.bgm-left,.bgm.folded{padding:4px 46px 4px 12px}
+  /* 오른쪽 끝은 메뉴 버튼(.mmenu-btn) 자리 — BGM 컨트롤을 그만큼 왼쪽으로. 버튼은 바의 오른쪽 칸처럼 같은 높이·배경으로 붙는다
+     (v2.1 사용자 요청: "여백이 많으니 메뉴 버튼이랑 연결된 UI처럼 한 줄로") — 바 높이를 36px로 맞춰 버튼과 같은 줄이 된다 */
+  .bgm,.bgm.bgm-left,.bgm.folded{padding:4px 42px 4px 12px;min-height:36px;box-sizing:border-box}
   .bgm .ctrl button{width:24px;height:24px}
 
   /* 캐릭터 리스트 — 모바일 1열 3개 (v1.9 사용자 확정) */
