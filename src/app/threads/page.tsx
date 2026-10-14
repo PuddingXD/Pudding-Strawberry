@@ -16,6 +16,7 @@ import {
 } from '@/lib/threadStore';
 import { useFonts } from '@/lib/fontStore';
 import { putBlob, BlobImg, useBlobUrl } from '@/lib/blobStore';
+import { pastedImageFiles } from '@/lib/pasteImages';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { SearchBar, KTextarea, KInput, KSelect } from '@/components/ui/Kit';
 import { GuestIdBar } from '@/components/ui/GuestId';
@@ -55,6 +56,10 @@ function KeepThumb({ id, onRemove }: { id: string; onRemove: () => void }) {
     </div>
   );
 }
+
+/** 긴 타래 — 처음에 보이는 최신 글 수 · 「이전 글 더보기」 한 번에 더 보이는 수 (루넬갠홈에서 이식, v2.1 사용자 요청) */
+const THR_SHOW = 20;
+const THR_MORE = 20;
 
 /** 타래 글 이미지 — 1장=와이드, 2~4장=격자 (4.17) · 클릭 시 확대 보기 */
 function PostImgs({ p, onOpen }: { p: ThreadPost; onOpen: (ids: string[], idx: number) => void }) {
@@ -113,6 +118,12 @@ function ThreadsPageInner() {
     .sort((a, b) => lastDate(b).localeCompare(lastDate(a))), [works, isAdmin, user, cat, q]);
 
   const sel = visible.find(w => w.id === selId) ?? visible[0];
+  /* 긴 타래는 최신 글만 (루넬갠홈에서 이식 — 「20개 이상 길어지면 윗부분을 더보기로 줄이고 최신만, 전체보기 버튼도」).
+     처음엔 최근 THR_SHOW개, 「이전 글 더보기」마다 THR_MORE개씩 더, 「전체보기」는 전부(그 뒤로 새 글이 붙어도 전부).
+     펼친 수는 그 타래에만 붙어 있어서 다른 타래를 열면 다시 최신만 */
+  const [thrShow, setThrShow] = useState<{ id?: string; n: number }>({ n: THR_SHOW });
+  const thrShown = thrShow.id === sel?.id ? thrShow.n : THR_SHOW;
+  const setThrShown = (n: number) => setThrShow({ id: sel?.id, n });
 
   // 댓글 — 글과 따로 저장 (v2.0 사용자 요청, 게시판·로드비와 같은 컬렉션을 target으로 나눠 쓴다)
   const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
@@ -141,7 +152,7 @@ function ThreadsPageInner() {
   const [files, setFiles] = useState<File[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
   const imgRef = useRef<HTMLInputElement>(null);
-  const addFiles = (list: FileList | null) => {
+  const addFiles = (list: FileList | File[] | null) => {   // 파일 고르기 · Ctrl+V 붙여넣기 공용
     if (!list) return;
     const next = [...files, ...Array.from(list)].slice(0, 4); // 이미지 4장 제한 (4.17)
     if (files.length + list.length > 4) toast('이미지는 최대 4장까지 첨부할 수 있습니다');
@@ -183,7 +194,7 @@ function ThreadsPageInner() {
     setEpKeep(p.images); setEpPh(p.images.length ? [] : (p.phList ?? []));
     setEpFiles([]); setEpUrls([]);
   };
-  const epAddFiles = (list: FileList | null) => {
+  const epAddFiles = (list: FileList | File[] | null) => {   // 파일 고르기 · Ctrl+V 붙여넣기 공용
     if (!list) return;
     const room = 4 - epKeep.length - epPh.length;
     const next = [...epFiles, ...Array.from(list)].slice(0, Math.max(0, room));
@@ -359,7 +370,23 @@ function ThreadsPageInner() {
                   </div>
                 </div>
                 <div className="thr-body">
-                  {sel.posts.map(p => {
+                  {(() => {
+                    const total = sel.posts.length;
+                    const hidden = Math.max(0, total - thrShown);
+                    if (hidden > 0) return (
+                      <div className="thr-more">
+                        <button className="btn btn-ghost rp-more" onClick={() => setThrShown(thrShown + THR_MORE)}>이전 글 더보기 ({hidden})</button>
+                        <button className="btn btn-ghost rp-more" onClick={() => setThrShown(Infinity)}>전체보기</button>
+                      </div>
+                    );
+                    if (total > THR_SHOW) return (
+                      <div className="thr-more">
+                        <button className="btn btn-ghost rp-more" onClick={() => setThrShown(THR_SHOW)}>최신 글만 보기</button>
+                      </div>
+                    );
+                    return null;
+                  })()}
+                  {sel.posts.slice(-thrShown).map(p => {
                     const folded = !!p.fold && !openFolds.has(p.id);
                     return (
                       <div key={p.id} className="thr-post">
@@ -396,7 +423,9 @@ function ThreadsPageInner() {
                 {/* 이어쓰기 컴포저 (트위터식) — 타래를 시작한 본인과 관리자 (v2.1) */}
                 {canManage(sel) && (
                   <div className="thr-write">
-                    <textarea placeholder="타래 이어쓰기…" value={text} onChange={e => setText(e.target.value)} />
+                    {/* Ctrl+V로 붙여 넣은 그림도 첨부 (루넬갠홈에서 이식) — 글자를 붙여 넣을 때는 그대로 글자 */}
+                    <textarea placeholder="타래 이어쓰기… (사진은 Ctrl+V로 붙여 넣어도 됩니다)" value={text} onChange={e => setText(e.target.value)}
+                      onPaste={e => { const fs = pastedImageFiles(e); if (!fs.length) return; e.preventDefault(); addFiles(fs); }} />
                     {urls.length > 0 && (
                       <div className="thr-att">
                         {urls.map((u, i) => (
@@ -412,7 +441,7 @@ function ThreadsPageInner() {
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <input ref={imgRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
                           onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
-                        <button className="icobtn" data-tip="사진 추가 (최대 4장)" onClick={() => imgRef.current?.click()}>
+                        <button className="icobtn" data-tip="사진 추가 (최대 4장) · 복사한 그림은 Ctrl+V로도" onClick={() => imgRef.current?.click()}>
                           <PhotoIcon />
                         </button>
                         {/* 접기 (v2.0 스포일러 쿠션) — 게시판 글쓰기의 접기와 같은 선택지 */}
@@ -491,7 +520,8 @@ function ThreadsPageInner() {
           <button className="btn btn-dark" onClick={saveEdit}>SAVE</button>
         </>}>
         <div style={{ display: 'grid', gap: 10 }}>
-          <KTextarea style={{ minHeight: 120 }} value={epText} onChange={e => setEpText(e.target.value)} />
+          <KTextarea style={{ minHeight: 120 }} value={epText} onChange={e => setEpText(e.target.value)}
+            onPaste={e => { const fs = pastedImageFiles(e); if (!fs.length) return; e.preventDefault(); epAddFiles(fs); }} />
           {/* 접기 (v2.0 스포일러 쿠션) — 컴포저와 같은 선택지 */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <KSelect minWidth={140} value={epFoldType} onChange={v => setEpFoldType(v as FoldPick)} options={FOLD_OPTIONS} />
@@ -525,7 +555,7 @@ function ThreadsPageInner() {
           <div>
             <input ref={epImgRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
               onChange={e => { epAddFiles(e.target.files); e.target.value = ''; }} />
-            <button className="icobtn" data-tip="사진 추가 (최대 4장)" onClick={() => epImgRef.current?.click()}>
+            <button className="icobtn" data-tip="사진 추가 (최대 4장) · 복사한 그림은 Ctrl+V로도" onClick={() => epImgRef.current?.click()}>
               <PhotoIcon />
             </button>
           </div>
