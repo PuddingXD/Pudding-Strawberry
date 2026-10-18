@@ -1128,7 +1128,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .profile-center img{width:100%;height:100%;object-fit:cover}
 /* 스티키 안정성 (v1.9): 끝까지 스크롤했을 때 아트 하단 == 정보 패널 하단이 되도록
    하단 여백을 계산값으로 고정 — viewH(100vh-58) - top(10) - artH(100vh-150) = 82px */
-.page-char-detail{padding-bottom:calc(82px + var(--bgm-h,0px))}
+/* 자캐·자관 상세 아래 여백 — 플레이어가 화면 아래를 가리는 높이(--bgm-cover: 바닥 바든 PC의 떠 있는 알약이든)만큼 더 (v2.1 사용자 요청 —
+   맨 아래의 추가 탭·역극 칸이 플레이어에 가려 보였다). .page.를 붙여 모바일의 .page 여백 규칙보다 앞선다 */
+.page.page-char-detail{padding-bottom:calc(82px + var(--bgm-cover,0px))}
+.page.page-rel-detail{padding-bottom:calc(80px + var(--bgm-cover,0px))}
 .profile-info{padding:24px;overflow:auto}
 /* 세리프는 **탭 제목에만** (v2.0 사용자 제보) — 예전 `.profile-info h3`는 본문(.prose)에
    직접 쓴 h3까지 잡아서, 본문 폰트를 바꿔도 h3만 세리프로 남았다 */
@@ -1536,7 +1539,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 @media (max-width:620px){.pl-table .hide-m,.pl-table col.c-wr,.pl-table col.c-with,.pl-table col.c-url,.pl-table col.c-mng{display:none}}
 
 /* ---------- 그림게시판 로드뷰 (4.10) ---------- */
-.roadview-item{display:grid;grid-template-columns:1fr 390px;margin-bottom:22px;overflow:hidden;padding:0} /* 우측 댓글 폭 확대 (320→390) */
+.roadview-item{display:grid;grid-template-columns:1fr;max-width:672px;margin:0 auto 22px;overflow:hidden;padding:0} /* 큰 그림 카드와 같은 672px — 댓글은 이미지 아래로 (v2.1 사용자 요청 · 예전엔 페이지 폭 + 오른쪽 댓글 390px) */
 /* 그림별 상단 번호 영역 (v1.9) — 숫자만 표시 */
 .roadview-item .rv-head{grid-column:1/-1;padding:11px 18px;border-bottom:1px solid var(--line)}
 .roadview-item .rv-head b{font-size:calc(13.5px*var(--fs,1));letter-spacing:.08em}
@@ -1556,7 +1559,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cmt-side{display:flex;flex-direction:column;border-left:1px solid var(--line);min-height:0;height:100%}
 .cmt-side .list{flex:1;min-height:120px;padding:16px;overflow:auto;scrollbar-color:var(--sb-thumb,#c9ccd2) transparent;scrollbar-width:thin}
 .roadview-item{grid-auto-rows:minmax(0,auto)}
-.roadview-item .cmt-side{max-height:none}
+.roadview-item .cmt-side{max-height:none;border-left:none;border-top:1px solid var(--line)}   /* 댓글은 이미지 아래 — 위쪽 선으로 가른다 */
 
 /* ---------- 그림백업 (4.11) ---------- */
 .g-item{overflow:hidden;padding:0;cursor:var(--cur-pointer,pointer);transition:.2s}
@@ -1592,7 +1595,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .single-viewer .nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(15,17,20,.45);color:#fff;display:grid;place-items:center;font-size:calc(15px*var(--fs,1));opacity:0;transition:.15s;z-index:2}
 .single-viewer:hover .nav{opacity:1}
 .single-viewer .nav:hover{background:rgba(15,17,20,.75)}
-.thumb-strip{display:flex;gap:8px;margin-top:10px;justify-content:center}
+.thumb-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:center}   /* 사진이 많으면 줄을 넘긴다 — 본문 카드가 672px로 줄어 한 줄이면 미리보기가 눌렸다 (v2.1) */
 .thumb-strip .t{width:64px;height:48px;border-radius:8px;overflow:hidden;cursor:var(--cur-pointer,pointer);opacity:.6;transition:.15s;border:2px solid transparent}
 .thumb-strip .t:hover{opacity:1}
 /* 선택된 썸네일 — 표정 스트립과 같은 기준(디자인 탭 「입력 포커스」) */

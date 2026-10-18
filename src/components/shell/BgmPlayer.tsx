@@ -94,17 +94,21 @@ export function BgmPlayer() {
   useEffect(() => {
     const el = rootRef.current;
     const root = document.documentElement.style;
-    if (!el) { root.removeProperty('--bgm-h'); return; }
+    if (!el) { root.removeProperty('--bgm-h'); root.removeProperty('--bgm-cover'); return; }
     const set = () => {
       const r = el.getBoundingClientRect();
       const full = r.width >= window.innerWidth - 2 && r.bottom >= window.innerHeight - 1;
       root.setProperty('--bgm-h', full ? `${Math.max(0, Math.round(window.innerHeight - r.top))}px` : '0px');
+      // 화면 아래를 가리는 높이 — 바닥에 붙은 바든 PC의 떠 있는 알약이든 (v2.1 사용자 요청: 자캐·자관 페이지 맨 아래의 탭·역극 칸이
+      // 플레이어에 가려 보인다 → 그만큼 더 내릴 수 있게). 알약은 폭 일부만 가려 모든 페이지에 쓰지는 않고 상세 페이지 아래 여백에만 쓴다
+      const bottomish = r.height > 0 && r.bottom >= window.innerHeight - 48;
+      root.setProperty('--bgm-cover', bottomish ? `${Math.max(0, Math.round(window.innerHeight - r.top))}px` : '0px');
     };
     set();
     const ro = new ResizeObserver(set);
     ro.observe(el);
     window.addEventListener('resize', set);
-    return () => { ro.disconnect(); window.removeEventListener('resize', set); root.removeProperty('--bgm-h'); };
+    return () => { ro.disconnect(); window.removeEventListener('resize', set); root.removeProperty('--bgm-h'); root.removeProperty('--bgm-cover'); };
   }, [settings.enabled, tracks.length]);
 
   // YT API 로드 + 플레이어 생성

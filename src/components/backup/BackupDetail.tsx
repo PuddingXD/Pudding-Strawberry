@@ -90,7 +90,8 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
 
       {/* 본문만 폭 제한 — 헤더는 풀폭 위치 유지 */}
       {/* 큰 그림은 패널째 70%(672px)로 — 이미지는 패널을 꽉 채운다 (v2.1 사용자 요청) */}
-      <div className="panel" style={{ padding: 20, maxWidth: feed ? 672 : 960, margin: '0 auto' }}>
+      {/* 갤러리 본문 카드도 큰 그림과 같은 672px (v2.1 사용자 요청 — 예전엔 960px) */}
+      <div className="panel" style={{ padding: 20, maxWidth: 672, margin: '0 auto' }}>
         {/* 제목·뱃지 세로 중앙 정렬 + 아래 여백 확보 */}
         <h2 style={{ fontSize: 18, marginBottom: p.desc ? 8 : 16, display: 'flex', alignItems: 'center', gap: 8 }}>
           {p.title}
