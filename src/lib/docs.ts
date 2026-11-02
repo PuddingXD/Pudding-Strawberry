@@ -7,8 +7,9 @@ import { sanitizeHtml } from '@/lib/sanitize';
 /** 문서 한 편 — 자캐의 추가 탭, 자관의 문서 탭을 같은 모양으로 읽기 화면에 넘긴다 */
 export interface DocItem { id: string; icon: string; title: string; subtitle?: string; html: string; size?: number }
 
-/** 문서 본문 기본 글자 크기(px) — 문서마다 바꿀 수 있다 */
-export const DEFAULT_DOC_SIZE = 10;
+/** 문서 본문 기본 글자 크기(px) — 전체 읽기 화면 13, 탭 안에 바로 보이는 본문 14. 문서마다 바꿀 수 있다 */
+export const DEFAULT_DOC_SIZE = 13;
+export const DEFAULT_TAB_SIZE = 14;
 export interface TocItem { id: string; level: 1 | 2 | 3; text: string }
 
 /** 본문 정리 + 제목 id 달기 + 목차 — 브라우저에서만 동작(SSR에서는 빈 값) */

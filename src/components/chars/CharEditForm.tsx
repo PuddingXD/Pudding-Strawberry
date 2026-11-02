@@ -13,7 +13,7 @@ import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { KInput, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
-import { DEFAULT_DOC_SIZE } from '@/lib/docs';
+import { DEFAULT_DOC_SIZE, DEFAULT_TAB_SIZE } from '@/lib/docs';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
@@ -398,12 +398,12 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
         <KCheck label="전체 읽기 사용" checked={!!tab.fullRead} onChange={v => onChange({ fullRead: v })} />
         <span className="hint" style={{ margin: 0 }}>켜면 탭에는 제목·소제목·항목만 보이고, 본문은 「전체 읽기 &gt;」 화면에서 읽습니다</span>
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label className="k-label" style={{ margin: 0 }}>본문 글자 크기</label>
-          <KStep value={tab.size ?? DEFAULT_DOC_SIZE} min={8} max={24} step={1} suffix="px" onChange={v => onChange({ size: v })} />
+          <label className="k-label" style={{ margin: 0 }}>본문 글자 크기 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>(탭 14 · 전체 읽기 13)</span></label>
+          <KStep value={tab.size ?? (tab.fullRead ? DEFAULT_DOC_SIZE : DEFAULT_TAB_SIZE)} min={8} max={24} step={1} suffix="px" onChange={v => onChange({ size: v })} />
         </span>
       </div>
       <DocImport html={tab.html} onChange={html => onChange({ html })} />
-      <RichEditor doc size={tab.size ?? DEFAULT_DOC_SIZE} value={tab.html} onChange={html => onChange({ html })}
+      <RichEditor doc size={tab.size ?? (tab.fullRead ? DEFAULT_DOC_SIZE : DEFAULT_TAB_SIZE)} value={tab.html} onChange={html => onChange({ html })}
         placeholder="탭 내용을 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
       <button className="btn btn-dark" style={{ justifySelf: 'end' }} onClick={onBack}>완료 — 목록으로</button>
     </div>

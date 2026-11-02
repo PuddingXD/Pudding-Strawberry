@@ -1,9 +1,9 @@
 'use client';
 // 자관 문서 읽기 — 문서 탭의 긴 글을 목차(제목1·2·3)와 함께 크게 읽는다. 폭은 갤러리 상세와 같은 672px.
-import React, { Suspense, useEffect, useMemo } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useLocalList } from '@/lib/postStore';
+import { useLocalList, newId } from '@/lib/postStore';
 import { Relation, REL_SEED, findByKey, auStyle } from '@/lib/charStore';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useFonts } from '@/lib/fontStore';
@@ -19,9 +19,10 @@ function RelReadInner() {
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const { familyOf } = useFonts();
   const rel = findByKey(rels, id);
+  const [justAdded, setJustAdded] = useState<string | undefined>(undefined);   // 방금 추가한 문서 — 열리면 바로 수정 모드
   const docs = useMemo<DocItem[]>(() => (rel?.docs ?? [])
-    .filter(d => d.html.trim() && d.html.trim() !== '<p></p>')
-    .map(d => ({ id: d.id, icon: d.icon, title: d.title, subtitle: d.subtitle, html: d.html, size: d.size })), [rel]);
+    .filter(d => isAdmin || (d.html.trim() && d.html.trim() !== '<p></p>'))   // 비어 있는 문서는 관리자에게만 보인다(새로 추가하면 바로 채울 수 있게)
+    .map(d => ({ id: d.id, icon: d.icon, title: d.title, subtitle: d.subtitle, html: d.html, size: d.size })), [rel, isAdmin]);
 
   // 자관 페이지와 같은 테마 — 별도 테마컬러·페이지 배경을 쓰는 자관이면 읽기 화면도 똑같이 (원본 기준)
   const { setPageTheme, setPageBg } = useTheme();
@@ -44,6 +45,12 @@ function RelReadInner() {
     return <section className="page"><div className="page-head"><PageTitle href="/rels">RELATIONS</PageTitle><p>자관을 찾을 수 없거나 열람 권한이 없습니다</p></div></section>;
   }
   const back = `/rels/${rel.id}`;
+  const addDoc = () => {
+    const did = newId();
+    setRels(rels.map(x => (x.id === rel.id ? { ...x, docs: [...(x.docs ?? []), { id: did, icon: '✦', title: '새 문서', html: '' }] } : x)));
+    setJustAdded(did);
+    router.replace(`/rels/${rel.id}/read?doc=${did}`, { scroll: false });
+  };
   const saveDoc = (did: string, p: DocPatch) =>
     setRels(rels.map(x => (x.id === rel.id
       ? { ...x, docs: (x.docs ?? []).map(d => (d.id === did ? { ...d, title: p.title, subtitle: p.subtitle || undefined, html: p.html, size: p.size } : d)) }
@@ -58,7 +65,7 @@ function RelReadInner() {
           <button className="btn btn-dark" onClick={() => router.push(back)}>‹ 자관으로</button>
         </div>
       </div>
-      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc}
+      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}
         onPick={did => router.replace(`/rels/${rel.id}/read?doc=${did}`, { scroll: false })} />
     </section>
   );
