@@ -11,6 +11,7 @@ import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
 import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { KInput, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
+import { DocImport } from '@/components/ui/DocImport';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
@@ -435,6 +436,7 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
         )}
       </div>
       {/* 리치 에디터 (TipTap) — 툴바로 서식·이미지 삽입, 출력은 HTML */}
+      <DocImport html={tab.html} onChange={html => onChange({ html })} />
       <RichEditor value={tab.html} onChange={html => onChange({ html })}
         placeholder="탭 내용을 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
       <button className="btn btn-dark" style={{ justifySelf: 'end' }} onClick={onBack}>완료 — 목록으로</button>

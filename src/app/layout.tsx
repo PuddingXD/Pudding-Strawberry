@@ -21,6 +21,7 @@ import { MobileMenu } from '@/components/shell/MobileMenu';
 import { UploadBusy } from '@/components/shell/UploadBusy';
 import { SpellCheck } from '@/components/shell/SpellCheck';
 import { PageFrame } from '@/lib/pageRefresh';
+import { PullToRefresh } from '@/components/shell/PullToRefresh';
 import { MenuGuard } from '@/components/shell/MenuGuard';
 import { ServerBoot } from '@/components/shell/ServerBoot';
 import { siteMeta } from '@/lib/siteMeta';
@@ -94,6 +95,7 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                   {/* PageFrame: 같은 메뉴를 다시 누르면 이 안쪽만 remount (BGM·상단바는 유지, v1.9) */}
                   {/* MenuGuard: 비공개로 둔 메뉴는 주소로 들어와도 열리지 않게 (v2.0 사용자 요청) */}
                   <main id="appMain"><PageFrame><MenuGuard>{children}</MenuGuard></PageFrame></main>
+                  <PullToRefresh />
                   {/* BGM 미니 플레이어 — 전역 상주, 페이지 이동에도 유지 (4.1) */}
                   <BgmPlayer />
                   {/* 전역 커스텀 툴팁 — data-tip 요소 공통 (7장) */}

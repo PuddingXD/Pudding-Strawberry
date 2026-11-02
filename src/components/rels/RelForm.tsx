@@ -3,7 +3,11 @@
 // 아트 다중 등록(첫 장 = 대표 · 리스트 썸네일 4:3 크롭) · 등록 시 내 캐릭터 연동
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Character, Relation, Visibility, RelCpTag, RelMember, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import { Character, Relation, Visibility, RelCpTag, RelMember, RelDoc, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import { RichEditor } from '@/components/ui/RichEditor';
+import { DocImport } from '@/components/ui/DocImport';
+import { SymbolInput } from '@/components/ui/SymbolInput';
+import { newId as newDocId } from '@/lib/postStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { isValidSlug, slugify } from '@/lib/link';
 import { CP_LABEL } from '@/lib/relqStore';
@@ -61,6 +65,7 @@ export interface RelFormValue {
   illustMode?: 'duo' | 'one';                  // 처음 보이는 이미지 — 전신(duo) / 일러스트(one) (v2.1 사용자 요청)
   auName?: string;           // AU별 자관명 (v2.0 사용자 요청 — AU 편집일 때만)
   qaHide?: boolean;          // 문답 답변 숨기기 (v2.0 사용자 요청)
+  docs?: RelDoc[];           // 문서 탭 (긴 글) — 원본 자관 편집에서만
   pickedCharIds: string[];   // 등록 시 연동할 내 캐릭터 (수정 모드에선 빈 배열)
 }
 
@@ -172,6 +177,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const auObj = auId ? initial?.aus.find(a => a.id === auId) : undefined;
 
   const [kind, setKind] = useState<'pair' | 'multi'>(initial?.kind ?? 'pair');
+  const [docs, setDocs] = useState<RelDoc[]>(initial?.docs ?? []);   // 문서 탭 (v2.2)
+  const [docOpen, setDocOpen] = useState<string | null>(null);        // 지금 펼쳐 편집 중인 문서
   const [name, setName] = useState(initial?.name ?? '');
   // 페이지 주소 /rels/{slug} — 신규는 비우면 자동(id). 수정에서도 바꿀 수 있다 (v2.0 사용자 요청)
   const [slug, setSlug] = useState(initial?.slug ?? '');
@@ -357,6 +364,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       nameBolds: pairMembers.length ? nameBolds : undefined,
       quoteColors: pairMembers.length ? quoteColors : undefined,
       fullFront,
+      docs: auObj ? undefined : docs,
       pickedCharIds: picked,
     });
   };
@@ -631,6 +639,46 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
               </div>
             )}
           </div>
+        )}
+
+        {/* 문서 탭 — 긴 글(소설·설정). 상세 화면에 아이콘 탭이 생기고, 누르면 바로 전체 읽기 화면이 열린다 (원본 자관 편집에서만) */}
+        {!auObj && (
+          <>
+            <label className="k-label" style={{ margin: '6px 0 0' }}>
+              문서 탭 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 긴 글 · 아이콘을 누르면 전체 읽기 화면으로 · 제목1·2·3으로 목차가 만들어집니다</span>
+            </label>
+            {docs.map(d => {
+              const open = docOpen === d.id;
+              const patch = (p: Partial<RelDoc>) => setDocs(l => l.map(x => (x.id === d.id ? { ...x, ...p } : x)));
+              return (
+                <div key={d.id} style={{ border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', display: 'grid', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef0f2', display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{d.icon}</span>
+                    <b style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title || '(제목 없음)'}</b>
+                    <small style={{ color: 'var(--faint)', fontSize: 10.5, flexShrink: 0 }}>{d.html.trim() ? `${d.html.length.toLocaleString()}자` : '비어 있음'}</small>
+                    <button type="button" className="btn btn-dark" style={{ marginLeft: 'auto', height: 27, padding: '0 12px', fontSize: 11 }}
+                      onClick={() => setDocOpen(open ? null : d.id)}>{open ? '접기' : '편집 ›'}</button>
+                    <span className="fx" onClick={() => del.ask(`문서 「${d.title || '제목 없음'}」을 삭제하시겠습니까?`,
+                      () => { setDocs(l => l.filter(x => x.id !== d.id)); if (open) setDocOpen(null); },
+                      '문서에 작성한 내용도 함께 사라집니다. 저장(SAVE) 전이면 CANCEL로 되돌릴 수 있습니다.')}>✕</span>
+                  </div>
+                  {open && (
+                    <>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <SymbolInput value={d.icon} maxLength={2} style={{ width: 56, textAlign: 'center' }} onChange={v => patch({ icon: v })} />
+                        <KInput placeholder="문서 제목" value={d.title} onChange={e => patch({ title: e.target.value })} />
+                        <KInput placeholder="소제목 (선택)" value={d.subtitle ?? ''} onChange={e => patch({ subtitle: e.target.value })} />
+                      </div>
+                      <DocImport html={d.html} onChange={html => patch({ html })} />
+                      <RichEditor value={d.html} onChange={html => patch({ html })} placeholder="긴 글을 작성하거나 파일에서 불러오세요" />
+                    </>
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11, justifySelf: 'center' }}
+              onClick={() => { const id = newDocId(); setDocs(l => [...l, { id, icon: '✦', title: '', html: '' }]); setDocOpen(id); }}>＋ 문서 추가</button>
+          </>
         )}
       </div>
 

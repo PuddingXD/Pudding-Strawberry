@@ -57,6 +57,7 @@ export default function RelNewPage() {
             illustMode: v.kind === 'pair' ? (v.illustMode ?? 'duo') : 'one',   // 처음 보이는 이미지 (v2.1)
             aus: [{ id: 'base', label: '원본', catchphrase: v.catchphrase }],
             timeline: [], questions: [],
+            ...(v.docs?.length ? { docs: v.docs } : {}),
           };
           setRels([...rels, rel]);
           toast('자관이 등록되었습니다 — 상대 캐릭터·한마디 등은 상세에서 이어서');

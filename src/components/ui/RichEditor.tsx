@@ -111,10 +111,15 @@ export function RichEditor({ value, onChange, placeholder }: {
         <TBtn title="취소선" label={<s>S</s>} on={editor.isActive('strike')}
           onClick={() => editor.chain().focus().toggleStrike().run()} />
         <span className="re-sep" />
-        <TBtn title="제목" label="H2" on={editor.isActive('heading', { level: 2 })}
+        {/* 제목1·2·3 / 본문 — 읽기 화면의 목차가 이 제목들로 만들어진다 */}
+        <TBtn title="제목 1" label="H1" on={editor.isActive('heading', { level: 1 })}
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
+        <TBtn title="제목 2" label="H2" on={editor.isActive('heading', { level: 2 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} />
-        <TBtn title="소제목" label="H3" on={editor.isActive('heading', { level: 3 })}
+        <TBtn title="제목 3" label="H3" on={editor.isActive('heading', { level: 3 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} />
+        <TBtn title="본문" label="¶" on={editor.isActive('paragraph')}
+          onClick={() => editor.chain().focus().setParagraph().run()} />
         <span className="re-sep" />
         <TBtn title="글머리 목록" label="•≡" on={editor.isActive('bulletList')}
           onClick={() => editor.chain().focus().toggleBulletList().run()} />

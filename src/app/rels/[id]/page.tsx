@@ -1107,6 +1107,11 @@ function RelDetailInner() {
           <button className={tab === 'tl' ? 'on' : ''} onClick={() => setTab('tl')}><span className="lb-pc">TIMELINE</span><span className="lb-m">T</span></button>
           {/* QUESTIONS 섹션은 ＋로 추가해야 생김 (v1.9) — 처음에는 타임라인만 */}
           {qaOn && <button className={tab === 'qa' ? 'on' : ''} onClick={() => setTab('qa')}><span className="lb-pc">QUESTIONS</span><span className="lb-m">Q</span></button>}
+          {/* 문서 탭 — 긴 글. 아이콘을 누르면 바로 전체 읽기 화면 (v2.2 사용자 요청) */}
+          {(rel.docs ?? []).filter(d => d.html.trim() && d.html.trim() !== '<p></p>').map(d => (
+            <button key={d.id} data-tip={d.title || '문서'} style={{ fontSize: 15, padding: '0 8px' }}
+              onClick={() => router.push(`/rels/${rel.id}/read?doc=${d.id}`)}>{d.icon}</button>
+          ))}
           {/* QUESTIONS 탭 숨기기 (v2.1 사용자 요청 — 타임라인만 보이게 되돌리기). 문답 자료는 남고 ＋로 다시 켠다 */}
           {isAdmin && qaOn && (
             <button data-tip="QUESTIONS 탭 숨기기 — 질문·답변은 지워지지 않고 ＋로 다시 켤 수 있습니다" style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}

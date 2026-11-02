@@ -19,6 +19,7 @@ import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/Crop
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useSectionTitle } from '@/lib/sectionStore';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { DocPreview } from '@/components/ui/DocReader';
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -105,10 +106,6 @@ function CharDetailInner() {
   }, [pageColor, setPageTheme]);
 
   const curTab = eff?.tabs.find(t => t.id === tab);
-  const tabHtml = useMemo(
-    () => (loaded && curTab ? sanitizeHtml(curTab.html) : ''),
-    [loaded, curTab],
-  );
   const basicHtml = useMemo(
     () => (loaded && eff ? sanitizeHtml(eff.basicHtml) : ''),
     [loaded, eff],
@@ -331,14 +328,16 @@ function CharDetailInner() {
               {(curTab?.groups ?? []).map(g => {
                 const rows = g.items.filter(x => x.label.trim() && x.value.trim());
                 return rows.length === 0 ? null : (
-                  <dl key={g.id} className="tab-spec">
+                  <dl key={g.id} className="spec tab-spec">
                     {rows.map(x => (
-                      <React.Fragment key={x.id}><dt style={{ color: eff.color }}>{x.label}</dt><dd>{x.value}</dd></React.Fragment>
+                      <React.Fragment key={x.id}><dt>{x.label}</dt><dd>{x.value}</dd></React.Fragment>
                     ))}
                   </dl>
                 );
               })}
-              <div className="prose" dangerouslySetInnerHTML={{ __html: tabHtml }} />
+              {/* 긴 글은 미리보기만 — 전체는 읽기 화면에서 (목차·제목 이동) */}
+              <DocPreview html={curTab?.html ?? ''}
+                onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab?.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`)} />
             </>
           )}
         </div>

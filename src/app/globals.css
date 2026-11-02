@@ -1140,10 +1140,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .spec{display:grid;grid-template-columns:76px 1fr;gap:7px 10px;font-size:calc(12.5px*var(--fs,1));margin-bottom:18px}
 .spec dt{color:var(--faint);letter-spacing:.06em}
 .spec dd{color:var(--ink)}
-/* 추가 탭 항목 그룹 — 항목명(캐릭터 테마색, 왼쪽 정렬) + 값(여백을 두고 같은 열에 정렬). 그룹 사이는 한 줄(엔터)보다 좁게 */
-.tab-spec{display:grid;grid-template-columns:minmax(64px,max-content) 1fr;gap:5px 18px;font-size:calc(12.5px*var(--fs,1));margin:0 0 14px;text-align:left}
-.tab-spec dt{font-weight:600;letter-spacing:.04em;text-align:left}
-.tab-spec dd{color:var(--ink);margin:0;text-align:left;word-break:break-word}
+/* 추가 탭 항목 그룹 — 모양은 기본 정보(.spec)와 똑같고, 그룹 사이만 넉넉히 띄운다 */
+.tab-spec{margin-bottom:34px}
+.tab-spec dd{word-break:break-word}
 .prose{font-size:calc(14px*var(--fs,1));line-height:1.85;color:#3a3f47}
 .prose b{display:block;margin-bottom:4px}
 .tabnote{margin-top:16px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:calc(11px*var(--fs,1));color:var(--faint)}
@@ -2096,3 +2095,44 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .pl-table.sh-table col.c-shu{width:34px}
   .pl-table.sh-table th,.pl-table.sh-table td{padding-left:3px;padding-right:3px}
 }
+
+/* ---------- 문서 읽기 (자캐 추가 탭 · 자관 문서 탭) ---------- */
+.doc-read{display:grid;grid-template-columns:200px minmax(0,672px);gap:28px;justify-content:center;align-items:start}
+.doc-side{position:sticky;top:16px;max-height:calc(100dvh - 32px);overflow:auto;padding:4px 0}
+.doc-side-h{font-size:calc(10px*var(--fs,1));letter-spacing:.14em;color:var(--faint);margin:0 0 6px 8px}
+.doc-tab{display:flex;gap:7px;align-items:center;width:100%;text-align:left;padding:7px 8px;border-radius:7px;font-size:calc(12.5px*var(--fs,1));font-weight:600;color:var(--ink);cursor:var(--cur-pointer,pointer)}
+.doc-tab:hover{background:rgba(127,127,127,.12)}
+.doc-tab.on{background:rgba(127,127,127,.16)}
+.doc-tab .ic{flex-shrink:0}
+.doc-tab .tt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-toc{display:block;width:100%;text-align:left;padding:4px 8px;border-radius:6px;font-size:calc(11.5px*var(--fs,1));color:var(--sub);line-height:1.45;cursor:var(--cur-pointer,pointer)}
+.doc-toc:hover{color:var(--accent);background:rgba(127,127,127,.08)}
+.doc-toc.l1{padding-left:18px;font-weight:600}
+.doc-toc.l2{padding-left:30px}
+.doc-toc.l3{padding-left:42px;font-size:calc(11px*var(--fs,1))}
+.doc-toc-btn{display:none}
+.doc-main{background:var(--panel-bg,#fff);border:1px solid var(--line);border-radius:var(--radius,14px);padding:30px 34px;min-width:0}
+.doc-title{font-size:calc(21px*var(--fs,1));margin:0 0 4px}
+.doc-sub{font-size:calc(12px*var(--fs,1));color:var(--faint);margin-bottom:18px}
+.doc-body{font-size:calc(15px*var(--fs,1));line-height:2;color:var(--ink);word-break:break-word}
+.doc-body p{margin:0 0 1.1em}
+.doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
+.doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
+.doc-body h3{font-size:1.1em;margin:1.4em 0 .4em;line-height:1.4}
+.doc-body h1,.doc-body h2,.doc-body h3{scroll-margin-top:18px}
+.doc-body img{max-width:100%;height:auto}
+.doc-body blockquote{margin:1em 0;padding:2px 0 2px 14px;border-left:3px solid var(--line-dark,var(--line));color:var(--sub)}
+.doc-body hr{border:none;border-top:1px solid var(--line);margin:2em 0}
+@media (max-width:900px){
+  .doc-read{grid-template-columns:minmax(0,1fr);gap:10px}
+  .doc-toc-btn{display:block;justify-self:start;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;background:transparent;color:var(--ink)}
+  .doc-side{display:none;position:static;max-height:46dvh;border:1.5px solid var(--line);border-radius:10px;padding:6px}
+  .doc-side.open{display:block}
+  .doc-main{padding:22px 18px}
+}
+/* 탭 안 미리보기 — 일정 높이까지만 보이고 아래는 흐려진다 */
+.doc-preview-wrap{margin-top:6px}
+.doc-preview{max-height:260px;overflow:hidden}
+.doc-preview.cut{-webkit-mask-image:linear-gradient(#000 62%,transparent);mask-image:linear-gradient(#000 62%,transparent)}
+.doc-open{margin-top:10px}
+@keyframes ptr-spin{to{transform:rotate(360deg)}}

@@ -370,6 +370,9 @@ export interface RelAu {
   hideLog?: boolean;
 }
 
+/** 자관 문서 탭 — 긴 글. 아이콘을 누르면 바로 전체 읽기 화면으로 간다 (자캐 추가 탭과 같은 읽기 화면) */
+export interface RelDoc { id: string; icon: string; title: string; subtitle?: string; html: string }
+
 export interface Relation {
   id: string;
   /** 페이지 주소 별명 (v2.0 사용자 요청) — /rels/{별명}. 나중에 수정 화면에서 바꿀 수 있다.
@@ -429,6 +432,7 @@ export interface Relation {
    *  **화면에서 가리는 것일 뿐 완전한 차단이 아니다** — 답변은 공개로 저장돼 있어 주소를 직접
    *  다루는 사람에게는 보일 수 있다. 설정 화면에도 그대로 적어 둔다. */
   qaHide?: boolean;
+  docs?: RelDoc[];               // 문서 탭 (긴 글 — 소설·설정 등)
 }
 
 export const CHAR_SEED: Character[] = [];
