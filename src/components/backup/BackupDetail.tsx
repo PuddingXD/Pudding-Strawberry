@@ -142,14 +142,9 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
           /* 단일형 — 큰 이미지 + 좌우 넘김 + 썸네일 스트립 */
           <>
             <div className="single-viewer">
-              {/* 고정 16:10 프레임 안 가운데 배치 — 실제 이미지일 때만 클릭 확대.
-                  grid는 암시적 row가 콘텐츠 높이로 늘어나 max-height:100%가 무력화됨(세로 긴 그림 잘림) → flex (v1.9) */}
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: imgs[cur].url ? 'zoom-in' : undefined,
-              }}
-                onClick={() => { if (imgs[cur].url) setLbOpen(true); }}>
-                <Img im={imgs[cur]} natural />
+              <div style={{ cursor: imgs[cur].url ? 'zoom-in' : undefined }}
+              onClick={() => { if (imgs[cur].url) setLbOpen(true); }}>
+              <Img im={imgs[cur]} />
               </div>
               {imgs.length > 1 && (
                 <>
