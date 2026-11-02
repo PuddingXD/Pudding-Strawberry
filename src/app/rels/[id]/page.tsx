@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useLocalList, newId } from '@/lib/postStore';
 import {
-  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, findChar, Visibility, CharGrant,
+  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, TlSide, tlSidesOf, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant, canManageRel,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
@@ -145,7 +145,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
       onContextMenu={e => { if (!isAdmin) return; e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY }); }}>
       <div className="hd">
         {rep ? (
-          <div className="face" data-tip="클릭하면 원본 보기"
+          <div className="face"
             style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in' }}
             onClick={e => { e.stopPropagation(); setLb(0); }}>
             {/* 얼굴칸은 1:1 — 캐릭터의 3:4 썸네일 크롭을 그대로 쓰면 어긋나므로
@@ -205,7 +205,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
       {rest.length > 0 && (
         <div className="card-thumbs">
           {rest.map((r, i) => (
-            <div key={r} className="t" data-tip="클릭하면 원본 보기"
+            <div key={r} className="t"
               style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in' }}
               onClick={e => { e.stopPropagation(); setLb((rep ? 1 : 0) + i); }}>
               <BlobImg fileRef={r} ph="" label="" />
@@ -273,6 +273,17 @@ function RelDetailInner() {
   const [qNote, setQNote] = useState<{ no: number; text: string } | null>(null);
   // 멤버 얼굴칸(1:1) 크롭 편집 (v2.0)
   const [faceEdit, setFaceEdit] = useState<{ charId: string; ref: string; crop?: CropValue } | null>(null);
+  // 다인관 멤버 줄 우클릭 메뉴 (썸네일 위치 조정)
+  const [mrowCtx, setMrowCtx] = useState<{ x: number; y: number; charId: string; ref: string; crop?: CropValue } | null>(null);
+  useEffect(() => {
+    if (!mrowCtx) return;
+    const close = () => setMrowCtx(null);
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setMrowCtx(null); };
+    window.addEventListener('click', close);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('keydown', key);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('scroll', close, true); window.removeEventListener('keydown', key); };
+  }, [mrowCtx]);
   // AU 네모(원본·AU) 썸네일 위치 편집 (v2.1 사용자 요청) — 네모 우클릭
   const [chipEdit, setChipEdit] = useState<{ auId: string; ref: string; crop?: CropValue } | null>(null);
   // 타임라인 항목 우클릭 메뉴 (v2.0 사용자 요청) — 수정·삭제. 늘 떠 있는 [삭제] 글자는 없앴다
@@ -335,8 +346,10 @@ function RelDetailInner() {
   const [mColor, setMColor] = useState('#8a7f70');
   const [mGrants, setMGrants] = useState<CharGrant[]>([]); // 새 상대 캐릭터 회원 권한 (v1.9)
   const [tlOpen, setTlOpen] = useState(false);
-  const [tEra, setTEra] = useState('');
-  const [tDesc, setTDesc] = useState('');
+  const emptySide = { era: '', title: '', desc: '' };
+  const [tL, setTL] = useState(emptySide);   // 왼쪽(관리자 캐릭터) 글
+  const [tR, setTR] = useState(emptySide);   // 오른쪽(상대 캐릭터) 글
+  const [tWho, setTWho] = useState('');       // 다인관: 이 사건의 주인 캐릭터 (비우면 함께 겪은 사건)
   // 한마디는 핑퐁식으로 여러 개 (사용자 요청)
   const [tSays, setTSays] = useState<{ id: string; charId: string; text: string }[]>([]);
   const [tlSort, setTlSort] = useState(false); // 타임라인 정렬 모드 (드래그앤드롭)
@@ -503,6 +516,16 @@ function RelDetailInner() {
     return auCharKey ? `${base}?au=${encodeURIComponent(auCharKey)}` : base;
   };
   const sideOf = (cid: string) => (isDuo && rel?.members[1]?.charId === cid ? 'r' : 'l');
+  // 타임라인의 좌우 — 페어: 화면에서 오른쪽 자리에 있는 캐릭터가 오른쪽 / 다인: 상대 캐릭터가 오른쪽, 내 캐릭터는 왼쪽
+  const tlSideOf = (cid: string): 'l' | 'r' => {
+    if (!rel) return 'l';
+    if (isDuo) {
+      const right = rel.pairRight ?? rel.members[1]?.charId;
+      return right === cid ? 'r' : 'l';
+    }
+    const c = findChar(chars, cid);
+    return c && !c.own ? 'r' : 'l';
+  };
 
   // AU 전환으로 QUESTIONS 섹션이 없는 AU에 오면 타임라인 탭으로 (v1.9)
   useEffect(() => { if (!qaOn && tab === 'qa') setTab('tl'); }, [qaOn, tab]);
@@ -584,15 +607,19 @@ function RelDetailInner() {
   };
 
   /* ---------- 타임라인 항목 추가·수정 (설명/한마디 중 하나 필수 — 4.5) ---------- */
-  const closeTl = () => { setTlOpen(false); setTlEditIdx(null); setTEra(''); setTDesc(''); setTSays([]); };
+  const closeTl = () => { setTlOpen(false); setTlEditIdx(null); setTL(emptySide); setTR(emptySide); setTWho(''); setTSays([]); };
   const addTlItem = () => {
     const says = tSays.filter(x => x.charId && x.text.trim()).map(({ charId, text }) => ({ charId, text: text.trim() }));
-    if (!tDesc.trim() && says.length === 0) { toast('설명 또는 한마디 중 하나는 입력해 주세요'); return; }
-    const item: TlItem = {
-      era: tEra.trim() || undefined,
-      desc: tDesc.trim() || undefined,
-      says,
+    const clean = (v: { era: string; title: string; desc: string }): TlSide | undefined => {
+      const o: TlSide = { era: v.era.trim() || undefined, title: v.title.trim() || undefined, desc: v.desc.trim() || undefined };
+      return o.era || o.title || o.desc ? o : undefined;
     };
+    // 한 캐릭터만의 사건이면 그 캐릭터가 있는 쪽 글만 남긴다
+    const who = !isDuo && tWho ? tWho : '';
+    const whoSide = who ? tlSideOf(who) : null;
+    const l = whoSide === 'r' ? undefined : clean(tL), r = whoSide === 'l' ? undefined : clean(tR);
+    if (!l && !r && says.length === 0) { toast('사건·설명·한마디 중 하나는 입력해 주세요'); return; }
+    const item: TlItem = { says, ...(l ? { l } : {}), ...(r ? { r } : {}), ...(who ? { charId: who } : {}) };
     const editing = tlEditIdx;
     patchAuData({
       timeline: editing == null
@@ -607,8 +634,10 @@ function RelDetailInner() {
   const openTlEdit = (i: number) => {
     const it = auTimeline[i];
     if (!it) return;
-    setTEra(it.era ?? '');
-    setTDesc(it.desc ?? '');
+    const sd = tlSidesOf(it, tlSideOf);
+    setTWho(it.charId ?? '');
+    setTL({ era: sd.l.era ?? '', title: sd.l.title ?? '', desc: sd.l.desc ?? '' });
+    setTR({ era: sd.r.era ?? '', title: sd.r.title ?? '', desc: sd.r.desc ?? '' });
     setTSays(it.says.map(sy => ({ id: newId(), charId: sy.charId, text: sy.text })));
     setTlEditIdx(i);
     setTlOpen(true);
@@ -823,6 +852,7 @@ function RelDetailInner() {
           ? { ...a, mset: { ...a.mset, [cid]: { ...a.mset?.[cid], faceCrop: c } } }
           : a)),
       });
+      setFaceEdit(null);
       return;
     }
     updateRel({ members: rel.members.map(m => (m.charId === cid ? { ...m, faceCrop: c } : m)) });
@@ -1052,12 +1082,21 @@ function RelDetailInner() {
               const c = charOf(m.charId);
               if (!c) return null;
               const unreg = auUnregOf(m.charId);
+              const mm = asAu(m) ?? m;
+              const rep = c.thumbId ?? c.arts?.[0];
               return (
                 <div key={m.charId} className="mrow" style={{ ['--cc' as string]: rgbTriple(c.color) }}
-                  onClick={() => router.push(charHref(m.charId))}>
-                  <div className={`face ph ${c.thumbClass}`}>
-                    {!unreg && (c.arts?.[0] ?? c.thumbId) && (
-                      <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} />
+                  onClick={() => router.push(charHref(m.charId))}
+                  onContextMenu={e => {
+                    if (!isAdmin || !rep) return;
+                    e.preventDefault();
+                    setMrowCtx({ x: e.clientX, y: e.clientY, charId: m.charId, ref: rep, crop: mm.faceCrop });
+                  }}>
+                  {/* 이미지가 있으면 어두운 자리표시 배경(ph)을 깔지 않는다 — 투명 PNG가 검게 보이던 것.
+                      2인 자관 카드와 같이 밝은 바탕에 얹고, 위치는 1:1 얼굴칸 크롭(우클릭 > 썸네일 위치 조정) */}
+                  <div className={`face ${rep && !unreg ? 'has-img' : `ph ${c.thumbClass}`}`}>
+                    {!unreg && rep && (
+                      <CroppedBlobImg fileRef={rep} crop={mm.faceCrop ?? c.thumbCrop} ph={c.thumbClass} />
                     )}
                   </div>
                   <div className="nm">
@@ -1191,37 +1230,63 @@ function RelDetailInner() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', width: '100%', padding: '8px 6px', border: '1.5px dashed var(--line)', borderRadius: 9, marginBottom: 6, background: '#fff' }}>
                   <span className="drag-h">⠿</span>
                   <div style={{ minWidth: 0 }}>
-                    {item.era && <div className="era">{item.era}</div>}
-                    <div style={{ fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {item.desc || item.says.map(s => s.text).join(' / ')}
-                    </div>
+                    {(() => {
+                      const sd = tlSidesOf(item, tlSideOf);
+                      const era = sd.l.era || sd.r.era;
+                      const text = [sd.l.title, sd.r.title].filter(Boolean).join(' / ') || sd.l.desc || sd.r.desc || item.says.map(s => s.text).join(' / ');
+                      return (<>
+                        {era && <div className="era">{era}</div>}
+                        <div style={{ fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{text}</div>
+                      </>);
+                    })()}
                   </div>
                 </div>
               )} />
           ) : (
-          <div>
-            {auTimeline.map((item, i) => (
+          <div className="tl-list">
+            {auTimeline.map((item, i) => {
               /* 수정·삭제는 우클릭 메뉴로 (v2.0 사용자 요청) — 늘 떠 있는 [삭제] 글자는 없앴다 */
-              <div className="tl-item" key={i}
-                onContextMenu={e => {
-                  if (!isAdmin) return;
-                  e.preventDefault();
-                  setTlCtx({ x: e.clientX, y: e.clientY, idx: i });
-                }}>
-                {item.era && <div className="era">{item.era}</div>}
-                {item.desc && <div className="desc">{item.desc}</div>}
-                {item.says.map((s, j) => {
-                  const c = charOf(s.charId);
-                  return (
-                    <div key={j} className={`tl-say ${sideOf(s.charId)}`}
-                      style={{ ['--cc' as string]: rgbTriple(c?.color ?? '#5d636d') }}>
-                      <div className="who" style={{ fontFamily: familyOf(c?.fontId) }}>{c?.name}</div>
-                      <div className="bub">{s.text}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+              const sd = tlSidesOf(item, tlSideOf);
+              const lSays = item.says.filter(sy => tlSideOf(sy.charId) === 'l');
+              const rSays = item.says.filter(sy => tlSideOf(sy.charId) === 'r');
+              const hasSide = (v: TlSide, n: number) => !!(v.era || v.title || v.desc) || n > 0;
+              let hasL = hasSide(sd.l, lSays.length), hasR = hasSide(sd.r, rSays.length);
+              if (!hasL && !hasR) { hasL = true; hasR = true; }
+              // 원 색: 페어 = 왼쪽 캐릭터색 / 오른쪽 캐릭터색 (둘 다면 반반) · 다인 = 한 캐릭터만의 사건이면 그 캐릭터 테마색, 함께 겪은 사건이면 자관 테마색
+              const lCol = charOf(pairSlots[0]?.charId ?? '')?.color ?? '#5d636d';
+              const rCol = charOf(pairSlots[1]?.charId ?? '')?.color ?? '#5d636d';
+              const themeCol = pageColor ?? 'var(--accent)';
+              const dot = !isDuo ? ((item.charId && charOf(item.charId)?.color) || themeCol)
+                : hasL && hasR ? `linear-gradient(90deg, ${lCol} 50%, ${rCol} 50%)`
+                : hasL ? lCol : rCol;
+              const col = (side: 'l' | 'r', v: TlSide, sy: typeof item.says) => (
+                <div className={`tl-col ${side}`}>
+                  {v.era && <div className="era">{v.era}</div>}
+                  {v.title && <div className="ttl">{v.title}</div>}
+                  {v.desc && <div className="desc">{v.desc}</div>}
+                  {sy.map((s, j) => {
+                    const c = charOf(s.charId);
+                    return (
+                      <div key={j} className={`tl-say ${side}`} style={{ ['--cc' as string]: rgbTriple(c?.color ?? '#5d636d') }}>
+                        <div className="bub">{s.text}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+              return (
+                <div className="tl-item" key={i}
+                  onContextMenu={e => {
+                    if (!isAdmin) return;
+                    e.preventDefault();
+                    setTlCtx({ x: e.clientX, y: e.clientY, idx: i });
+                  }}>
+                  {col('l', sd.l, lSays)}
+                  <i className="tl-dot" style={{ background: dot }} />
+                  {col('r', sd.r, rSays)}
+                </div>
+              );
+            })}
             {auTimeline.length === 0 && <p className="hint">타임라인이 비어 있습니다 — 우상단 [＋ ADD RECORD]로 추가</p>}
           </div>
           )
@@ -1435,15 +1500,34 @@ function RelDetailInner() {
 
       {/* ---------- 타임라인 항목 추가 모달 (가운데 · 한마디 핑퐁 다중) ---------- */}
       <Modal open={tlOpen} onClose={closeTl} title={tlEditIdx == null ? '타임라인 항목 추가' : '타임라인 항목 수정'}
-        desc="설명 / 한마디 중 하나는 필수 · 시기 라벨은 선택 · 한마디는 여러 개 추가 가능"
-        dirty={!!(tEra || tDesc || tSays.some(x => x.text))}
+        desc="왼쪽(관리자 캐릭터)·오른쪽(상대 캐릭터) 글을 따로 적습니다 — 한쪽만 채우면 그쪽에만 표시 · 시기 라벨은 선택"
+        dirty={!!(tL.era || tL.title || tL.desc || tR.era || tR.title || tR.desc || tSays.some(x => x.text))}
         actions={<>
           <button className="btn btn-ghost" onClick={closeTl}>CANCEL</button>
           <button className="btn btn-dark" onClick={addTlItem}>{tlEditIdx == null ? 'ADD' : 'SAVE'}</button>
         </>}>
         <div style={{ display: 'grid', gap: 10 }}>
-          <KInput placeholder="시기 라벨 (선택)" value={tEra} onChange={e => setTEra(e.target.value)} />
-          <KTextarea placeholder="설명" value={tDesc} onChange={e => setTDesc(e.target.value)} style={{ minHeight: 80 }} />
+          {/* 다인관 — 누구의 사건인지: 한 캐릭터만의 사건이면 그 캐릭터 색, 함께 겪은 사건이면 자관 테마색 원 */}
+          {!isDuo && (
+            <KSelect value={tWho} onChange={v => setTWho(v)}
+              options={[
+                { value: '', label: '함께 겪은 사건 (자관 테마색)' },
+                ...rel.members.map(m => ({ value: m.charId, label: `${charOf(m.charId)?.name ?? m.charId} 의 사건 (캐릭터 테마색)` })),
+              ]} />
+          )}
+          {([['l', tL, setTL], ['r', tR, setTR]] as const).filter(([sd]) => !(!isDuo && tWho) || tlSideOf(tWho) === sd).map(([sd, v, set]) => {
+            const nm = isDuo ? charOf(pairSlots[sd === 'l' ? 0 : 1]?.charId ?? '')?.name : (tWho ? charOf(tWho)?.name : undefined);
+            return (
+              <div key={sd} style={{ display: 'grid', gap: 7, padding: 10, border: '1.5px solid var(--line)', borderRadius: 9 }}>
+                <label className="k-label" style={{ margin: 0 }}>
+                  {sd === 'l' ? '왼쪽' : '오른쪽'} — {nm ?? (sd === 'l' ? '관리자 캐릭터' : '상대 캐릭터')}
+                </label>
+                <KInput placeholder="시기 라벨 (선택)" value={v.era} onChange={e => set({ ...v, era: e.target.value })} />
+                <KInput placeholder="사건 (볼드로 표시)" value={v.title} onChange={e => set({ ...v, title: e.target.value })} />
+                <KTextarea placeholder="설명 (작은 글씨)" value={v.desc} onChange={e => set({ ...v, desc: e.target.value })} style={{ minHeight: 64 }} />
+              </div>
+            );
+          })}
           <label className="k-label" style={{ margin: 0 }}>한마디 — 캐릭터를 바꿔가며 주고받는 대화로 쌓을 수 있습니다</label>
           {tSays.map(s => (
             <div key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1713,6 +1797,13 @@ function RelDetailInner() {
       )}
 
       {/* 멤버 얼굴칸(1:1) 크롭 — 캐릭터의 3:4 썸네일과 별개로 이 자관에만 저장 (v2.0) */}
+      {mrowCtx && createPortal(
+        <div className="ctx-menu on" style={{ left: mrowCtx.x, top: mrowCtx.y }} onClick={e => e.stopPropagation()}>
+          <div className="ctx-ttl">{charOf(mrowCtx.charId)?.name}</div>
+          <button onClick={() => { setFaceEdit({ charId: mrowCtx.charId, ref: mrowCtx.ref, crop: mrowCtx.crop }); setMrowCtx(null); }}>썸네일 위치 조정</button>
+        </div>,
+        document.body,
+      )}
       {faceEdit && (
         <FaceCropModal fileRef={faceEdit.ref} crop={faceEdit.crop}
           onClose={() => setFaceEdit(null)}
