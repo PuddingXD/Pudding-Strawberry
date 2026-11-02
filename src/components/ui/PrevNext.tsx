@@ -47,7 +47,7 @@ const Chev = ({ dir }: { dir: 'l' | 'r' }) => (
   <svg viewBox="0 0 24 24" aria-hidden="true"><path d={dir === 'l' ? 'M15 5 8 12l7 7' : 'M9 5l7 7-7 7'} /></svg>
 );
 
-export function PrevNext({ prev, next }: { prev?: PnItem | null; next?: PnItem | null }) {
+export function PrevNext({ prev, next, ltr }: { prev?: PnItem | null; next?: PnItem | null; ltr?: boolean }) {
   const router = useRouter();
   if (!prev && !next) return null;
   /* 왼쪽 ‹ = 다음글, 오른쪽 › = 이전글 (v2.1 사용자 요청 — 최신 글이 위에 오는 목록 기준으로 왼쪽이 더 최신).
@@ -59,8 +59,17 @@ export function PrevNext({ prev, next }: { prev?: PnItem | null; next?: PnItem |
   );
   return (
     <nav className="pn" aria-label="이전글 다음글">
-      <Btn it={next} dir="l" label="다음글" />
-      <Btn it={prev} dir="r" label="이전글" />
+     {ltr ? (
+  <>
+    <Btn it={prev} dir="l" label="이전글" />
+    <Btn it={next} dir="r" label="다음글" />
+  </>
+) : (
+  <>
+    <Btn it={next} dir="l" label="다음글" />
+    <Btn it={prev} dir="r" label="이전글" />
+  </>
+)}
     </nav>
   );
 }
