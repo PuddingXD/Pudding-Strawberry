@@ -7,6 +7,7 @@ import { prepareDoc, DocItem, DEFAULT_DOC_SIZE, DEFAULT_TAB_SIZE } from '@/lib/d
 import { KInput, KStep } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
+import { DragList } from '@/components/ui/DragList';
 
 export interface DocPatch { title: string; subtitle: string; html: string; size: number }
 
@@ -22,7 +23,7 @@ export function ReadMore({ onOpen }: { onOpen: () => void }) {
   return <button type="button" className="doc-more" onClick={onOpen}>전체 읽기 &gt;</button>;
 }
 
-export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, onAdd, startEditId, onStartedEdit }: {
+export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, onAdd, onReorder, startEditId, onStartedEdit }: {
   docs: DocItem[];
   activeId: string;
   onPick: (id: string) => void;
@@ -30,6 +31,7 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
   canEdit?: boolean;
   onSave?: (id: string, patch: DocPatch) => void;
   onAdd?: () => void;                  // 「＋ 문서 추가」 (자관) — 없으면 버튼 없음
+  onReorder?: (ids: string[]) => void; // 문서 제목을 끌어 순서 변경 (권한 있을 때만) — 프로필/자관 페이지의 아이콘 순서도 같이 바뀐다
   startEditId?: string;                // 이 문서가 열리면 바로 수정 모드로 (방금 추가한 문서)
   onStartedEdit?: () => void;
 }) {
@@ -37,6 +39,8 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
   const prep = useMemo(() => (cur ? prepareDoc(cur.html, `d${cur.id}`) : { html: '', toc: [] }), [cur]);
   const [open, setOpen] = useState(false);   // 모바일 목차 펼침
   const [draft, setDraft] = useState<DocPatch | null>(null);   // 수정 중인 내용
+  const [tocOpen, setTocOpen] = useState(true);                 // 문서 제목 아래 소제목(목차) 펼침 — 제목을 누르면 접고 펼친다
+  useEffect(() => { setTocOpen(true); }, [activeId]);
 
   // 다른 문서로 가면 수정 모드 종료 — 방금 추가한 문서면 바로 수정 모드로
   useEffect(() => {
@@ -60,7 +64,6 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setOpen(false);
   };
-  const top = () => { window.scrollTo({ top: 0, behavior: 'smooth' }); document.getElementById('appMain')?.scrollTo({ top: 0, behavior: 'smooth' }); setOpen(false); };
   const size = cur.size ?? DEFAULT_DOC_SIZE;
 
   return (
@@ -68,17 +71,31 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
       <button type="button" className="doc-toc-btn" onClick={() => setOpen(o => !o)}>☰ 목차 · 문서 탭</button>
       <aside className={`doc-side ${open ? 'open' : ''}`}>
         {docs.length > 1 && <div className="doc-side-h">문서 탭</div>}
-        {docs.map(d => (
-          <div key={d.id}>
-            <button type="button" className={`doc-tab ${d.id === cur.id ? 'on' : ''}`}
-              onClick={() => { if (d.id !== cur.id) { onPick(d.id); setOpen(false); document.getElementById('appMain')?.scrollTo({ top: 0 }); } else top(); }}>
-              <span className="ic">{d.icon}</span><span className="tt">{d.title || '제목 없음'}</span>
-            </button>
-            {d.id === cur.id && !draft && prep.toc.map(t => (
-              <button key={t.id} type="button" className={`doc-toc l${t.level}`} onClick={() => jump(t.id)}>{t.text}</button>
-            ))}
-          </div>
-        ))}
+        <DragList items={docs} keyOf={d => d.id} disabled={!canEdit || !onReorder || docs.length < 2}
+          onReorder={next => onReorder?.(next.map(d => d.id))}
+          render={d => {
+            const isCur = d.id === cur.id;
+            const hasToc = isCur && !draft && prep.toc.length > 0;
+            return (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {canEdit && onReorder && docs.length > 1 && <span className="drag-h" data-tip="끌어서 순서 변경" style={{ padding: '0 2px 0 4px', flexShrink: 0 }}>⠿</span>}
+                  <button type="button" className={`doc-tab ${isCur ? 'on' : ''}`} style={{ flex: 1, minWidth: 0 }}
+                    onClick={() => {
+                      // 다른 문서 → 그 문서로 / 지금 열린 문서 → 소제목 접기·펼치기
+                      if (!isCur) { onPick(d.id); setOpen(false); document.getElementById('appMain')?.scrollTo({ top: 0 }); }
+                      else setTocOpen(o => !o);
+                    }}>
+                    <span className="ic">{d.icon}</span><span className="tt">{d.title || '제목 없음'}</span>
+                    {hasToc && <span style={{ marginLeft: 'auto', fontSize: 10, opacity: .55, flexShrink: 0 }}>{tocOpen ? '▾' : '▸'}</span>}
+                  </button>
+                </div>
+                {hasToc && tocOpen && prep.toc.map(t => (
+                  <button key={t.id} type="button" className={`doc-toc l${t.level}`} onClick={() => jump(t.id)}>{t.text}</button>
+                ))}
+              </div>
+            );
+          }} />
         {canEdit && onAdd && (
           <button type="button" className="doc-tab" style={{ color: 'var(--faint)', marginTop: 6 }} onClick={onAdd}>
             <span className="ic">＋</span><span className="tt">문서 추가</span>

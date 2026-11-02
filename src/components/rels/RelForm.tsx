@@ -652,14 +652,15 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
         {!auObj && (
           <>
             <label className="k-label" style={{ margin: '6px 0 0' }}>
-              문서 탭 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 긴 글 · 아이콘을 누르면 전체 읽기 화면으로 · 제목1·2·3으로 목차가 만들어집니다</span>
+              문서 탭 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 긴 글 · 아이콘을 누르면 전체 읽기 화면으로 · 제목1·2·3으로 목차가 만들어집니다 · ⠿ 끌어서 순서 변경</span>
             </label>
-            {docs.map(d => {
+            {docs.length > 0 && <DragList items={docs} keyOf={d => d.id} onReorder={setDocs} render={d => {
               const open = docOpen === d.id;
               const patch = (p: Partial<RelDoc>) => setDocs(l => l.map(x => (x.id === d.id ? { ...x, ...p } : x)));
               return (
-                <div key={d.id} style={{ border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', display: 'grid', gap: 8 }}>
+                <div style={{ border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', display: 'grid', gap: 8, marginBottom: 8 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="drag-h">⠿</span>
                     <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef0f2', display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{d.icon}</span>
                     <b style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title || '(제목 없음)'}</b>
                     <small style={{ color: 'var(--faint)', fontSize: 10.5, flexShrink: 0 }}>{d.html.trim() ? `${d.html.length.toLocaleString()}자` : '비어 있음'}</small>
@@ -686,7 +687,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                   )}
                 </div>
               );
-            })}
+            }} />}
             <button type="button" className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11, justifySelf: 'center' }}
               onClick={() => { const id = newDocId(); setDocs(l => [...l, { id, icon: '✦', title: '', html: '' }]); setDocOpen(id); }}>＋ 문서 추가</button>
           </>

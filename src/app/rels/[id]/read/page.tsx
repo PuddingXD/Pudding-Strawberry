@@ -55,6 +55,17 @@ function RelReadInner() {
     setRels(rels.map(x => (x.id === rel.id
       ? { ...x, docs: (x.docs ?? []).map(d => (d.id === did ? { ...d, title: p.title, subtitle: p.subtitle || undefined, html: p.html, size: p.size } : d)) }
       : x)));
+  // 문서 순서 변경 — 보이는 문서들이 차지한 자리를 새 순서로 채운다 → 자관 페이지의 문서 아이콘 순서도 같이 바뀐다
+  const reorderDocs = (ids: string[]) =>
+    setRels(rels.map(x => {
+      if (x.id !== rel.id) return x;
+      const all = x.docs ?? [];
+      const slots = all.map((d, i) => (ids.includes(d.id) ? i : -1)).filter(i => i >= 0);
+      const byId = new Map(all.map(d => [d.id, d]));
+      const next = [...all];
+      slots.forEach((slot, k) => { const d = byId.get(ids[k]); if (d) next[slot] = d; });
+      return { ...x, docs: next };
+    }));
   const active = params.get('doc') ?? docs[0]?.id ?? '';
   return (
     <section className="page">
@@ -65,7 +76,7 @@ function RelReadInner() {
           <button className="btn btn-dark" onClick={() => router.push(back)}>‹ 자관으로</button>
         </div>
       </div>
-      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}
+      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onReorder={reorderDocs} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}
         onPick={did => router.replace(`/rels/${rel.id}/read?doc=${did}`, { scroll: false })} />
     </section>
   );

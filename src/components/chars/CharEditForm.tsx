@@ -295,9 +295,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
           placeholder="캐릭터 소개를 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
 
         {/* 추가 탭 — 목록만, 내용은 전용 화면에서 */}
-        <label className="k-label" style={{ margin: 0 }}>추가 탭 — 내용은 [편집]을 눌러 전용 화면에서 작성</label>
-        {tabs.map(t => (
-          <div key={t.id} style={{ display: 'flex', gap: 8, alignItems: 'center', border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px' }}>
+        <label className="k-label" style={{ margin: 0 }}>추가 탭 — 내용은 [편집]을 눌러 전용 화면에서 작성 · ⠿ 끌어서 순서 변경 (프로필의 아이콘 순서도 같이 바뀝니다)</label>
+        {tabs.length > 0 && <DragList items={tabs} keyOf={t => t.id} onReorder={setTabs} render={t => (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', marginBottom: 8 }}>
+            <span className="drag-h">⠿</span>
             <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef0f2', display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{t.icon}</span>
             <b style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title || '(제목 없음)'}</b>
             {t.subtitle && <small style={{ color: 'var(--faint)', fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.subtitle}</small>}
@@ -306,7 +307,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
               onClick={() => setView(t.id)}>편집 ›</button>
             <span className="fx" onClick={() => askDeleteTab(t.id)}>✕</span>
           </div>
-        ))}
+        )} />}
         <button className="btn btn-ghost" style={addBtn}
           onClick={() => {
             const id = newId();

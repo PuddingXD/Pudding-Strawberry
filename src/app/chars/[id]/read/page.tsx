@@ -52,6 +52,21 @@ function CharReadInner() {
       return { ...x, tabs: patchTabs(x.tabs) };
     }));
   };
+  // 문서 순서 변경 — 문서(전체 읽기) 탭들이 차지한 자리를 새 순서로 채운다 (다른 탭 자리는 그대로) → 프로필의 아이콘 순서도 같이 바뀐다
+  const reorderDocs = (ids: string[]) => {
+    const order = (tabs: typeof eff.tabs) => {
+      const slots = tabs.map((t, i) => (ids.includes(t.id) ? i : -1)).filter(i => i >= 0);
+      const byId = new Map(tabs.map(t => [t.id, t]));
+      const next = [...tabs];
+      slots.forEach((slot, k) => { const t = byId.get(ids[k]); if (t) next[slot] = t; });
+      return next;
+    };
+    setChars(chars.map(x => {
+      if (x.id !== ch.id) return x;
+      if (auKey && x.auProfiles?.[auKey]?.tabs) return { ...x, auProfiles: { ...x.auProfiles, [auKey]: { ...x.auProfiles[auKey], tabs: order(x.auProfiles[auKey].tabs!) } } };
+      return { ...x, tabs: order(x.tabs) };
+    }));
+  };
   const active = params.get('tab') ?? docs[0]?.id ?? '';
   return (
     <section className="page">
@@ -62,7 +77,7 @@ function CharReadInner() {
           <button className="btn btn-dark" onClick={() => router.push(back)}>‹ 프로필로</button>
         </div>
       </div>
-      <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc}
+      <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc} onReorder={reorderDocs}
         onPick={tid => router.replace(`/chars/${ch.id}/read?tab=${tid}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`, { scroll: false })} />
     </section>
   );
