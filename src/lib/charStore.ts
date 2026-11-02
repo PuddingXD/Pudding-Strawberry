@@ -207,6 +207,9 @@ export interface RelMember {
 
 export interface TlSay { charId: string; text: string }
 /** 타임라인 한쪽(왼쪽=관리자 캐릭터 / 오른쪽=상대 캐릭터)에 들어가는 글 — 시기 라벨(선택) · 사건(볼드) · 설명(작게) */
+/** 자관 페이지 스티커 — 편집모드에서 올린 이미지. x: 페이지 폭 대비 왼쪽 위치(0~1) · y: 페이지 맨 위에서 px · w: 페이지 폭 대비 너비(0~1) */
+export interface RelSticker { id: string; imgId: string; x: number; y: number; w: number; rot?: number }
+
 export interface TlSide { era?: string; title?: string; desc?: string }
 export interface TlItem {
   era?: string; desc?: string; says: TlSay[];   // era·desc: 옛 저장분 (새 항목은 l·r에 저장)
@@ -380,6 +383,7 @@ export function fullShadow(color?: string, strength?: number, geom = '0 8px 18px
 
 export interface RelAu {
   id: string;
+  stickers?: RelSticker[];   // 이 AU 페이지의 스티커
   label: string;
   catchphrase: string;
   /** AU별 자관명 (v2.0 사용자 요청) — 비우면 자관 이름을 그대로 쓴다 */
@@ -421,6 +425,7 @@ export interface RelDoc { id: string; icon: string; title: string; subtitle?: st
 
 export interface Relation {
   id: string;
+  stickers?: RelSticker[];   // 스티커 (이 자관 원본 페이지 — AU 페이지는 RelAu.stickers)
   /** 이 자관을 수정할 수 있는 회원 (관리자가 지정, level 'edit'). 등록한 회원도 자동으로 들어간다. 서버 편집 권한(editorIds)도 여기서 만들어진다 */
   grants?: CharGrant[];
   /** 페이지 주소 별명 (v2.0 사용자 요청) — /rels/{별명}. 나중에 수정 화면에서 바꿀 수 있다.

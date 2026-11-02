@@ -91,7 +91,9 @@ const STORAGE_KEY = 'ohome.main.v1';
  *  /trpg 로그 백업이 빠져 있던 것은 실수 — 드래그 정렬·목록 숨김 확인 모두 이 토글이 있어야 켜진다
  *  (v2.0 사용자 발견 — 목록 숨김 기능을 만들다 보니 편집모드 자체가 이 페이지에서 켜지지 않는 걸 발견) */
 const EDIT_PAGES = ['/', '/chars', '/pchars', '/rels', '/gallery', '/dotori', '/tchars', '/playlog', '/sheet', '/trpg'];   // /pchars: 상대 캐릭터 리스트 (v2.1 사용자 제보)
-const EDIT_PAGE_NAMES = '메인 · 캐릭터 · 상대 캐릭터 · 자관 · 갤러리 · 도토리 · TRPG 캐릭터 · 플레이기록 · TRPG 로그';
+// 자관 상세(/rels/아이디)도 편집모드를 켤 수 있다 — 스티커 추가용
+const isEditPage = (p: string) => EDIT_PAGES.includes(p) || (/^\/rels\/[^/]+$/.test(p) && p !== '/rels/new');
+const EDIT_PAGE_NAMES = '메인 · 캐릭터 · 상대 캐릭터 · 자관(상세 페이지는 스티커) · 갤러리 · 도토리 · TRPG 캐릭터 · 플레이기록 · TRPG 로그';
 
 interface MainCtx {
   state: MainState;
@@ -167,7 +169,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
       setNotice('모바일에서는 편집모드를 사용할 수 없습니다. PC에서 해주세요.');
       return;
     }
-    if (!EDIT_PAGES.includes(pathname)) {
+    if (!isEditPage(pathname)) {
       setNotice(`이 페이지에서는 편집모드를 켤 수 없습니다.\n가능한 페이지: ${EDIT_PAGE_NAMES}`);
       return;
     }
@@ -271,7 +273,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      state, editOn, editAvailable: EDIT_PAGES.includes(pathname), gridOn, setGridOn, toggleEdit, requestExit, guardNav,
+      state, editOn, editAvailable: isEditPage(pathname), gridOn, setGridOn, toggleEdit, requestExit, guardNav,
       updateWidget, addWidget, removeWidget, setLayoutMode, setMobileOff, setMobileOrder, saveNow, resetMain,
     }}>
       {children}

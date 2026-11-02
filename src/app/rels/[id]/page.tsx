@@ -5,12 +5,15 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { createPortal } from 'react-dom';
+import { exportTimelinePng } from '@/lib/timelinePng';
+import { StickerLayer } from '@/components/rels/StickerLayer';
+import { useMainStore } from '@/lib/mainStore';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useLocalList, newId } from '@/lib/postStore';
 import {
-  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, TlSide, tlSidesOf, findChar, Visibility, CharGrant,
+  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, TlSide, tlSidesOf, RelSticker, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant, canManageRel,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
@@ -253,6 +256,7 @@ function RelDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin: siteAdmin } = useAuth();
+  const { editOn } = useMainStore();   // 홈과 같은 편집모드 (프로필 메뉴 > 편집모드 켜기) — 스티커 편집
   const toast = useToast();
   const { familyOf } = useFonts();
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -565,7 +569,7 @@ function RelDetailInner() {
   const updateRel = (patch: Partial<Relation>) =>
     setRels(rels.map(r => (r.id === rel.id ? { ...r, ...patch } : r)));
   // AU별 프로필 데이터 갱신 (v1.9) — base는 최상위 필드, 그 외 AU는 aus 항목에
-  const patchAuData = (p: { arts?: string[]; timeline?: TlItem[]; questions?: QaEntry[]; qaEnabled?: boolean; qaPool?: string[] }) => {
+  const patchAuData = (p: { stickers?: RelSticker[]; arts?: string[]; timeline?: TlItem[]; questions?: QaEntry[]; qaEnabled?: boolean; qaPool?: string[] }) => {
     if (isBaseAu) updateRel(p);
     else updateRel({ aus: rel.aus.map(a => (a.id === au!.id ? { ...a, ...p } : a)) });
   };
@@ -860,7 +864,9 @@ function RelDetailInner() {
   };
 
   return (
-    <section className="page page-rel-detail">
+    <section className="page page-rel-detail" style={{ position: 'relative' }}>
+      <StickerLayer stickers={(isBaseAu ? rel.stickers : au?.stickers) ?? []} editable={editOn && siteAdmin}
+        onChange={next => patchAuData({ stickers: next })} />
       {/* 헤더 이미지 (v1.5) — 풀폭 블러 + 아래로 페이드아웃.
           AU별 완전 분리 (v1.9 사용자 확정): AU는 자기 헤더만 — base 것을 물려받지 않음.
           이미지가 없으면 아무것도 안 그리는 게 기본(v2.0) — 다만 자관 수정에서 배경 그라데이션을
@@ -1183,8 +1189,19 @@ function RelDetailInner() {
               onClick={() => setQsetOpen(true)}>＋</button>
           )}
           {isAdmin && (
-            <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8 }}>
               {/* 이 줄의 버튼은 홈 공통 버튼과 같은 세로 크기(35px)로 — 탭 줄에서만 작아 보이던 것 */}
+              {/* 완성한 타임라인을 이미지(PNG)로 저장 */}
+              {tab === 'tl' && auTimeline.length > 0 && !tlSort && (
+                <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11.5 }} data-tip="타임라인을 PNG 이미지로 저장"
+                  onClick={async () => {
+                    const el = document.querySelector<HTMLElement>('.panel.timeline .tl-list');
+                    const ok = el ? await exportTimelinePng(el, `${rel.name || 'timeline'}-timeline.png`) : false;
+                    toast(ok ? '이미지로 저장했습니다' : '이미지 저장에 실패했습니다');
+                  }}>
+                  <span className="lb-pc">⤓ PNG</span><span className="lb-m">⤓</span>
+                </button>
+              )}
               {tab === 'tl' && auTimeline.length > 1 && (
                 <button className={`btn ${tlSort ? 'btn-accent' : 'btn-ghost'}`}
                   style={{ height: 35, padding: '0 14px', fontSize: 11.5 }}

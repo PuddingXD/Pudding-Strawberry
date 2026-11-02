@@ -227,7 +227,7 @@ export function TopBar() {
       )}
       {/* 그리드 토글 — 메인에서 편집모드 켰을 때만 (v1.9) */}
       <KToggle
-        className={`grid-chip ${editOn && pathname === '/' ? 'show' : ''}`}
+        className={`grid-chip ${editOn && (pathname === '/' || /^\/rels\/[^/]+$/.test(pathname) && pathname !== '/rels/new') ? 'show' : ''}`}
         label="그리드"
         checked={gridOn}
         onChange={setGridOn}

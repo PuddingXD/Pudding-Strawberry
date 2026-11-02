@@ -1083,6 +1083,10 @@ body.edit-on .add-wgt{display:block}
 }
 /* 그리드 표시 중엔 점선 테두리를 위젯 모서리에 밀착 — 3px 띄우면 격자에 맞아도 어긋나 보임 */
 body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
+/* 자관 스티커 — 모바일에서는 숨김 / 그리드 라인은 홈과 같은 10px */
+.sticker-layer,.sticker-grid{display:block}
+.sticker-grid{background-image:repeating-linear-gradient(to right,rgba(255,255,255,.07) 0 1px,transparent 1px 10px),repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px 10px)}
+@media (max-width:620px){.sticker-layer,.sticker-grid,.sticker-bar{display:none !important}}
 /* 우클릭 컨텍스트 메뉴 (자체 스타일) */
 .ctx-menu{position:fixed;z-index:95;min-width:110px;display:none;
   background:rgba(28,31,37,.97);border:1px solid var(--line-dark);border-radius:10px;padding:5px;
