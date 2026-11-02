@@ -11,10 +11,10 @@ import { DocImport } from '@/components/ui/DocImport';
 export interface DocPatch { title: string; subtitle: string; html: string; size: number }
 
 /** 탭 안 본문 — 읽기 화면과 같은 글자·문단 모양 */
-export function DocBody({ html, size }: { html: string; size?: number }) {
+export function DocBody({ html, size, flat }: { html: string; size?: number; flat?: boolean }) {
   const clean = useMemo(() => prepareDoc(html, 'tb').html, [html]);
   if (!html.trim() || html.trim() === '<p></p>') return null;
-  return <div className="doc-body" style={{ ['--doc-fs' as string]: `${size ?? DEFAULT_TAB_SIZE}px` }} dangerouslySetInnerHTML={{ __html: clean }} />;
+  return <div className={flat ? 'doc-body doc-flat' : 'doc-body'} style={{ ['--doc-fs' as string]: `${size ?? DEFAULT_TAB_SIZE}px` }} dangerouslySetInnerHTML={{ __html: clean }} />;
 }
 
 /** 「전체 읽기 >」 — 글자만 (오른쪽 정렬, 이탤릭 볼드, 포인트색) */
