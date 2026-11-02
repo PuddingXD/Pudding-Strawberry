@@ -2177,3 +2177,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 :is(.re-content,.prose,.post-body,.html-body,.doc-body) ol>li::before{content:counter(li) ".";position:absolute;left:0}
 /* 읽기 화면 수정 — CANCEL/SAVE 줄은 위에 고정, 에디터 툴바는 그 바로 아래에 고정 */
 .doc-editbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;min-height:46px;margin:-6px -6px 0;padding:6px;background:var(--panel);border-bottom:1px solid var(--line)}
+/* 자캐 페이지 추가탭 본문 — 기본 탭과 같게 */
+.doc-body.doc-flat{line-height:1.85;color:#3a3f47}
+.doc-body.doc-flat p{margin:0}
+.doc-body.doc-flat :is(ul,ol){margin-bottom:0}
