@@ -132,7 +132,7 @@ function TCharDetailInner() {
           onClose={() => setLbOpen(false)} />
       )}
 
-      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+      <PrevNext ltr prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
 
       <ConfirmModal open={delAsk} title={`「${c.name}」를 삭제하시겠습니까?`}
         body="삭제한 캐릭터는 복구할 수 없습니다."
