@@ -62,9 +62,9 @@ export interface BoardSettings {
   /** TRPG 리뷰 별점 이름 (v2.1) — 둘이 따로 매길 때 각 별점 앞에 붙는 이름 (예: 푸딩 / 곰주) */
   reviewStars?: { a?: string; b?: string };
   /** 한 페이지에 보일 글 수 (v2.1 사용자 요청) — 갤러리 보기 / 갤러리 리스트 보기 / 큰 그림 / 로드비. 비우면 기본값 */
-  perPage?: { gallery?: number; galleryList?: number; feed?: number; road?: number };
+  perPage?: { gallery?: number; galleryList?: number; feed?: number; road?: number; board?: number };
 }
-export const PER_PAGE_DEFAULT = { gallery: 12, galleryList: 20, feed: 6, road: 4 } as const;
+export const PER_PAGE_DEFAULT = { gallery: 12, galleryList: 20, feed: 6, road: 4, board: 8 } as const;
 /** 한 페이지 글 수 — 정한 값(1~60), 없으면 기본값 */
 export const perPageOf = (s: BoardSettings, k: keyof typeof PER_PAGE_DEFAULT): number => {
   const v = s.perPage?.[k];

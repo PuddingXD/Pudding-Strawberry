@@ -59,6 +59,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [nameSize, setNameSize] = useState(initial?.nameSize ?? 38);   // 상세 큰 이름 크기 (v2.0)
   const [nameBold, setNameBold] = useState(initial?.nameBold ?? true); // 상세 이름 볼드 (v2.0 — 기본 켜짐)
   const [bodyFontId, setBodyFontId] = useState(initial?.bodyFontId ?? 'default');
+  // 한마디 — 대표 아트 위 가운데에 표시 (자관의 한마디와 같은 모양)
+  const [quote, setQuote] = useState(initial?.quote ?? '');
+  const [quoteColor, setQuoteColor] = useState<string | undefined>(initial?.quoteColor);
+  const [quoteMarkColor, setQuoteMarkColor] = useState<string | undefined>(initial?.quoteMarkColor);
   // 기본 정보 항목 — 그룹 단위 (새 캐릭터: 나이·성별 / 키·체중·혈액형·생일)
   const [specGroups, setSpecGroups] = useState<TabGroup[]>(() => (initial
     ? specGroupsOf(initial).map(g => ({ id: newId(), items: g.items.map(x => ({ ...x, id: newId() })) }))
@@ -109,6 +113,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       colors: colors.filter(x => x.hex).map(({ hex, label }) => ({ hex, label })),
       colorTipMode,
       colorBd,
+      quote: quote.trim() || undefined,
+      quoteColor: quote.trim() ? quoteColor : undefined,
+      quoteMarkColor: quote.trim() ? quoteMarkColor : undefined,
       specGroups: specGroups
         .map(g => ({ id: g.id, items: g.items.filter(x => x.label.trim()).map(x => ({ id: x.id, label: x.label.trim(), value: x.value })) }))
         .filter(g => g.items.length > 0),
@@ -197,6 +204,22 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
           {...fileDrop(fl => addArts(fl))}>
           ＋ ADD ART {arts.length === 0 && '(첫 장 등록 시 썸네일 크롭 지정)'}
         </button>
+
+        {/* 한마디 — 대표 아트 위에 가운데 정렬로 표시 */}
+        <label className="k-label" style={{ margin: 0 }}>한마디 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 대표 아트 위에 표시 (비우면 안 보임)</span></label>
+        <KInput placeholder="한마디" value={quote} onChange={e => setQuote(e.target.value)} />
+        {quote.trim() && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="cp-lb">글씨</span>
+            <ColorField value={quoteColor ?? '#d7dae0'} onChange={setQuoteColor} />
+            <span className="cp-lb">따옴표</span>
+            <ColorField value={quoteMarkColor ?? '#c96a73'} onChange={setQuoteMarkColor} />
+            {(quoteColor || quoteMarkColor) && (
+              <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
+                onClick={() => { setQuoteColor(undefined); setQuoteMarkColor(undefined); }}>색 기본값</button>
+            )}
+          </div>
+        )}
 
         {/* 기본 정보 스펙 */}
         <label className="k-label" style={{ margin: 0 }}>기본 정보 항목</label>

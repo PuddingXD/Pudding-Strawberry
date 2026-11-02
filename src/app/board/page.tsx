@@ -9,7 +9,7 @@ import {
   CommentRow, COMMENT_KEY, COMMENT_SEED, commentsFor,
 } from '@/lib/postStore';
 import {
-  useBoardSettings, useBoards, badgeFor, boardBadgeStyle, boardHref, MAIN_BOARD_ID,
+  useBoardSettings, useBoards, perPageOf, badgeFor, boardBadgeStyle, boardHref, MAIN_BOARD_ID,
 } from '@/lib/boardStore';
 import { useMenuSettings, canWriteAt, canReadSecret } from '@/lib/menuStore';
 import { LockIcon } from '@/components/ui/LockIcon';
@@ -17,7 +17,6 @@ import { SearchBar, Pager } from '@/components/ui/Kit';
 import { CropImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
-const PER_PAGE = 10;
 
 /** 본문에서 첫 이미지 추출 — 티켓 스킨 썸네일용 (HTML img / MD 이미지) */
 function firstImage(body: string): string | null {
@@ -65,8 +64,9 @@ function BoardInner() {
       (b.notice ? 1 : 0) - (a.notice ? 1 : 0) || b.date.localeCompare(a.date));
   }, [posts, board.id, cat, q]);
 
+  const PER_PAGE = perPageOf(boardSet, 'board');   // 한 페이지에 몇 개 — 환경설정 > 게시판 관리 (기본 8)
   const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
-  const pageList = visible.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const pageList = visible.slice((Math.min(page, totalPages) - 1) * PER_PAGE, Math.min(page, totalPages) * PER_PAGE);
   /* 비밀글 열람 (v2.0 발견) — authorId 없는 비밀글은 비로그인 방문자에게도 열렸다.
      둘 다 undefined라 `undefined === undefined`가 참이었기 때문 */
   // 비밀글은 관리자 · 글쓴이 · 권한 탭에서 지정한 회원만 (게시판마다)

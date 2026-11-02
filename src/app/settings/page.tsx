@@ -919,6 +919,7 @@ function BoardPane() {
       {([
         { k: 'gallery' as const, label: '갤러리 (갤러리 보기)' }, { k: 'galleryList' as const, label: '갤러리 (리스트 보기)' },
         { k: 'feed' as const, label: '큰 그림' }, { k: 'road' as const, label: '로드비' },
+        { k: 'board' as const, label: '게시판 (기본 게시판 · 추가한 게시판)' },
       ]).map(row => (
         <div key={row.k} className="set-row" style={{ alignItems: 'center' }}>
           <div className="l"><b>{row.label}</b><small>기본 {PER_PAGE_DEFAULT[row.k]}개</small></div>

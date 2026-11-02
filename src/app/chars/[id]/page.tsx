@@ -239,7 +239,14 @@ function CharDetailInner() {
           )}
         </div>
 
-        {/* 중앙 아트 — 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
+        {/* 중앙 — 한마디(위, 가운데 정렬) + 대표 아트. 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
+        <div className="profile-mid">
+        {eff.quote?.trim() && (
+          <div className="profile-quote" style={{
+            color: eff.quoteColor,
+            ['--q-mark' as string]: eff.quoteMarkColor,
+          } as React.CSSProperties}>{eff.quote}</div>
+        )}
         {(() => {
           const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
           if (arts.length === 0 && !eff.artUrl) {
@@ -276,6 +283,7 @@ function CharDetailInner() {
             </div>
           );
         })()}
+        </div>
 
         {/* 우측 정보 패널 — 최상단 캐릭터 이름 크게 (v1.6) · AU면 그 AU의 이름·폰트 */}
         <div className="panel profile-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
