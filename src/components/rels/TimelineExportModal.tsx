@@ -21,7 +21,7 @@ function Slider({ label, v, set, min, max, step, fmt }: { label: string; v: numb
 export function TimelineExportModal({ open, onClose, filename, getList, base, auHeaderId, hasStickers }: {
   open: boolean; onClose: () => void; filename: string;
   getList: () => HTMLElement | null;
-  base: Pick<PngOpts, 'left' | 'right' | 'theme' | 'legend'>;
+  base: Pick<PngOpts, 'left' | 'right' | 'theme'>;
   auHeaderId?: string;          // 이 자관(AU) 페이지의 헤더 이미지
   hasStickers: boolean;
 }) {

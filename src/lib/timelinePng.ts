@@ -4,8 +4,8 @@
 const SCALE = 2;      // 선명하게 (2배)
 const MARGIN = 40;    // 바깥 배경 여백(px)
 const PADX = 44;      // 카드 안쪽 좌우 여백
-const HEAD_H = 72;    // 카드 윗줄(이름·제목) 높이
-const FOOT_H = 60;    // 카드 아랫줄(범례) 높이
+const HEAD_H = 84;    // 카드 윗줄(이름·제목) 높이
+const FOOT_H = 0;     // (범례 제거 — 아랫줄 없음)
 const BODY_PAD = 36;  // 타임라인 위·아래 여백
 
 type Cs = CSSStyleDeclaration;
@@ -45,14 +45,12 @@ function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
 
 
 // ── 내보내기 옵션 ──
-export interface PngLegend { label: string; kind: 'solid' | 'half'; c1: string; c2?: string }
-export interface PngPerson { name: string; sub?: string; color: string }
+export interface PngPerson { name: string; font?: string }   // font: 그 캐릭터의 이름 글꼴(CSS font-family)
 export interface PngOpts {
   title: string;                 // 가운데 제목 (예: MEMORY)
   left?: PngPerson; right?: PngPerson;   // 페어일 때 양 끝 이름 (다인관은 생략)
   theme: string;                 // 페어(자관) 테마색 — 배경을 이 색의 옅은 톤으로
   bgStrength: number;            // 배경에 섞는 테마색 비율 0.1~0.6
-  legend: PngLegend[];
   stickers: boolean;             // 스티커도 함께 내보내기
   header?: { url: string; height: number; zoom: number; px: number; py: number };
 }
@@ -171,28 +169,37 @@ export async function exportTimelinePng(list: HTMLElement, filename: string, o: 
   rr(ctx, MARGIN, MARGIN, cardW, cardH, 28, 28, 28, 28);
   ctx.clip();
 
-  // 윗줄 — 이름(양 끝) · 제목(가운데)
-  const person = (p: PngPerson, side: 'l' | 'r') => {
-    const sw = 34, y = MARGIN + (HEAD_H - sw) / 2;
-    const bx = side === 'l' ? MARGIN + 28 : MARGIN + cardW - 28 - sw;
-    rr(ctx, bx, y, sw, sw, 10, 10, 10, 10); ctx.fillStyle = p.color; ctx.fill();
-    const tx = side === 'l' ? bx + sw + 12 : bx - 12;
+  // 윗줄 — 이름(양 끝, 각 캐릭터의 이름 글꼴) · 제목(가운데, 이름보다 크게)
+  //  이름 크기: 글자 수가 달라도 비슷한 너비로 보이게 자동 조절 (같은 글꼴 크기일 필요는 없다)
+  const people = [o.left && { p: o.left, side: 'l' as const }, o.right && { p: o.right, side: 'r' as const }]
+    .filter((x): x is { p: PngPerson; side: 'l' | 'r' } => !!x);
+  for (const { p } of people) {
+    try { await document.fonts?.load(`700 20px ${p.font || fam}`, p.name); } catch { /* 무시 */ }
+  }
+  const TARGET = Math.min(170, cardW * 0.22);
+  const sized = people.map(({ p, side }) => {
+    ctx.font = `700 20px ${p.font || fam}`;
+    const w20 = ctx.measureText(p.name).width || 1;
+    return { p, side, size: Math.max(15, Math.min(30, (TARGET / w20) * 20)) };
+  });
+  const nameMax = sized.reduce((m, s) => Math.max(m, s.size), 18);
+  for (const { p, side, size } of sized) {
     (ctx as unknown as { letterSpacing: string }).letterSpacing = '0px';
+    ctx.font = `700 ${size}px ${p.font || fam}`;
+    ctx.fillStyle = '#222';
     ctx.textAlign = side === 'l' ? 'left' : 'right';
-    ctx.fillStyle = '#222'; ctx.font = `700 16px ${fam}`;
-    ctx.fillText(p.name, tx, y + (p.sub ? 1 : 9));
-    if (p.sub) { ctx.fillStyle = '#9a9fa8'; ctx.font = `400 11.5px ${fam}`; ctx.fillText(p.sub, tx, y + 20); }
-    ctx.textAlign = 'left';
-  };
-  if (o.left) person(o.left, 'l');
-  if (o.right) person(o.right, 'r');
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.name, side === 'l' ? MARGIN + 36 : MARGIN + cardW - 36, MARGIN + HEAD_H / 2 + 1);
+  }
+  ctx.textBaseline = 'top'; ctx.textAlign = 'left';
   if (o.title) {
-    ctx.textAlign = 'center'; ctx.fillStyle = '#2a2d33';
-    ctx.font = `600 19px "Cormorant Garamond", "Playfair Display", Georgia, serif`;
+    const ts = Math.min(46, Math.max(30, nameMax * 1.5));   // 이름보다 항상 크게
+    ctx.textAlign = 'center'; ctx.fillStyle = '#2a2d33'; ctx.textBaseline = 'middle';
+    ctx.font = `600 ${ts}px "Cormorant Garamond", "Playfair Display", Georgia, serif`;
     (ctx as unknown as { letterSpacing: string }).letterSpacing = '4px';
-    ctx.fillText(o.title.toUpperCase(), MARGIN + cardW / 2 + 2, MARGIN + (HEAD_H - 22) / 2);
+    ctx.fillText(o.title.toUpperCase(), MARGIN + cardW / 2 + 2, MARGIN + HEAD_H / 2 + 1);
     (ctx as unknown as { letterSpacing: string }).letterSpacing = '0px';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   }
   ctx.fillStyle = '#eceef1'; ctx.fillRect(MARGIN, MARGIN + HEAD_H - 1, cardW, 1);
 
@@ -203,27 +210,6 @@ export async function exportTimelinePng(list: HTMLElement, filename: string, o: 
     drawCover(ctx, hdrImg, MARGIN, MARGIN + HEAD_H, cardW, hh, o.header.zoom, o.header.px, o.header.py);
     ctx.restore();
     ctx.fillStyle = '#e4e6ea'; ctx.fillRect(MARGIN, MARGIN + HEAD_H + hh, cardW, 1);
-  }
-
-  // 아랫줄 — 범례
-  const fy = MARGIN + cardH - FOOT_H;
-  ctx.fillStyle = '#eceef1'; ctx.fillRect(MARGIN, fy, cardW, 1);
-  {
-    ctx.font = `700 12px ${fam}`;
-    const gap = 26, dotW = 14 + 8;
-    const ws = o.legend.map(l => dotW + ctx.measureText(l.label).width);
-    const total = ws.reduce((a, b) => a + b, 0) + gap * Math.max(0, o.legend.length - 1);
-    let x = MARGIN + (cardW - total) / 2;
-    const cy = fy + FOOT_H / 2 + 0.5;
-    o.legend.forEach((l, i) => {
-      if (l.kind === 'half' && l.c2) {
-        ctx.fillStyle = l.c1; ctx.beginPath(); ctx.arc(x + 7, cy, 7, Math.PI / 2, Math.PI * 1.5); ctx.fill();
-        ctx.fillStyle = l.c2; ctx.beginPath(); ctx.arc(x + 7, cy, 7, -Math.PI / 2, Math.PI / 2); ctx.fill();
-      } else { ctx.fillStyle = l.c1; ctx.beginPath(); ctx.arc(x + 7, cy, 7, 0, Math.PI * 2); ctx.fill(); }
-      ctx.fillStyle = '#666b74'; ctx.font = `700 12px ${fam}`;
-      ctx.fillText(l.label, x + dotW, cy - 7);
-      x += ws[i] + gap;
-    });
   }
 
   // 타임라인 본체 — 화면 좌표를 카드 안 좌표로

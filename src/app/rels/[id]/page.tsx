@@ -877,22 +877,12 @@ function RelDetailInner() {
         auHeaderId={(isBaseAu ? rel.headerImgId : (au?.headerImgId ?? undefined)) ?? undefined}
         hasStickers={((isBaseAu ? rel.stickers : au?.stickers) ?? []).length > 0}
         base={(() => {
-          const col = (cid?: string) => charOf(cid ?? '')?.color ?? '#5d636d';
           const theme = pageColor ?? 'var(--accent)';
-          const per = (m: RelMember | null) => (m ? { name: charOf(m.charId)?.name ?? '', sub: charOf(m.charId)?.sub, color: col(m.charId) } : undefined);
-          const half = isDuo && pairSlots[0] && pairSlots[1];
+          const per = (m: RelMember | null) => (m ? { name: charOf(m.charId)?.name ?? '', font: familyOf(charOf(m.charId)?.fontId) } : undefined);
           return {
             left: isDuo ? per(pairSlots[0]) : undefined,
             right: isDuo ? per(pairSlots[1]) : undefined,
             theme,
-            legend: [
-              ...(isDuo
-                ? pairSlots.filter((m): m is RelMember => !!m).map(m => ({ label: charOf(m.charId)?.name ?? '', kind: 'solid' as const, c1: col(m.charId) }))
-                : rel.members.map(m => ({ label: charOf(m.charId)?.name ?? '', kind: 'solid' as const, c1: col(m.charId) }))),
-              half
-                ? { label: '공동', kind: 'half' as const, c1: col(pairSlots[0]?.charId), c2: col(pairSlots[1]?.charId) }
-                : { label: '공동', kind: 'solid' as const, c1: theme },
-            ],
           };
         })()} />
       <StickerLayer stickers={(isBaseAu ? rel.stickers : au?.stickers) ?? []} editable={editOn && isAdmin}
