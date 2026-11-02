@@ -163,6 +163,11 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
 
 export interface CharGrant { userId: string; level: 'play' | 'edit' }
 
+/** 이 자관을 관리(수정·멤버/타임라인 편집)할 수 있는 회원인가 — 관리자 또는 지정된 회원 */
+export function canManageRel(rel: { grants?: CharGrant[] } | undefined | null, userId?: string): boolean {
+  return !!rel && !!userId && !!rel.grants?.some(g => g.userId === userId && g.level === 'edit');
+}
+
 /** 이 자관의 멤버 캐릭터 중 하나라도 권한을 받은 회원인가 (v2.0) — 문답 숨김 판정 */
 export function hasRelGrant(
   members: { charId: string }[], chars: Character[], userId?: string,
@@ -401,6 +406,8 @@ export interface RelDoc { id: string; icon: string; title: string; subtitle?: st
 
 export interface Relation {
   id: string;
+  /** 이 자관을 수정할 수 있는 회원 (관리자가 지정, level 'edit'). 등록한 회원도 자동으로 들어간다. 서버 편집 권한(editorIds)도 여기서 만들어진다 */
+  grants?: CharGrant[];
   /** 페이지 주소 별명 (v2.0 사용자 요청) — /rels/{별명}. 나중에 수정 화면에서 바꿀 수 있다.
    *  참조(AU 프로필 키·로그 연동 등)는 언제나 id로 저장되므로 바꿔도 끊어지지 않는다. */
   slug?: string;

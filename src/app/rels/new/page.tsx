@@ -8,19 +8,21 @@ import { Character, CHAR_SEED, Relation, REL_SEED, RelMember } from '@/lib/charS
 import { RelForm } from '@/components/rels/RelForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
+import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
 
 export default function RelNewPage() {
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const [menuSet, , menuLoaded] = useMenuSettings();
   const toast = useToast();
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
 
-  if (!loaded) return <section className="page" />;
-  if (!isAdmin) {
+  if (!loaded || !menuLoaded) return <section className="page" />;
+  if (!canWriteAt(menuSet, writeKeyOf('/rels'), { loggedIn: !!user, isAdmin, id: user?.id }, writeDefaultOf('/rels'))) {
     return (
       <section className="page">
-        <div className="page-head"><PageTitle>ADD RELATION</PageTitle><p>관리자 전용</p></div>
+        <div className="page-head"><PageTitle>ADD RELATION</PageTitle><p>허용된 회원만 등록할 수 있습니다</p></div>
       </section>
     );
   }
@@ -54,6 +56,8 @@ export default function RelNewPage() {
             headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle,
             pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle,
             members, thumbClass: '',
+            // 회원이 등록한 자관은 등록한 회원이 수정할 수 있게 (관리자 등록이면 지정 회원만)
+            ...(v.grants?.length || (!isAdmin && user) ? { grants: [...(v.grants ?? []), ...(!isAdmin && user ? [{ userId: user.id, level: 'edit' as const }] : [])] } : {}),
             illustMode: v.kind === 'pair' ? (v.illustMode ?? 'duo') : 'one',   // 처음 보이는 이미지 (v2.1)
             aus: [{ id: 'base', label: '원본', catchphrase: v.catchphrase }],
             timeline: [], questions: [],

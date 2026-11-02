@@ -3,7 +3,9 @@
 // 아트 다중 등록(첫 장 = 대표 · 리스트 썸네일 4:3 크롭) · 등록 시 내 캐릭터 연동
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Character, Relation, Visibility, RelCpTag, RelMember, RelDoc, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import { GrantsEditor } from '@/components/chars/GrantsEditor';
+import { useAuth } from '@/lib/auth';
+import { CharGrant, Character, Relation, Visibility, RelCpTag, RelMember, RelDoc, auMember, auStyle, fullShadow } from '@/lib/charStore';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
 import { SymbolInput } from '@/components/ui/SymbolInput';
@@ -29,6 +31,7 @@ export interface RelFormValue {
   catchphrase: string;
   kind: 'pair' | 'multi';
   visibility: Visibility;
+  grants?: CharGrant[];      // 수정 가능 회원 (관리자만 지정)
   fontId: string;
   bodyFontId: string;
   arts: string[];            // 첫 장 = 대표 = 리스트 썸네일 원본
@@ -185,6 +188,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [slug, setSlug] = useState(initial?.slug ?? '');
   const [catchphrase, setCatchphrase] = useState(auObj ? auObj.catchphrase : (initial?.catchphrase ?? ''));
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
+  const { isAdmin: siteAdmin } = useAuth();
+  const [relGrants, setRelGrants] = useState<CharGrant[]>((initial?.grants ?? []).filter(g => g.level === 'edit'));
   const [cp, setCp] = useState<RelCpTag>(initial?.cp ?? 'cp');   // CP/NCP (v1.9)
   // AU 편집이면 그 AU에 정한 폰트부터 (v2.0 사용자 제보 — AU 폰트가 분리되지 않던 것)
   const [fontId, setFontId] = useState((auObj?.fontId ?? initial?.fontId) ?? 'serif');
@@ -325,6 +330,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       name: name.trim().toUpperCase(),
       catchphrase: catchphrase.trim(),
       kind, visibility, fontId, bodyFontId,
+      grants: siteAdmin ? relGrants : initial?.grants,
       arts: artIds,
       thumbCrop,
       headerImgId: headerFile ? await putBlob(headerFile) : (headerRemoved ? undefined : initHeaderId),
@@ -893,6 +899,13 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                 { value: 'member', label: '멤버공개' },
                 { value: 'private', label: '나만보기' },
               ]} />
+            {/* 수정 가능 회원 — 지정된 회원은 이 자관을 수정하고 멤버·타임라인·문답도 관리할 수 있다 (관리자만 지정) */}
+            {siteAdmin && !auId && (
+              <div style={{ display: 'grid', gap: 6 }}>
+                <label className="k-label" style={{ margin: 0 }}>수정 가능 회원 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 지정한 회원이 이 자관을 수정할 수 있습니다</span></label>
+                <GrantsEditor value={relGrants} onChange={v => setRelGrants(v.map(g => ({ ...g, level: 'edit' as const })))} />
+              </div>
+            )}
           </div>
         </div>
         <div className="form-actions">

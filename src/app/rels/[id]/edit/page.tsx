@@ -5,7 +5,7 @@ import React, { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, Relation, REL_SEED, findByKey } from '@/lib/charStore';
+import { Character, CHAR_SEED, Relation, REL_SEED, findByKey, canManageRel } from '@/lib/charStore';
 import { RelForm } from '@/components/rels/RelForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -13,7 +13,7 @@ import { PageTitle, EditableDesc } from '@/components/ui/PageText';
 function RelEditInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const toast = useToast();
   const params = useSearchParams();
   const auId = params.get('au') ?? undefined;
@@ -24,10 +24,10 @@ function RelEditInner() {
   const rel = findByKey(rels, id);
   const auObj = auId ? rel?.aus.find(a => a.id === auId && a.id !== 'base') : undefined;
   if (!loaded) return <section className="page" />;
-  if (!isAdmin || !rel) {
+  if (!rel || !(isAdmin || canManageRel(rel, user?.id))) {
     return (
       <section className="page">
-        <div className="page-head"><PageTitle>EDIT</PageTitle><p>{!rel ? '자관을 찾을 수 없습니다' : '관리자 전용'}</p></div>
+        <div className="page-head"><PageTitle>EDIT</PageTitle><p>{!rel ? '자관을 찾을 수 없습니다' : '수정 권한이 없습니다'}</p></div>
       </section>
     );
   }
@@ -59,6 +59,7 @@ function RelEditInner() {
                 headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle,
                 pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle }),
             // CP/문답 숨김은 자관 전체 설정(AU 폼에는 없음) · 전신 앞뒤는 AU면 그 AU에만 (v2.0)
+            ...(auObj || !isAdmin ? {} : { grants: v.grants }),
             ...(auObj ? {} : { docs: v.docs, cp: v.cp, qaHide: v.qaHide, fullFront: v.fullFront ?? r.fullFront }),
             illustMode: v.kind === 'pair' ? (auObj ? r.illustMode : (v.illustMode ?? r.illustMode)) : 'one',   // 처음 보이는 이미지 — AU 편집이면 아래 AU에 (v2.1)
             // 전신 크기·위치·한마디·대사 색 — **AU를 편집 중이면 자관 공통을 건드리지 않는다**

@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useMainStore } from '@/lib/mainStore';
+import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
 
 export default function RelsPage() {
@@ -21,6 +22,9 @@ export default function RelsPage() {
   const [rels, setRels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const [q, setQ] = useState('');
+  // 등록 권한 — 환경설정 「권한」에서 회원을 지정할 수 있다 (기본: 관리자)
+  const [menuSet] = useMenuSettings();
+  const canAdd = canWriteAt(menuSet, writeKeyOf('/rels'), { loggedIn: !!user, isAdmin, id: user?.id }, writeDefaultOf('/rels'));
 
   const colorOf = (id: string) => chars.find(c => c.id === id)?.color ?? '#666';
   const visible = rels
@@ -37,7 +41,7 @@ export default function RelsPage() {
         <EditableDesc k="rels-desc" def="자관 목록 · 4:3 가로 썸네일 · 공개범위: 전체공개/멤버공개/나만보기" />
         <div className="head-actions">
           <SearchBar onSearch={setQ} />
-          {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/rels/new')}>＋ ADD RELATION</button>}
+          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/rels/new')}>＋ ADD RELATION</button>}
         </div>
       </div>
       <div className="g3 rels-grid">

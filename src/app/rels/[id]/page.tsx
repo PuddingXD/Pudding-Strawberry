@@ -11,7 +11,7 @@ import { useTheme } from '@/lib/ThemeProvider';
 import { useLocalList, newId } from '@/lib/postStore';
 import {
   Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, findChar, Visibility, CharGrant,
-  auMember, auStyle, fullShadow, hasRelGrant,
+  auMember, auStyle, fullShadow, hasRelGrant, canManageRel,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
   findByKey, charPath, specGroupsOf,
@@ -252,7 +252,7 @@ function EmptyCard({ isAdmin, onAdd }: { isAdmin: boolean; onAdd: () => void }) 
 function RelDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin: siteAdmin } = useAuth();
   const toast = useToast();
   const { familyOf } = useFonts();
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -376,6 +376,8 @@ function RelDetailInner() {
 
   // 별명 주소로도 열린다 (v2.0 사용자 요청 — 주소를 나중에 바꿔도 옛 주소가 살아 있게)
   const rel = findByKey(rels, id);
+  // 관리자이거나 이 자관의 수정 가능 회원으로 지정된 회원이면 이 화면의 편집 기능을 쓸 수 있다
+  const isAdmin = siteAdmin || canManageRel(rel, user?.id);
   // 주소의 ?au=<AU id>로 들어오면 그 AU를 펼친 채 시작 (JN 이식 — 로그 백업 상세의 자관·AU 버튼이 여기로 온다)
   useEffect(() => {
     if (!rel) return;
@@ -896,10 +898,13 @@ function RelDetailInner() {
           {/* AU를 보는 중이면 지워지는 것도 그 AU다 (v2.0 사용자 발견 — 자관이 통째로 지워졌다).
               EDIT은 AU를 따라가는데 DELETE만 안 따라가서, AU 화면에서 누르면 자관 전체가 날아갔다.
               버튼 글씨에도 무엇이 지워지는지 그대로 쓴다 */}
+          {/* 자관 전체 삭제는 관리자만 — 지정된 수정 회원은 AU 삭제까지 */}
+          {(siteAdmin || !isBaseAu) && (
           <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
             onClick={() => (isBaseAu ? setDelAsk(true) : setAuDelAsk(au!.id))}>
             {isBaseAu ? 'DELETE' : `DELETE ${au!.label}`}
           </button>
+          )}
         </div>
       )}
 
