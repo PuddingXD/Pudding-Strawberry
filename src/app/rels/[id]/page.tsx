@@ -615,11 +615,11 @@ function RelDetailInner() {
       return o.era || o.title || o.desc ? o : undefined;
     };
     // 한 캐릭터만의 사건이면 그 캐릭터가 있는 쪽 글만 남긴다
-    const who = !isDuo && tWho ? tWho : '';
+    const who = tWho;
     const whoSide = who ? tlSideOf(who) : null;
     const l = whoSide === 'r' ? undefined : clean(tL), r = whoSide === 'l' ? undefined : clean(tR);
     if (!l && !r && says.length === 0) { toast('사건·설명·한마디 중 하나는 입력해 주세요'); return; }
-    const item: TlItem = { says, ...(l ? { l } : {}), ...(r ? { r } : {}), ...(who ? { charId: who } : {}) };
+    const item: TlItem = { says, ...(l ? { l } : {}), ...(r ? { r } : {}), ...(who ? { charId: who } : { all: true }) };
     const editing = tlEditIdx;
     patchAuData({
       timeline: editing == null
@@ -1252,28 +1252,43 @@ function RelDetailInner() {
               const hasSide = (v: TlSide, n: number) => !!(v.era || v.title || v.desc) || n > 0;
               let hasL = hasSide(sd.l, lSays.length), hasR = hasSide(sd.r, rSays.length);
               if (!hasL && !hasR) { hasL = true; hasR = true; }
-              // 원 색: 페어 = 왼쪽 캐릭터색 / 오른쪽 캐릭터색 (둘 다면 반반) · 다인 = 한 캐릭터만의 사건이면 그 캐릭터 테마색, 함께 겪은 사건이면 자관 테마색
+              // 원 색 — 한 캐릭터만의 사건: 그 캐릭터 테마색 / 함께 겪은 사건: 페어는 두 캐릭터 색 반반, 다인은 자관 테마색
+              //   (예전 페어 항목은 이 선택이 없어서 글이 있는 쪽으로 판단)
               const lCol = charOf(pairSlots[0]?.charId ?? '')?.color ?? '#5d636d';
               const rCol = charOf(pairSlots[1]?.charId ?? '')?.color ?? '#5d636d';
               const themeCol = pageColor ?? 'var(--accent)';
-              const dot = !isDuo ? ((item.charId && charOf(item.charId)?.color) || themeCol)
-                : hasL && hasR ? `linear-gradient(90deg, ${lCol} 50%, ${rCol} 50%)`
-                : hasL ? lCol : rCol;
-              const col = (side: 'l' | 'r', v: TlSide, sy: typeof item.says) => (
-                <div className={`tl-col ${side}`}>
-                  {v.era && <div className="era">{v.era}</div>}
-                  {v.title && <div className="ttl">{v.title}</div>}
-                  {v.desc && <div className="desc">{v.desc}</div>}
-                  {sy.map((s, j) => {
-                    const c = charOf(s.charId);
-                    return (
-                      <div key={j} className={`tl-say ${side}`} style={{ ['--cc' as string]: rgbTriple(c?.color ?? '#5d636d') }}>
-                        <div className="bub">{s.text}</div>
-                      </div>
-                    );
-                  })}
+              const half = `linear-gradient(90deg, ${lCol} 50%, ${rCol} 50%)`;
+              const dot = item.charId ? (charOf(item.charId)?.color ?? themeCol)
+                : !isDuo ? themeCol
+                : item.all ? half
+                : hasL && hasR ? half : hasL ? lCol : rCol;
+              // 칸 맞춤 — 같은 종류(시기·사건·설명·한마디)는 상대가 비어 있어도 좌우가 같은 줄에 놓인다.
+              //  한마디: 페어는 왼쪽 n번째·오른쪽 n번째가 같은 줄 / 다인은 한마디마다 차례대로 한 줄씩 아래로
+              type Row = { l?: React.ReactNode; r?: React.ReactNode };
+              const rows: Row[] = [];
+              const textRow = (cls: string, k: 'era' | 'title' | 'desc') => {
+                if (!sd.l[k] && !sd.r[k]) return;
+                rows.push({
+                  l: sd.l[k] ? <div className={cls}>{sd.l[k]}</div> : undefined,
+                  r: sd.r[k] ? <div className={cls}>{sd.r[k]}</div> : undefined,
+                });
+              };
+              textRow('era', 'era'); textRow('ttl', 'title'); textRow('desc', 'desc');
+              const bub = (s: { charId: string; text: string }, side: 'l' | 'r', j: number) => (
+                <div key={j} className={`tl-say ${side}`} style={{ ['--cc' as string]: rgbTriple(charOf(s.charId)?.color ?? '#5d636d') }}>
+                  <div className="bub">{s.text}</div>
                 </div>
               );
+              if (isDuo) {
+                for (let k = 0; k < Math.max(lSays.length, rSays.length); k++) {
+                  rows.push({ l: lSays[k] ? bub(lSays[k], 'l', k) : undefined, r: rSays[k] ? bub(rSays[k], 'r', k) : undefined });
+                }
+              } else {
+                item.says.forEach((sy, k) => {
+                  const side = tlSideOf(sy.charId);
+                  rows.push(side === 'l' ? { l: bub(sy, 'l', k) } : { r: bub(sy, 'r', k) });
+                });
+              }
               return (
                 <div className="tl-item" key={i}
                   onContextMenu={e => {
@@ -1281,9 +1296,13 @@ function RelDetailInner() {
                     e.preventDefault();
                     setTlCtx({ x: e.clientX, y: e.clientY, idx: i });
                   }}>
-                  {col('l', sd.l, lSays)}
-                  <i className="tl-dot" style={{ background: dot }} />
-                  {col('r', sd.r, rSays)}
+                  <i className="tl-dot" style={{ background: dot, gridRow: 1, gridColumn: 2 }} />
+                  {rows.map((row, n) => (
+                    <React.Fragment key={n}>
+                      {row.l && <div className="tl-cell l" style={{ gridRow: n + 1, gridColumn: 1 }}>{row.l}</div>}
+                      {row.r && <div className="tl-cell r" style={{ gridRow: n + 1, gridColumn: 3 }}>{row.r}</div>}
+                    </React.Fragment>
+                  ))}
                 </div>
               );
             })}
@@ -1507,15 +1526,14 @@ function RelDetailInner() {
           <button className="btn btn-dark" onClick={addTlItem}>{tlEditIdx == null ? 'ADD' : 'SAVE'}</button>
         </>}>
         <div style={{ display: 'grid', gap: 10 }}>
-          {/* 다인관 — 누구의 사건인지: 한 캐릭터만의 사건이면 그 캐릭터 색, 함께 겪은 사건이면 자관 테마색 원 */}
-          {!isDuo && (
-            <KSelect value={tWho} onChange={v => setTWho(v)}
-              options={[
-                { value: '', label: '함께 겪은 사건 (자관 테마색)' },
-                ...rel.members.map(m => ({ value: m.charId, label: `${charOf(m.charId)?.name ?? m.charId} 의 사건 (캐릭터 테마색)` })),
-              ]} />
-          )}
-          {([['l', tL, setTL], ['r', tR, setTR]] as const).filter(([sd]) => !(!isDuo && tWho) || tlSideOf(tWho) === sd).map(([sd, v, set]) => {
+          {/* 누구의 사건인지 — 함께 겪은 사건 / 한 캐릭터의 사건 (원 색이 달라진다) */}
+          <KSelect value={tWho} onChange={v => setTWho(v)}
+            options={[
+              { value: '', label: '함께 겪은 사건' },
+              ...(isDuo ? pairSlots.filter((m): m is RelMember => !!m) : rel.members)
+                .map(m => ({ value: m.charId, label: `${charOf(m.charId)?.name ?? m.charId}의 사건` })),
+            ]} />
+          {([['l', tL, setTL], ['r', tR, setTR]] as const).filter(([sd]) => !tWho || tlSideOf(tWho) === sd).map(([sd, v, set]) => {
             const nm = isDuo ? charOf(pairSlots[sd === 'l' ? 0 : 1]?.charId ?? '')?.name : (tWho ? charOf(tWho)?.name : undefined);
             return (
               <div key={sd} style={{ display: 'grid', gap: 7, padding: 10, border: '1.5px solid var(--line)', borderRadius: 9 }}>

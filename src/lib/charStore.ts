@@ -211,7 +211,8 @@ export interface TlSide { era?: string; title?: string; desc?: string }
 export interface TlItem {
   era?: string; desc?: string; says: TlSay[];   // era·desc: 옛 저장분 (새 항목은 l·r에 저장)
   l?: TlSide; r?: TlSide;
-  charId?: string;   // 다인관: 이 사건이 한 캐릭터만의 것이면 그 캐릭터 (원 색 = 그 캐릭터 테마색). 없으면 다 함께 겪은 사건 (원 색 = 자관 테마색)
+  all?: boolean;     // 「함께 겪은 사건」으로 직접 고른 항목 (페어: 두 캐릭터 색 반반 원)
+  charId?: string;   // 한 캐릭터만의 사건이면 그 캐릭터 (원 색 = 그 캐릭터 테마색). 다인관: 이 사건이 한 캐릭터만의 것이면 그 캐릭터 (원 색 = 그 캐릭터 테마색). 없으면 다 함께 겪은 사건 (원 색 = 자관 테마색)
 }
 
 /** 항목의 왼쪽·오른쪽 글 — 옛 항목(era·desc만 있음)은 한마디를 한 쪽이 전부 하면 그쪽, 아니면 왼쪽에 둔다 */
