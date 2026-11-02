@@ -30,6 +30,8 @@ export interface MenuSettings {
   labels: Record<string, string>;
   // 메뉴별 부속 설정 (스펙상 "메뉴 관리에서" 지정하는 것들)
   playlogPc: string[];               // 플레이기록 표시 열 — PC (4.16 v1.8)
+  sheetPc: string[];                 // 시트 게시판 표시 열 — PC
+  sheetMobile: string[];             //   〃 모바일
   playlogMobile: string[];           //   〃 모바일 (기본 Date/Scenario/Role/Playtime)
   roadUpload: MenuPerm;              // 로드뷰 업로드 권한 (4.10 v1.7)
   roadComment: MenuPerm;             // 로드뷰 댓글 권한
@@ -109,7 +111,17 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
   { key: 'url', label: 'Url' },
 ];
 
+/** 시트 게시판 열 (환경설정에서 PC/모바일 각각 고른다) */
+export const SHEET_COLS: { key: string; label: string }[] = [
+  { key: 'with', label: 'With' },
+  { key: 'name', label: 'Name' },
+  { key: 'check', label: 'Check' },
+  { key: 'url', label: 'Url' },
+];
+
 export const DEFAULT_MENU_SETTINGS: MenuSettings = {
+  sheetPc: SHEET_COLS.map(c => c.key),
+  sheetMobile: SHEET_COLS.map(c => c.key),
   removedBoards: [],
   groupOrder: DEFAULT_MENU.map(m => m.label),
   hidden: [],
@@ -330,7 +342,8 @@ export function canReadSecret(
 /** 게시판마다의 기본 글쓰기 권한 (v2.1) — 지금까지 관리자만 쓰던 곳은 그대로 관리자, 나머지는 로그인한 회원.
  *  권한 설정 화면과 각 페이지가 같은 값을 보도록 한곳에 둔다 */
 const WRITE_DEFAULT: Record<string, MenuPerm> = {
-  '/diary': 'admin', '/threads': 'admin', '/chars': 'admin', '/pchars': 'admin', '/tchars': 'admin', '/dotori': 'admin', '/playlog': 'admin', '/sheet': 'admin',
+  '/diary': 'admin', '/threads': 'admin', '/chars': 'admin', '/pchars': 'admin', '/tchars': 'admin', '/dotori': 'admin', '/playlog': 'admin',   // 시트(/sheet)는 가입자 기본 — 글쓰기 회원은 환경설정 > 권한에서 지정
+  
   '/trpg': 'admin',   // 로그 백업 — 등록 권한이 있는 회원은 수정도 (trpgPerm.ts, JN 이식)
 };
 export const writeDefaultOf = (path: string): MenuPerm => WRITE_DEFAULT[path] ?? 'member';

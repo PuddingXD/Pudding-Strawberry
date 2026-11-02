@@ -1,10 +1,10 @@
 'use client';
-// 시트 게시판 입력 폼 — With(말머리) · Name(시트 이름) · Date · Url(시트 링크)
-// 말머리는 직접 입력하거나, 이미 쓴 말머리를 눌러 고른다
+// 시트 게시판 입력 폼 — With(말머리) · Name(시트 이름) · Url(시트 링크)
+// 말머리는 환경설정 > 게시판 관리에서 정한 것 중에서 고른다
 import React, { useState } from 'react';
 import { PlayRecord } from '@/lib/galleryStore';
 import { SheetFormValue, httpOk } from '@/lib/sheetStore';
-import { KInput, KDate } from '@/components/ui/Kit';
+import { KInput } from '@/components/ui/Kit';
 import { useToast } from '@/components/ui/Toast';
 import { CatPick } from '@/components/ui/CatPick';
 import { useBoardSettings, sheetCatsOf } from '@/lib/boardStore';
@@ -28,7 +28,6 @@ export function SheetForm({ initial, secId, onSave, onCancel }: {
   const isNew = !initial;
   const [head, setHead] = useState(initial?.withText ?? '');
   const [name, setName] = useState(initial?.scenario ?? '');
-  const [date, setDate] = useState(initial?.date ?? '');
   const [url, setUrl] = useState(initial?.url ?? '');
 
   const { st } = useBoardSettings();   // 말머리는 환경설정 > 게시판 관리에서 정한 것 중에서 고른다
@@ -38,8 +37,7 @@ export function SheetForm({ initial, secId, onSave, onCancel }: {
     if (!name.trim()) { toast('Name을 입력해 주세요'); return; }
     if (!url.trim()) { toast('Url을 입력해 주세요'); return; }
     if (!httpOk(url)) { toast('Url은 http:// 또는 https:// 로 시작해야 합니다'); return; }
-    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast('Date는 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
-    onSave({ head: head.trim(), name: name.trim(), date: date || undefined, url: url.trim() });
+    onSave({ head: head.trim(), name: name.trim(), url: url.trim() });
   };
 
   return (
@@ -47,9 +45,8 @@ export function SheetForm({ initial, secId, onSave, onCancel }: {
       <div className="panel" style={{ padding: 24, display: 'grid', gap: 12, alignContent: 'start' }}>
         <Field label="With (말머리)"><CatPick cats={cats} value={head} onChange={setHead} /></Field>
         <Field label="Name (시트 이름)"><KInput value={name} onChange={e => setName(e.target.value)} /></Field>
-        <Field label="Date (optional)"><KDate value={date} onChange={setDate} placeholder="" style={{ width: '100%' }} /></Field>
         <Field label="Url (시트 링크)"><KInput value={url} onChange={e => setUrl(e.target.value)} /></Field>
-        <p className="hint" style={{ margin: 0 }}>Date를 비워두면 표 맨 아래에 추가됩니다 · 말머리를 고르지 않으면 ALL에만 보입니다</p>
+        <p className="hint" style={{ margin: 0 }}>새 시트는 표 맨 위에 추가됩니다 · 말머리를 고르지 않으면 ALL에만 보입니다</p>
       </div>
 
       <div>

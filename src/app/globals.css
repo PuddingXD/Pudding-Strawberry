@@ -1523,6 +1523,16 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table .td-sc{font-weight:600}  /* Scenario — 가장 넓고 가운데 정렬 (4.16) */
 .pl-table .td-sc a{border-bottom:1px solid var(--line);transition:.15s}
 .pl-table .td-sc a:hover{color:var(--accent);border-color:var(--accent)}
+.pl-table.sh-table .td-sc a{border-bottom:none;text-decoration:none}   /* 시트 제목 링크는 밑줄 없이 */
+.pl-table.sh-table .td-sc a:hover{border-bottom:none}
+/* 시트 Check — 빈 네모 2칸(왼쪽 관리자 · 오른쪽 회원), 체크하면 채워진다 */
+.pl-table .td-chk{white-space:nowrap}
+.sh-chk{width:15px;height:15px;border:1.5px solid var(--sub);border-radius:3px;background:transparent;padding:0;margin:0 4px;vertical-align:middle;cursor:var(--cur-pointer,pointer);transition:.13s}
+.sh-chk.on{background:var(--accent);border-color:var(--accent)}
+.sh-chk:disabled{cursor:default;opacity:.55}
+.sh-chk:not(:disabled):hover{border-color:var(--accent)}
+/* 표 첫 줄이 머리글 선에 붙어 보이지 않게 — 선 아래 여백을 맨 아래 여백(td 10 + 패널 16)과 같게 */
+.pl-table tbody tr:first-child td{padding-top:26px}
 .pl-table .td-role{font-size:calc(11px*var(--fs,1));letter-spacing:.06em;color:var(--sub)}
 .pl-table .td-date{font-size:calc(11.5px*var(--fs,1));color:var(--sub);letter-spacing:.03em}
 /* Playtime 밑줄·탭 이동은 모바일 전용 — PC는 맨 끝 클립 칸이 담당 (4.16) */
@@ -2071,15 +2081,14 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 
 /* ---------- 시트 게시판 (/sheet) ---------- */
 .pl-table.sh-table col.c-shh{width:128px}
-.pl-table.sh-table col.c-shd{width:92px}
+.pl-table.sh-table col.c-shc{width:78px}
 .pl-table.sh-table col.c-shu{width:56px}
 .sh-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:calc(11px*var(--fs,1));padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:var(--cur-pointer,pointer);transition:.13s}
 .sh-chip:hover{border-color:var(--accent);color:var(--accent)}
 .sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
 @media (max-width:620px){
   .pl-table.sh-table col.c-shh{width:76px}
-  .pl-table.sh-table col.c-shd{width:64px}
+  .pl-table.sh-table col.c-shc{width:56px}
   .pl-table.sh-table col.c-shu{width:34px}
-  .pl-table.sh-table .td-date{font-size:calc(10.5px*var(--fs,1));letter-spacing:0}
   .pl-table.sh-table th,.pl-table.sh-table td{padding-left:3px;padding-right:3px}
 }

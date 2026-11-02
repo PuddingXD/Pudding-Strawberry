@@ -181,6 +181,8 @@ export default function BoardDetailPage() {
         </div>
       </div>
 
+      {/* 본문·이전/다음글·댓글을 합작(큰 그림) 상세와 같은 672px 폭으로 — 헤더는 풀폭 유지 */}
+      <div style={{ maxWidth: 672, margin: '0 auto' }}>
       <div className="panel" style={{ padding: '26px 28px' }}>
         <h2 style={{ fontSize: 19, marginBottom: 4 }}>
           {post.title}{(post.secret || post.fold) && <LockIcon />}
@@ -244,6 +246,8 @@ export default function BoardDetailPage() {
             {user ? '이 게시판은 관리자만 댓글을 쓸 수 있습니다' : '댓글은 로그인 후 작성할 수 있습니다'}
           </div>
         )}
+      </div>
+
       </div>
 
       <ConfirmModal open={delAsk} title="글을 삭제하시겠습니까?" body="삭제한 글은 복구할 수 없습니다."

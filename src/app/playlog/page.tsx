@@ -16,7 +16,20 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
 const PAGE_SIZE = 15;
-type SortKey = 'with' | 'scenario' | 'writer' | 'date';
+type SortKey = 'with' | 'scenario' | 'writer' | 'playtime' | 'date';
+
+/** "4h 30m" · "4시간 30분" · "90m" · "2:30" 같은 자유 표기를 분으로 — 읽을 수 없으면 null(정렬 때 맨 뒤) */
+function playMinutes(t: string): number | null {
+  const s = t.trim().toLowerCase();
+  if (!s) return null;
+  const hm = s.match(/^(\d+):(\d{1,2})$/);
+  if (hm) return +hm[1] * 60 + +hm[2];
+  const h = s.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours|시간)/);
+  const m = s.match(/(\d+)\s*(?:m|min|mins|분)/);
+  if (h || m) return Math.round((h ? parseFloat(h[1]) * 60 : 0) + (m ? +m[1] : 0));
+  const n = s.match(/^\d+(?:\.\d+)?$/);
+  return n ? Math.round(parseFloat(n[0]) * 60) : null;   // 숫자만 쓰면 시간으로 본다
+}
 
 /** 클립 픽토그램 (선 아이콘 — 이모지 아님) */
 function ClipIcon() {
@@ -89,7 +102,15 @@ function PlaylogPageInner() {
     }
     const c = sortKey === 'with' ? catIdx(a) - catIdx(b) || a.withText.localeCompare(b.withText, 'ko')
       : sortKey === 'scenario' ? a.scenario.localeCompare(b.scenario, 'ko')
+      : sortKey === 'playtime' ? 0
       : a.writer.localeCompare(b.writer, 'ko');
+    if (sortKey === 'playtime') {
+      const x = playMinutes(a.playtime), y = playMinutes(b.playtime);
+      if (x === null && y === null) return a.playtime.localeCompare(b.playtime, 'ko');
+      if (x === null) return 1;      // 읽을 수 없는 값은 방향과 상관없이 맨 아래
+      if (y === null) return -1;
+      return desc ? y - x : x - y;
+    }
     return desc ? -c : c;
   });
   const clickSort = (k: SortKey) => {
@@ -150,7 +171,7 @@ function PlaylogPageInner() {
               {show('with') && <th className="sortable" onClick={() => clickSort('with')}>With{arrow('with')}</th>}
               {show('scenario') && <th className="sortable" onClick={() => clickSort('scenario')}>Scenario{arrow('scenario')}</th>}
               {show('writer') && <th className="sortable" onClick={() => clickSort('writer')}>Writer{arrow('writer')}</th>}
-              {show('playtime') && <th>Playtime</th>}
+              {show('playtime') && <th className="sortable" onClick={() => clickSort('playtime')}>Playtime{arrow('playtime')}</th>}
               {show('date') && <th className="sortable" onClick={() => clickSort('date')}>Date{arrow('date')}</th>}
               {show('url') && <th aria-label="Url" />}
               {canAdd && !isMobile && <th aria-label="관리" />}

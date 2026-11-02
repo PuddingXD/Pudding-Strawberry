@@ -23,7 +23,7 @@ import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle
 import { useTrpgSettings, dotoriStatusKeys, dotoriBadgeOn, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
 import { useMemoSettings } from '@/lib/memoStore';
 import {
-  useMenuSettings, MenuSettings, MenuPerm, MenuVis, PLAYLOG_COLS,
+  useMenuSettings, MenuSettings, MenuPerm, MenuVis, PLAYLOG_COLS, SHEET_COLS,
   MenuGroupNode, MenuLeaf, defaultTree, newGroupId, menuLabelFor, extraBoardHref, boardEntries,
   IMG_PROTECT_AREAS, writeKeyOf, writeDefaultOf,
 } from '@/lib/menuStore';
@@ -2928,9 +2928,9 @@ function TrpgPane() {
     patch({ statuses: rest, statusOrder: statusKeys.filter(x => x !== k) });
   };
   // 균등 칸 그리드 — 항목 폭이 라벨 길이에 안 흔들려 PC/모바일 두 줄이 세로로 정렬됨 (v1.9)
-  const colToggle = (list: string[], k: keyof MenuSettings) => (
-    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${PLAYLOG_COLS.length}, 1fr)`, gap: 6, justifyItems: 'center' }}>
-      {PLAYLOG_COLS.map(c => (
+  const colToggle = (list: string[], k: keyof MenuSettings, all: { key: string; label: string }[] = PLAYLOG_COLS) => (
+    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${all.length}, 1fr)`, gap: 6, justifyItems: 'center' }}>
+      {all.map(c => (
         <KCheck key={c.key} label={c.label} checked={list.includes(c.key)}
           onChange={v => patchMenu({ [k]: v ? [...list, c.key] : list.filter(x => x !== c.key) } as Partial<MenuSettings>)} />
       ))}
@@ -2992,6 +2992,19 @@ function TrpgPane() {
       <div className="set-row" style={{ flexWrap: 'wrap' }}>
         <div className="l" style={{ width: 64, flexShrink: 0 }}><b>모바일</b></div>
         {colToggle(ms.playlogMobile, 'playlogMobile')}
+      </div>
+
+      {/* 시트 게시판 표시 열 — PC/모바일 각각 */}
+      <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
+      <h3>시트 게시판 표시 열</h3>
+      <div className="d">PC와 모바일에서 보여줄 열을 각각 선택 (기본: 모두 표시)</div>
+      <div className="set-row" style={{ flexWrap: 'wrap' }}>
+        <div className="l" style={{ width: 64, flexShrink: 0 }}><b>PC</b></div>
+        {colToggle(ms.sheetPc ?? SHEET_COLS.map(c => c.key), 'sheetPc', SHEET_COLS)}
+      </div>
+      <div className="set-row" style={{ flexWrap: 'wrap' }}>
+        <div className="l" style={{ width: 64, flexShrink: 0 }}><b>모바일</b></div>
+        {colToggle(ms.sheetMobile ?? SHEET_COLS.map(c => c.key), 'sheetMobile', SHEET_COLS)}
       </div>
     </div>
   );

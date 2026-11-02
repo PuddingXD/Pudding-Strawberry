@@ -7,7 +7,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
 import { Character, CHAR_SEED, charGrant, charWithAu, Relation, REL_SEED , findByKey } from '@/lib/charStore';
-import { CharEditForm } from '@/components/chars/CharEditForm';
+import { CharEditForm, DEFAULT_SPECS } from '@/components/chars/CharEditForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
 
@@ -51,7 +51,7 @@ function CharEditInner() {
       ? charWithAu(ch, auKey)
       : {
         ...ch, name: '', sub: '', basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
-        specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
+        specs: DEFAULT_SPECS,
         arts: [], artId: undefined, thumbId: undefined, thumbCrop: undefined,
       })
     : ch;

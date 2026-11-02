@@ -1,24 +1,22 @@
 'use client';
 // 시트 게시판 — 구글 스프레드시트 링크 모음 (표 형식)
-// With(말머리) · Name(시트 이름) · Date · Url · 말머리 탭으로 모아보기 · With/Name/Date 정렬 · 검색 · 페이지
+// With(말머리) · Name(시트 이름) · Check(관리자/회원 2칸) · Url · 말머리 탭으로 모아보기 · With/Name 정렬(기본: 등록 순) · 검색 · 페이지
 // 말머리는 환경설정 > 게시판 관리에서 정한다. 항목은 같은 목록(playlog)에 `sheet:` 소속으로 저장된다 (lib/sheetStore.ts)
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, secQuery } from '@/lib/sectionStore';
 import { useLocalList } from '@/lib/postStore';
 import { PlayRecord, PLAYLOG_SEED } from '@/lib/galleryStore';
 import { SHEET_KEY, sheetsOf, sheetSetter } from '@/lib/sheetStore';
-import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
+import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf, SHEET_COLS } from '@/lib/menuStore';
 import { useBoardSettings, sheetCatsOf, boardBadgeStyle } from '@/lib/boardStore';
-import { useMainStore } from '@/lib/mainStore';
-import { useCardSort, mergeOrder } from '@/lib/cardSort';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
 const PAGE_SIZE = 15;
-type SortKey = 'with' | 'name' | 'date';
+type SortKey = 'with' | 'name' | null;   // null = 기본(등록한 순서)
 
 /** 클립 픽토그램 (선 아이콘 — 이모지 아님) */
 function ClipIcon() {
@@ -43,8 +41,8 @@ function SheetPageInner() {
 
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');                    // '' = ALL (말머리 모아보기)
-  const [sortKey, setSortKey] = useState<SortKey>('date');
-  const [desc, setDesc] = useState(true);                // 정렬 방향 (Date는 최신이 위)
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [desc, setDesc] = useState(false);               // 정렬 방향
   const [page, setPage] = useState(1);
   const [delFor, setDelFor] = useState<PlayRecord | null>(null);
 
@@ -53,9 +51,23 @@ function SheetPageInner() {
   const canAdd = canWriteAt(menuSet, writeKeyOf('/sheet', sec.id), { loggedIn: !!user, isAdmin, id: user?.id }, writeDefaultOf('/sheet'));
   const canEdit = (r: PlayRecord) => isAdmin || (!!user && r.authorId === user.id);
 
-  // 편집모드 행 드래그 정렬 — 편집 중에는 정렬·페이지 없이 저장 순서 전체 표시
-  const { editOn } = useMainStore();
-  const rowSort = useCardSort(records, next => setRecords(mergeOrder(records, next)), editOn && isAdmin);
+  // 표시 열 — 환경설정에서 PC/모바일 각각 선택
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width:620px)');
+    const f = () => setIsMobile(mq.matches);
+    f();
+    mq.addEventListener('change', f);
+    return () => mq.removeEventListener('change', f);
+  }, []);
+  const cols = (isMobile ? menuSet.sheetMobile : menuSet.sheetPc ?? []).filter(k => SHEET_COLS.some(c => c.key === k));
+  const show = (k: string) => cols.includes(k);
+
+  // 체크 칸 — 왼쪽은 관리자만, 오른쪽은 등록한 회원(과 관리자)만 누를 수 있다
+  const canChkAdmin = isAdmin;
+  const canChkMember = (r: PlayRecord) => isAdmin || (!!user && r.authorId === user.id);
+  const toggle = (r: PlayRecord, f: 'chkAdmin' | 'chkMember') =>
+    setRecords(records.map(x => (x.id === r.id ? { ...x, [f]: !x[f] } : x)));
 
   if (!loaded) return <section className="page" />;
 
@@ -65,32 +77,29 @@ function SheetPageInner() {
     .filter(r => !curCat || r.withText.trim() === curCat)
     .filter(r => !query || r.scenario.toLowerCase().includes(query) || r.withText.toLowerCase().includes(query));
 
-  // 정렬 — Date는 날짜 없는 기록이 항상 맨 아래 · With는 환경설정에서 정한 말머리 순서 · Name은 가나다
+  // 정렬 — 기본은 최신 등록순(새 시트가 맨 위) · With는 환경설정의 말머리 순서 · Name은 가나다
   const catIdx = (r: PlayRecord) => { const i = cats.findIndex(c => c.label === r.withText.trim()); return i < 0 ? 9999 : i; };
+  const byTime = (a: PlayRecord, b: PlayRecord) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);   // 최신(나중에 등록한) 시트가 위
   const sorted = [...filtered].sort((a, b) => {
-    if (sortKey === 'date') {
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return desc ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date);
-    }
+    if (!sortKey) return byTime(a, b);
     const c = sortKey === 'with'
       ? catIdx(a) - catIdx(b) || a.withText.localeCompare(b.withText, 'ko')
       : a.scenario.localeCompare(b.scenario, 'ko');
-    return desc ? -c : c;
+    return (desc ? -c : c) || byTime(a, b);
   });
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const cur = Math.min(page, totalPages);
-  const shown = editOn ? records : sorted.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
+  const shown = sorted.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
 
   const pickCat = (c: string) => { setCat(c); setPage(1); };
-  const clickSort = (k: SortKey) => {
-    if (editOn) return;
-    if (k === sortKey) setDesc(d => !d);
-    else { setSortKey(k); setDesc(k === 'date'); }   // 날짜는 최신순부터, 글자는 가나다순부터
+  // 같은 머리글을 누를 때마다: 오름차순 → 내림차순 → 기본(최신 등록순)
+  const clickSort = (k: 'with' | 'name') => {
+    if (k !== sortKey) { setSortKey(k); setDesc(false); }
+    else if (!desc) setDesc(true);
+    else { setSortKey(null); setDesc(false); }
     setPage(1);
   };
-  const arrow = (k: SortKey) => (editOn ? (k === 'date' ? ' ⠿' : '') : sortKey === k ? (desc ? ' ▾' : ' ▴') : '');
+  const arrow = (k: 'with' | 'name') => (sortKey === k ? (desc ? ' ▾' : ' ▴') : '');
   const catOf = (r: PlayRecord) => cats.find(c => c.label === r.withText.trim());
 
   return (
@@ -118,34 +127,41 @@ function SheetPageInner() {
       <div className="panel" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
         <table className="pl-table sh-table">
           <colgroup>
-            <col className="c-shh" />
-            <col />
-            <col className="c-shd" />
-            <col className="c-shu" />
+            {show('with') && <col className="c-shh" />}
+            {show('name') && <col />}
+            {show('check') && <col className="c-shc" />}
+            {show('url') && <col className="c-shu" />}
             {canAdd && <col className="c-mng" />}
           </colgroup>
           <thead>
             <tr>
-              <th className="sortable" onClick={() => clickSort('with')}>With{arrow('with')}</th>
-              <th className="sortable" onClick={() => clickSort('name')}>Name{arrow('name')}</th>
-              <th className="sortable" onClick={() => clickSort('date')}>Date{arrow('date')}</th>
-              <th>Url</th>
+              {show('with') && <th className="sortable" onClick={() => clickSort('with')}>With{arrow('with')}</th>}
+              {show('name') && <th className="sortable" onClick={() => clickSort('name')}>Name{arrow('name')}</th>}
+              {show('check') && <th>Check</th>}
+              {show('url') && <th>Url</th>}
               {canAdd && <th aria-label="관리" />}
             </tr>
           </thead>
           <tbody>
-            {shown.map((r, i) => (
-              <tr key={r.id} {...(editOn ? rowSort(i) : {})}>
-                <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>
-                <td className="td-sc">
+            {shown.map(r => (
+              <tr key={r.id}>
+                {show('with') && <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>}
+                {show('name') && <td className="td-sc">
                   {r.url
                     ? <a href={r.url} target="_blank" rel="noreferrer">{r.scenario}</a>
                     : r.scenario}
-                </td>
-                <td className="td-date">{r.date ? r.date.replace(/-/g, '.') : ''}</td>
-                <td className="td-url">
+                </td>}
+                {show('check') && <td className="td-chk">
+                  <button type="button" className={`sh-chk ${r.chkAdmin ? 'on' : ''}`} disabled={!canChkAdmin}
+                    aria-label="관리자 확인" aria-pressed={!!r.chkAdmin}
+                    onClick={() => toggle(r, 'chkAdmin')} />
+                  <button type="button" className={`sh-chk ${r.chkMember ? 'on' : ''}`} disabled={!canChkMember(r)}
+                    aria-label="회원 확인" aria-pressed={!!r.chkMember}
+                    onClick={() => toggle(r, 'chkMember')} />
+                </td>}
+                {show('url') && <td className="td-url">
                   {r.url && <a href={r.url} target="_blank" rel="noreferrer" aria-label="시트 열기 (새 탭)"><ClipIcon /></a>}
-                </td>
+                </td>}
                 {canAdd && (
                   <td className="td-mng">
                     {canEdit(r) && (
@@ -159,7 +175,7 @@ function SheetPageInner() {
               </tr>
             ))}
             {shown.length === 0 && (
-              <tr><td colSpan={4 + (canAdd ? 1 : 0)} style={{ textAlign: 'center', padding: 32, color: 'var(--faint)' }}>
+              <tr><td colSpan={Math.max(1, cols.length) + (canAdd ? 1 : 0)} style={{ textAlign: 'center', padding: 32, color: 'var(--faint)' }}>
                 {query || curCat ? '검색 결과가 없습니다' : '등록된 시트가 없습니다'}
               </td></tr>
             )}
@@ -168,7 +184,7 @@ function SheetPageInner() {
       </div>
 
       <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
-        {!editOn && <Pager page={cur} total={totalPages} onChange={setPage} />}
+        <Pager page={cur} total={totalPages} onChange={setPage} />
       </div>
 
       <ConfirmModal open={delFor !== null} title="시트를 삭제하시겠습니까?"

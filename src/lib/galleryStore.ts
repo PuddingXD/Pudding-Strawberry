@@ -299,6 +299,9 @@ export interface PlayRecord {
   playtime: string;          // 4h 30m 등 자유 표기
   url?: string;              // Url (optional) — 클립 아이콘, 새 탭
   logId?: string;            // 내 홈 로그 백업 연결 (모바일: Playtime 밑줄)
+  /** 시트 게시판 체크 칸 — 왼쪽: 관리자가 체크 / 오른쪽: 등록한 회원이 체크 */
+  chkAdmin?: boolean;
+  chkMember?: boolean;
 }
 
 export const PLAYLOG_SEED: PlayRecord[] = [];

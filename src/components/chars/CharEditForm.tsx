@@ -32,6 +32,9 @@ function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   return <CropImg src={src} crop={crop} />;
 }
 
+/** 새 캐릭터의 기본 정보 항목 — 값은 비워 두고, 순서·이름·개수는 그대로 고칠 수 있다 (내 캐릭터·상대 캐릭터 공통) */
+export const DEFAULT_SPECS = ['나이', '성별', '키', '체중', '혈액형', '생일'].map(label => ({ label, value: '' }));
+
 export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }: {
   initial: Character | null;               // null = 신규 등록
   onSave: (c: Character) => void;
@@ -57,7 +60,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [nameBold, setNameBold] = useState(initial?.nameBold ?? true); // 상세 이름 볼드 (v2.0 — 기본 켜짐)
   const [bodyFontId, setBodyFontId] = useState(initial?.bodyFontId ?? 'default');
   const [specs, setSpecs] = useState<SpecRow[]>(
-    (initial?.specs ?? [{ label: '성별', value: '' }, { label: '키', value: '' }]).map(s => ({ ...s, id: newId() })));
+    (initial?.specs ?? DEFAULT_SPECS).map(s => ({ ...s, id: newId() })));
   const [colors, setColors] = useState<ColorRow[]>((initial?.colors ?? []).map(c => ({ ...c, id: newId() })));
   const [colorTipMode, setColorTipMode] = useState<'hex' | 'both' | 'label'>(initial?.colorTipMode ?? 'hex');
   // 색 점 테두리 (v2.0 사용자 요청) — 없음 / 1px(색 지정). 미지정이면 지금까지의 옅은 테두리

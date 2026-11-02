@@ -602,7 +602,7 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
       </div>
 
       {/* 본문만 폭 제한 — 헤더는 풀폭 위치 유지 */}
-      <div className="panel" style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
+      <div className="panel" style={{ padding: 24, maxWidth: 672, margin: '0 auto' }}>
         <h2 style={{
           fontFamily: l.serifTitle ? 'var(--serif)' : "'Noto Serif KR',serif",
           fontSize: 24, fontWeight: 700,
@@ -895,7 +895,9 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
           { label: 'CANCEL', kind: 'ghost', onClick: () => setMsgDel(null) },
         ]} />
 
-      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+      <div style={{ maxWidth: 672, margin: '0 auto' }}>
+        <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+      </div>
 
       <ConfirmModal open={delAsk} title="로그를 삭제하시겠습니까?" body="삭제한 로그는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}

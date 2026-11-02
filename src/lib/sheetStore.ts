@@ -4,7 +4,7 @@
 // `sheet:` 머리를 붙여 구분한다 → 플레이기록 쪽에서는 (기본 섹션도 추가 섹션도) 이 항목이 걸러져 안 보이고,
 // 시트 게시판에서는 이 항목만 보인다. 포크 사용자가 SQL·Firestore 규칙을 다시 적용할 일이 없다.
 //
-// 필드 매핑 (PlayRecord 재사용):  With(말머리) = withText · Name(시트 이름) = scenario · Date = date · Url(시트 링크) = url
+// 필드 매핑 (PlayRecord 재사용):  With(말머리) = withText · Name(시트 이름) = scenario · Url(시트 링크) = url · Check = chkAdmin / chkMember
 import type { PlayRecord } from './galleryStore';
 import { MAIN_SEC } from './sectionStore';
 
@@ -36,10 +36,10 @@ export function sheetSetter(all: PlayRecord[], secId: string, setAll: (next: Pla
 }
 
 /** 폼 값 ↔ 저장 모양 */
-export interface SheetFormValue { head: string; name: string; date?: string; url: string }
+export interface SheetFormValue { head: string; name: string; url: string }
 
 export const toRecord = (v: SheetFormValue): Omit<PlayRecord, 'id'> => ({
-  date: v.date || undefined,
+  date: undefined,                  // 시트 게시판은 Date를 쓰지 않는다 — 기본 정렬은 등록한 순서
   scenario: v.name,
   withText: v.head,
   url: v.url,
