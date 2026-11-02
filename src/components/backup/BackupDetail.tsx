@@ -14,7 +14,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
-import { useBoardSettings, boardBadgeStyle, feedCatsOf, feedHideAuthorOf } from '@/lib/boardStore';
+import { useBoardSettings, boardBadgeStyle, feedCatsOf, galleryCatsOf, feedHideAuthorOf } from '@/lib/boardStore';
 
 export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   const feed = kind === 'feed';
@@ -54,11 +54,11 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
      예전 글이나 손님이 쓴 글은 authorId가 없는데, 비로그인 방문자도 user?.id가 없어
      `undefined === undefined`로 통과했다 — 아무나 남의 글을 고치고 지울 수 있었다 */
   const canManage = isAdmin || (!!p.authorId && p.authorId === user?.id);
-  // 큰 그림 게시판은 유형 대신 말머리 뱃지 (v2.1) — 갤러리는 지금까지처럼 유형(로그/단일…) 뱃지
+  // 말머리 뱃지 — 색은 환경설정 > 게시판 관리의 말머리 설정 (큰 그림·갤러리 공통)
   const badge = feed
     ? feedCatsOf(boardSet, p.secId ?? MAIN_SEC).find(c => c.label === p.category)
-    : boardSet.gallery.find(b => b.id === p.type);
-  const badgeLabel = feed ? p.category : badge?.label;
+    : galleryCatsOf(boardSet, p.secId ?? MAIN_SEC).find(c => c.label === p.category);
+  const badgeLabel = p.category;   // 갤러리도 유형(로그/화살표…)이 아니라 말머리를 뱃지로 (v2.1 사용자 요청)
   // 큰 그림 게시판 — 작성자 이름 숨기기 (환경설정 > 게시판 관리, v2.1)
   const hideAuthor = feed && feedHideAuthorOf(boardSet, p.secId ?? MAIN_SEC);
 

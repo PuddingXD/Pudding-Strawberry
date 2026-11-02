@@ -1,5 +1,5 @@
 'use client';
-// 이전글 / 다음글 (본문 하단) — 네모 안에 ‹ › 만 있는 버튼이 양 끝에. 같은 게시판 안에서 글을 오간다.
+// 이전글 / 다음글 (본문 하단) — 네모 안에 ‹ › 만 있는 버튼이 양 끝에. 왼쪽 = 다음글, 오른쪽 = 이전글.
 // 제목은 화면에 안 보이고, 마우스를 올리면(툴팁) · 스크린리더에서만 나온다.
 import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -50,14 +50,17 @@ const Chev = ({ dir }: { dir: 'l' | 'r' }) => (
 export function PrevNext({ prev, next }: { prev?: PnItem | null; next?: PnItem | null }) {
   const router = useRouter();
   if (!prev && !next) return null;
+  /* 왼쪽 ‹ = 다음글, 오른쪽 › = 이전글 (v2.1 사용자 요청 — 최신 글이 위에 오는 목록 기준으로 왼쪽이 더 최신).
+     툴팁에는 「이전글/다음글」 말 없이 글 제목만 */
+  const Btn = ({ it, dir, label }: { it?: PnItem | null; dir: 'l' | 'r'; label: string }) => (
+    <button type="button" className="pn-b" disabled={!it}
+      aria-label={it ? `${label}: ${it.title}` : `${label} 없음`} data-tip={it ? it.title : undefined}
+      onClick={() => it && router.push(it.href)}><Chev dir={dir} /></button>
+  );
   return (
     <nav className="pn" aria-label="이전글 다음글">
-      <button type="button" className="pn-b" disabled={!prev}
-        aria-label={prev ? `이전글: ${prev.title}` : '이전글 없음'} data-tip={prev ? `이전글 · ${prev.title}` : undefined}
-        onClick={() => prev && router.push(prev.href)}><Chev dir="l" /></button>
-      <button type="button" className="pn-b" disabled={!next}
-        aria-label={next ? `다음글: ${next.title}` : '다음글 없음'} data-tip={next ? `다음글 · ${next.title}` : undefined}
-        onClick={() => next && router.push(next.href)}><Chev dir="r" /></button>
+      <Btn it={next} dir="l" label="다음글" />
+      <Btn it={prev} dir="r" label="이전글" />
     </nav>
   );
 }

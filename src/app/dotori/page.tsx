@@ -92,11 +92,12 @@ function DotoriPageInner() {
 
       {/* 상태 필터 탭 + 검색·ADD — 필터 줄 오른쪽 정렬 (v1.9 사용자 요청) */}
       <div className="toolrow" style={{ marginBottom: 16 }}>
-        <div className="tag-row">
+        {/* 갤러리 말머리와 같은 하나의 네모 탭 (v2.1 사용자 요청 — 디자인 통일) · 많으면 탭째 다음 줄로 */}
+        <div className="seg cat-tabs">
           {TABS.map(t => (
-            <div key={t.key} className={`tag ${tab === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
-              {t.label} <small>{countOf(t.key)}</small>
-            </div>
+            <button key={t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>
+              {t.label} <small style={{ opacity: .6 }}>{countOf(t.key)}</small>
+            </button>
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

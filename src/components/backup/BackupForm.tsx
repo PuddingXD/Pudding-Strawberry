@@ -186,14 +186,13 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
           {/* 유형 — 큰 그림 게시판에는 없다 (늘 세로 나열, v2.1) */}
           {!feed && <div className="form-row">
             <label className="k-label" style={{ width: 60 }}>유형</label>
-            {/* 모바일에서는 설명(.rd-desc)을 숨겨 한 줄 유지 — 두 줄로 넘어가면 안 예쁨 (v1.9 사용자 확정) */}
             <div style={{ display: 'flex', gap: '8px 18px', alignItems: 'center', flexWrap: 'wrap' }}>
               <KRadio name="wtype" value="log" current={type} onChange={v => setType(v as 'log')}
-                label={<span>로그 <span className="rd-desc">— 웹툰처럼 세로 스크롤</span></span>} />
+                label="로그" />
               <KRadio name="wtype" value="single" current={type} onChange={v => setType(v as 'single')}
-                label={<span>단일 <span className="rd-desc">— 큰 이미지 + 좌우 넘김</span></span>} />
+                label="화살표" />
               <KRadio name="wtype" value="vlist" current={type} onChange={v => setType(v as 'vlist')}
-                label={<span>단일(세로) <span className="rd-desc">— 이미지 사이 갭을 두고 세로로 나열</span></span>} />
+                label="세로" />
               <KRadio name="wtype" value="pair" current={type} onChange={v => setType(v as 'pair')}
                 label="나란히" />
             </div>

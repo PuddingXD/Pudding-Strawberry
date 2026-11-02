@@ -1981,7 +1981,13 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   /* gnb(flex:1)가 숨어 우측 밀림이 사라짐 — 알림·프로필/로그인 우측 정렬 복원 (8장) */
   .user-wrap,.login-link{margin-left:auto}
   /* 하단 고정 바(BGM 플레이어 + ≡ 메뉴 칸)에 본문 끝이 가리지 않게 — 바 높이(--bgm-h, 없어도 ≡ 칸 36px)만큼 + 여유 */
-  .page{padding:16px 16px calc(56px + max(var(--bgm-h,0px),36px) + env(safe-area-inset-bottom,0px))}
+  /* 모든 페이지 맨 아래 여백 (v2.1 사용자 제보 — 끝까지 스크롤하면 일부가 플레이어·메뉴 칸에 가려짐).
+     ① 스크롤 영역(#appMain) 자체에 「바 높이 + 여유」를 둬서 .page를 안 쓰는 화면까지 전부 적용 — 바 높이(--bgm-h)는 BGM 바가 없어도 ≡ 메뉴 칸(36px)만큼은 확보
+     ② 모바일 브라우저는 주소창이 보일 때 100vh가 실제 보이는 높이보다 커서 맨 아래가 브라우저 UI 뒤로 밀린다 → 보이는 높이(100dvh)를 쓴다 */
+  body{height:100vh;height:100dvh}
+  #appMain{padding-bottom:calc(max(var(--bgm-h,0px),36px) + 20px + env(safe-area-inset-bottom,0px))}
+  #appMain:has(.page-rp){padding-bottom:0}   /* 역극은 자기 높이·여백을 따로 계산한다 */
+  .page,.page.page-char-detail,.page.page-rel-detail{padding:16px 16px 28px}   /* 상세 페이지의 PC용 큰 아래 여백(82px)은 모바일에서 불필요 */
   .page-head h1{font-size:calc(24px*var(--fs,1))}
   /* 페이지 타이틀 모바일 옵션 (v1.9 사용자 요청) — 「생략」이면 모바일에서만 제목·설명 숨김
      (상태·안내 문구는 PC와 동일하게 항상 표시) */

@@ -21,9 +21,9 @@ export const DEFAULT_BOARD_CATS: BoardBadge[] = ['잡담', '설정', '합작', '
 /** 갤러리(그림백업) 유형 뱃지 2종 — 로그/단일 (라벨·색 수정 가능, 삭제 불가) */
 export const DEFAULT_GALLERY_BADGES: BoardBadge[] = [
   { id: 'log', label: '로그', bg: '#1d2025', border: '#1d2025', fg: '#ffffff' },
-  { id: 'single', label: '단일', bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' },
+  { id: 'single', label: '화살표', bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' },
   // 단일(세로정렬) (v1.9) — 로그와 달리 이미지 사이 갭을 두고 세로로 죽 내려보는 게시글
-  { id: 'vlist', label: '단일(세로)', bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' },
+  { id: 'vlist', label: '세로', bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' },
   // 나란히 — 이미지 2개를 약간의 공백을 두고 가로로
   { id: 'pair', label: '나란히', bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' },
 ];
