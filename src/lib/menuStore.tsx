@@ -45,6 +45,8 @@ export interface MenuSettings {
   writePerm?: Record<string, MenuPerm>;
   /** 글쓰기를 특정 회원으로 좁히기 (v2.1) — 'member'일 때만 의미 · 비우면 로그인한 모든 회원 */
   writeMembers?: Record<string, string[]>;
+  /** 비밀글을 볼 수 있는 회원 (게시판별 — 키는 게시판 주소 `/board`·`/board?b=<id>`). 관리자와 글쓴이는 늘 볼 수 있다. 비우면 그 둘만 */
+  secretMembers?: Record<string, string[]>;
   calTitle: 'en' | 'num';            // 스케줄러 달 표기 (v1.9) — AUGUST 2026 / 2026.08
   imgProtect: ImgProtectArea[];      // 이미지 저장 방지 영역 (v1.9 — 우클릭·드래그 차단, 관리자 제외)
 }
@@ -97,12 +99,13 @@ function migrateTree(p: Partial<MenuSettings>): MenuGroupNode[] {
 export const newGroupId = () => `g-${newId()}`;
 
 export const PLAYLOG_COLS: { key: string; label: string }[] = [
-  { key: 'date', label: 'Date' },
+  // 열 순서 — With / Scenario / Writer / Playtime / Date / Url (v2.1 사용자 요청)
+  { key: 'with', label: 'With' },
   { key: 'scenario', label: 'Scenario' },
   { key: 'writer', label: 'Writer' },
-  { key: 'with', label: 'With' },
   // Role 열은 v2.1에서 뺐다 (사용자 요청 — 커플홈이라 GM/PC 구분이 필요 없다). 옛 저장값(role)은 그대로 두되 보이지 않는다
   { key: 'playtime', label: 'Playtime' },
+  { key: 'date', label: 'Date' },
   { key: 'url', label: 'Url' },
 ];
 
@@ -314,6 +317,15 @@ export function canGalleryWrite(s: MenuSettings, secId: string, viewer: MenuView
  *  (메뉴 주소에 적힌 별명이 아니라 id로 통일 — 별명은 바뀔 수 있다) */
 export const writeKeyOf = (href: string, secId?: string) =>
   (!secId || secId === 'main' ? href : `${href}?s=${secId}`);
+
+/** 비밀글을 읽을 수 있는가 — 관리자 · 글쓴이 · 「비밀글 열람 멤버」로 지정된 회원 */
+export function canReadSecret(
+  s: MenuSettings, boardKey: string, post: { authorId?: string }, viewer: { isAdmin: boolean; id?: string },
+): boolean {
+  if (viewer.isAdmin) return true;
+  if (!viewer.id) return false;
+  return (!!post.authorId && post.authorId === viewer.id) || !!s.secretMembers?.[boardKey]?.includes(viewer.id);
+}
 
 /** 게시판마다의 기본 글쓰기 권한 (v2.1) — 지금까지 관리자만 쓰던 곳은 그대로 관리자, 나머지는 로그인한 회원.
  *  권한 설정 화면과 각 페이지가 같은 값을 보도록 한곳에 둔다 */

@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
 import { useSectionTitle, secQuery } from '@/lib/sectionStore';
 import { PlayRecord, PLAYLOG_SEED } from '@/lib/galleryStore';
-import { SHEET_KEY, sheetsOf, sheetSecId, isSheetRec, toRecord } from '@/lib/sheetStore';
+import { SHEET_KEY, sheetSecId, isSheetRec, toRecord } from '@/lib/sheetStore';
 import { SheetForm } from '@/components/trpg/SheetForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
@@ -35,7 +35,7 @@ export default function SheetEditPage() {
   return (
     <section className="page">
       <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>{r.scenario}</p></div>
-      <SheetForm initial={r} records={sheetsOf(all, secId)}
+      <SheetForm initial={r} secId={secId}
         onCancel={() => router.push(back)}
         onSave={v => {
           setAll(all.map(x => (x.id === r.id ? { ...x, ...toRecord(v) } : x)));

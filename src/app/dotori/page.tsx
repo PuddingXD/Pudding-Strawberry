@@ -96,7 +96,7 @@ function DotoriPageInner() {
         <div className="seg cat-tabs">
           {TABS.map(t => (
             <button key={t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>
-              {t.label} <small style={{ opacity: .6 }}>{countOf(t.key)}</small>
+              {t.label}
             </button>
           ))}
         </div>

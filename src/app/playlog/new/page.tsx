@@ -35,7 +35,7 @@ function PlaylogNewPageInner() {
   return (
     <section className="page">
       <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><EditableDesc k="playlog-new-desc" def="플레이기록 추가" /></div>
-      <PlaylogForm initial={null} records={records}
+      <PlaylogForm initial={null} records={records} secId={sec.id}
         onCancel={() => router.push('/playlog' + secQuery('playlog', sec.id))}
         onSave={v => {
           // 등록한 사람을 남긴다 (v2.1) — 수정·삭제는 본인과 관리자

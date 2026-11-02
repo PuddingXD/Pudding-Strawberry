@@ -7,7 +7,7 @@ import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/m
 import { useSectionParam, secQuery, useSectionTitle } from '@/lib/sectionStore';
 import { useLocalList, newId } from '@/lib/postStore';
 import { PlayRecord, PLAYLOG_SEED } from '@/lib/galleryStore';
-import { SHEET_KEY, sheetsOf, sheetSecOf, toRecord } from '@/lib/sheetStore';
+import { SHEET_KEY, sheetSecOf, toRecord } from '@/lib/sheetStore';
 import { SheetForm } from '@/components/trpg/SheetForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -35,7 +35,7 @@ function SheetNewPageInner() {
   return (
     <section className="page">
       <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><EditableDesc k="sheet-new-desc" def="시트 추가" /></div>
-      <SheetForm initial={null} records={sheetsOf(all, sec.id)}
+      <SheetForm initial={null} secId={sec.id}
         onCancel={() => router.push(back)}
         onSave={v => {
           // 등록한 사람을 남긴다 — 수정·삭제는 본인과 관리자

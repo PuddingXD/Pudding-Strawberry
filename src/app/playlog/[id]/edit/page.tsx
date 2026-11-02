@@ -33,7 +33,7 @@ export default function PlaylogEditPage() {
   return (
     <section className="page">
       <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>{r.scenario}</p></div>
-      <PlaylogForm initial={r} records={records}
+      <PlaylogForm initial={r} records={records} secId={r.secId ?? 'main'}
         onCancel={() => router.push('/playlog')}
         onSave={v => {
           setRecords(records.map(x => (x.id === r.id ? { ...x, ...v, date: v.date, url: v.url, logId: v.logId, scenarioLink: v.scenarioLink } : x)));

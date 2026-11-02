@@ -6,6 +6,8 @@ import { PlayRecord, TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
 import { useLocalList } from '@/lib/postStore';
 import { KInput, KDate } from '@/components/ui/Kit';
 import { useToast } from '@/components/ui/Toast';
+import { CatPick } from '@/components/ui/CatPick';
+import { useBoardSettings, playlogCatsOf } from '@/lib/boardStore';
 
 export interface PlaylogFormValue {
   date?: string; scenario: string; scenarioLink?: string;
@@ -22,13 +24,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function PlaylogForm({ initial, records, onSave, onCancel }: {
+export function PlaylogForm({ initial, records, secId, onSave, onCancel }: {
   initial: PlayRecord | null;
+  secId: string;                    // 어느 플레이기록 게시판인지 — 그 게시판의 With 말머리 목록을 쓴다
   records: PlayRecord[];            // 시나리오 자동완성 소스
   onSave: (v: PlaylogFormValue) => void;
   onCancel: () => void;
 }) {
   const toast = useToast();
+  const { st } = useBoardSettings();
+  const cats = playlogCatsOf(st, secId);
   const isNew = !initial;
   const [logs] = useLocalList<TrpgLog>('ohome.trpg.v1', TRPG_SEED);
   const [date, setDate] = useState(initial?.date ?? '');
@@ -98,7 +103,7 @@ export function PlaylogForm({ initial, records, onSave, onCancel }: {
         <Field label="Scenario Link (optional)"><KInput value={scenarioLink} onChange={e => setScenarioLink(e.target.value)} /></Field>
         {/* Role 칸은 v2.1에서 뺐다 (사용자 요청 — 커플홈이라 GM/PC 구분이 필요 없다) */}
         <Field label="Writer"><KInput value={writer} onChange={e => setWriter(e.target.value)} /></Field>
-        <Field label="With"><KInput value={withText} onChange={e => setWithText(e.target.value)} /></Field>
+        <Field label="With (말머리)"><CatPick cats={cats} value={withText} onChange={setWithText} /></Field>
 
         {/* 로그 연결 — 외부 URL 또는 내 홈 백업 로그 검색 (4.16) */}
         <div>

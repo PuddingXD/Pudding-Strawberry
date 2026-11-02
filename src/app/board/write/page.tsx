@@ -235,7 +235,7 @@ function WriteInner() {
                 placeholder="쉼표로 구분" style={{ flex: 1 }} />
             </div>
             <div style={{ display: 'grid', gap: 9 }}>
-              <KCheck label="비밀글 (관리자와 나만 열람)" checked={secret} onChange={setSecret} />
+              <KCheck label="비밀글 (관리자·지정된 회원만 열람)" checked={secret} onChange={setSecret} />
               {isAdmin && <KCheck label="공지로 고정" checked={notice} onChange={setNotice} />}
             </div>
           </div>

@@ -11,7 +11,8 @@ import {
 import {
   useBoardSettings, useBoards, badgeFor, boardBadgeStyle, boardHref, MAIN_BOARD_ID,
 } from '@/lib/boardStore';
-import { useMenuSettings, canWriteAt } from '@/lib/menuStore';
+import { useMenuSettings, canWriteAt, canReadSecret } from '@/lib/menuStore';
+import { LockIcon } from '@/components/ui/LockIcon';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { CropImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
@@ -38,7 +39,7 @@ function BoardInner() {
   // 댓글 수 — 댓글은 글과 따로 저장된다 (v2.0). 옛 글 안에 남아 있던 것도 함께 센다
   const [cmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
   const cmtCount = (p: Post) => commentsFor(cmtRows, 'post', p.id, p.comments).length;
-  const { st: boardSet } = useBoardSettings();   // 시스템 뱃지 색 (환경설정 > 게시판 관리)
+  const { st: boardSet } = useBoardSettings();   // 말머리 뱃지 색 (환경설정 > 게시판 관리)
   const [cat, setCat] = useState('전체');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -68,14 +69,13 @@ function BoardInner() {
   const pageList = visible.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   /* 비밀글 열람 (v2.0 발견) — authorId 없는 비밀글은 비로그인 방문자에게도 열렸다.
      둘 다 undefined라 `undefined === undefined`가 참이었기 때문 */
-  const canRead = (p: Post) => !p.secret || isAdmin || (!!p.authorId && p.authorId === user?.id);
+  // 비밀글은 관리자 · 글쓴이 · 권한 탭에서 지정한 회원만 (게시판마다)
+  const canRead = (p: Post) => !p.secret || canReadSecret(menuSet, boardHref(board.id), p, { isAdmin, id: user?.id });
 
   if (!boardsLoaded) return <section className="page" />;
 
   const postBadge = (p: Post) => (
-    <span style={boardBadgeStyle(badgeFor(boardSet, p, board.cats))}>
-      {p.notice ? boardSet.system[0].label : p.secret ? boardSet.system[1].label : p.category}
-    </span>
+    <span style={boardBadgeStyle(badgeFor(boardSet, p, board.cats))}>{p.category}</span>
   );
 
   return (
@@ -116,10 +116,9 @@ function BoardInner() {
                 <div className="bt-body">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {postBadge(p)}
-                    {p.fold && <span style={boardBadgeStyle(boardSet.system[2])}>{boardSet.system[2].label}</span>}
                   </div>
                   <div className="bt-title">
-                    {canRead(p) ? <>{p.secret && '🔒 '}{p.title}</> : '🔒 비밀글입니다'}
+                    {canRead(p) ? <>{p.title}{(p.secret || p.fold) && <LockIcon />}</> : <>비밀글입니다<LockIcon /></>}
                     {canRead(p) && cmtCount(p) > 0 && <span className="cmt">{cmtCount(p)}</span>}
                   </div>
                   <div className="bt-meta">{p.author} · {fmtDate(p.date)}</div>
@@ -142,12 +141,11 @@ function BoardInner() {
               <div className="tcell">
                 {canRead(p) ? (
                   <b>
-                    {p.secret && '🔒 '}{p.title}
+                    {p.title}{(p.secret || p.fold) && <LockIcon />}
                     {cmtCount(p) > 0 && <span className="cmt">{cmtCount(p)}</span>}
-                    {p.fold && <span style={{ ...boardBadgeStyle(boardSet.system[2]), marginLeft: 6 }}>{boardSet.system[2].label}</span>}
                   </b>
                 ) : (
-                  <b style={{ color: 'var(--faint)' }}>🔒 비밀글입니다</b>
+                  <b style={{ color: 'var(--faint)' }}>비밀글입니다<LockIcon /></b>
                 )}
                 {canRead(p) && (p.tags ?? []).length > 0 && (
                   <span className="tags">{(p.tags ?? []).map(t => <i key={t}>#{t}</i>)}</span>

@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
-import { extraBoardHref } from '@/lib/menuStore';
+import { extraBoardHref, useMenuSettings, canReadSecret } from '@/lib/menuStore';
+import { LockIcon } from '@/components/ui/LockIcon';
 import { useAuth } from '@/lib/auth';
 import {
   useLocalList, BOARD_SEED, Post, Comment, newId, fmtDate,
@@ -32,6 +33,7 @@ export default function BoardDetailPage() {
   // 일반 회원이 관리자 글에 댓글을 달 수 없었다 (포크 사용자 제보)
   const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
   const { boards } = useBoards();                  // 소속 게시판 (5.2 다중 게시판)
+  const [menuSet] = useMenuSettings();               // 비밀글 열람 멤버 (권한 탭)
   const [open, setOpen] = useState(false);         // 접기 해제
   const [cmt, setCmt] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -64,10 +66,12 @@ export default function BoardDetailPage() {
   /* 글쓴이인지 한 곳에서 정한다 (v2.0 발견) — 예전 글이나 손님이 쓴 글은 authorId가 없고
      비로그인 방문자도 user?.id가 없어, 서로 「같다」고 판정돼 **비밀글이 그대로 열렸다.** */
   const isAuthor = !!post.authorId && post.authorId === user?.id;
-  if (post.secret && !isAdmin && !isAuthor) {
+  const boardKey = bid === MAIN_BOARD_ID ? '/board' : `/board?b=${bid}`;
+  const readSecret = (x: Post) => canReadSecret(menuSet, boardKey, x, { isAdmin, id: user?.id });
+  if (post.secret && !readSecret(post)) {
     return (
       <section className="page">
-        <div className="page-head"><PageTitle>BOARD</PageTitle><p>비밀글 — 작성자와 관리자만 열람할 수 있습니다</p></div>
+        <div className="page-head"><PageTitle>BOARD</PageTitle><p>비밀글 — 작성자·관리자·지정된 회원만 열람할 수 있습니다</p></div>
       </section>
     );
   }
@@ -84,10 +88,10 @@ export default function BoardDetailPage() {
   // 이전글/다음글 — 같은 게시판에서, 내가 열 수 있는 글만 (비밀글은 작성자·관리자만)
   const nb = pickNeighbors(
     posts.filter(x => (x.boardId ?? MAIN_BOARD_ID) === (post.boardId ?? MAIN_BOARD_ID)
-      && (!x.secret || isAdmin || (!!x.authorId && x.authorId === user?.id))),
+      && (!x.secret || readSecret(x))),
     post.id,
   );
-  const pnOf = (x: Post | null) => (x ? { href: `/board/${x.id}`, title: `${x.secret ? '🔒 ' : ''}${x.title}` } : null);
+  const pnOf = (x: Post | null) => (x ? { href: `/board/${x.id}`, title: x.title } : null);
   const update = (patch: Partial<Post>) =>
     setPosts(posts.map(p => (p.id === post.id ? { ...p, ...patch } : p)));
 
@@ -165,7 +169,7 @@ export default function BoardDetailPage() {
     <section className="page">
       <div className="page-head">
         <PageTitle href={boardHref(board.id)}>{boardTitle}</PageTitle>
-        <p>{post.notice ? '공지 · ' : `${post.category} · `}{post.author} · {fmtDate(post.date)}</p>
+        <p>{`${post.category} · `}{post.author} · {fmtDate(post.date)}</p>
         <div className="head-actions">
           {/* 수정은 작성자 본인만 — 관리자도 타인 글은 삭제만 (v1.9) */}
           {isAuthor && (
@@ -179,7 +183,7 @@ export default function BoardDetailPage() {
 
       <div className="panel" style={{ padding: '26px 28px' }}>
         <h2 style={{ fontSize: 19, marginBottom: 4 }}>
-          {post.secret && '🔒 '}{post.title}
+          {post.title}{(post.secret || post.fold) && <LockIcon />}
         </h2>
         <p style={{ fontSize: 11, color: 'var(--faint)', marginBottom: 18 }}>
           {post.author} · {fmtDate(post.date)} · {post.mode.toUpperCase()}

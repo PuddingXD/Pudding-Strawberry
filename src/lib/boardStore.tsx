@@ -54,6 +54,11 @@ export interface BoardSettings {
   /** TRPG 리뷰 말머리 — 페어(누구와 했는지)별 (v2.1). 게시판(섹션)마다 따로 */
   reviewCats?: BoardBadge[];
   secReviewCats?: Record<string, BoardBadge[]>;
+  /** 시트 게시판 · 플레이기록 말머리 — With 칸. 글쓰기에서 이 목록 중에서 고르고, 목록 위 탭으로 모아 본다. 게시판(섹션)마다 따로 */
+  sheetCats?: BoardBadge[];
+  secSheetCats?: Record<string, BoardBadge[]>;
+  playlogCats?: BoardBadge[];
+  secPlaylogCats?: Record<string, BoardBadge[]>;
   /** TRPG 리뷰 별점 이름 (v2.1) — 둘이 따로 매길 때 각 별점 앞에 붙는 이름 (예: 푸딩 / 곰주) */
   reviewStars?: { a?: string; b?: string };
   /** 한 페이지에 보일 글 수 (v2.1 사용자 요청) — 갤러리 보기 / 갤러리 리스트 보기 / 큰 그림 / 로드비. 비우면 기본값 */
@@ -99,6 +104,16 @@ export const reviewCatsOf = (s: BoardSettings, secId: string): BoardBadge[] =>
   (secId === MAIN_SEC ? (s.reviewCats ?? []) : s.secReviewCats?.[secId] ?? s.reviewCats ?? []);
 const reviewCatsPatch = (s: BoardSettings, secId: string, cats: BoardBadge[]): Partial<BoardSettings> =>
   (secId === MAIN_SEC ? { reviewCats: cats } : { secReviewCats: { ...s.secReviewCats, [secId]: cats } });
+/** 그 시트 게시판 / 플레이기록 게시판에서 쓸 말머리 — 따로 정한 적이 없으면 기본 게시판 것, 그것도 없으면 없음(ALL만) */
+export const sheetCatsOf = (s: BoardSettings, secId: string): BoardBadge[] =>
+  (secId === MAIN_SEC ? (s.sheetCats ?? []) : s.secSheetCats?.[secId] ?? s.sheetCats ?? []);
+const sheetCatsPatch = (s: BoardSettings, secId: string, cats: BoardBadge[]): Partial<BoardSettings> =>
+  (secId === MAIN_SEC ? { sheetCats: cats } : { secSheetCats: { ...s.secSheetCats, [secId]: cats } });
+export const playlogCatsOf = (s: BoardSettings, secId: string): BoardBadge[] =>
+  (secId === MAIN_SEC ? (s.playlogCats ?? []) : s.secPlaylogCats?.[secId] ?? s.playlogCats ?? []);
+const playlogCatsPatch = (s: BoardSettings, secId: string, cats: BoardBadge[]): Partial<BoardSettings> =>
+  (secId === MAIN_SEC ? { playlogCats: cats } : { secPlaylogCats: { ...s.secPlaylogCats, [secId]: cats } });
+
 /** TRPG 리뷰 별점 이름 — 비우면 「별점」·「별점 2」 */
 export const reviewStarsOf = (s: BoardSettings): { a: string; b: string } =>
   ({ a: s.reviewStars?.a?.trim() || '별점', b: s.reviewStars?.b?.trim() || '별점 2' });
@@ -186,11 +201,29 @@ export function useBoardSettings() {
   const removeReviewCat = useCallback((secId: string, id: string) =>
     mutReviewCats(secId, cs => cs.filter(b => b.id !== id)), [mutReviewCats]);
   const setReviewCats = useCallback((secId: string, cats: BoardBadge[]) => mutReviewCats(secId, () => cats), [mutReviewCats]);
+  const mutSheetCats = useCallback((secId: string, fn: (cats: BoardBadge[]) => BoardBadge[]) =>
+    apply(s => ({ ...s, ...sheetCatsPatch(s, secId, fn(sheetCatsOf(s, secId))) })), [apply]);
+  const patchSheetCat = useCallback((secId: string, id: string, p: Partial<BoardBadge>) =>
+    mutSheetCats(secId, cs => cs.map(b => (b.id === id ? { ...b, ...p } : b))), [mutSheetCats]);
+  const addSheetCat = useCallback((secId: string) => mutSheetCats(secId, cs => [...cs, NEW_CAT()]), [mutSheetCats]);
+  const removeSheetCat = useCallback((secId: string, id: string) =>
+    mutSheetCats(secId, cs => cs.filter(b => b.id !== id)), [mutSheetCats]);
+  const setSheetCats = useCallback((secId: string, cats: BoardBadge[]) => mutSheetCats(secId, () => cats), [mutSheetCats]);
+  const mutPlaylogCats = useCallback((secId: string, fn: (cats: BoardBadge[]) => BoardBadge[]) =>
+    apply(s => ({ ...s, ...playlogCatsPatch(s, secId, fn(playlogCatsOf(s, secId))) })), [apply]);
+  const patchPlaylogCat = useCallback((secId: string, id: string, p: Partial<BoardBadge>) =>
+    mutPlaylogCats(secId, cs => cs.map(b => (b.id === id ? { ...b, ...p } : b))), [mutPlaylogCats]);
+  const addPlaylogCat = useCallback((secId: string) => mutPlaylogCats(secId, cs => [...cs, NEW_CAT()]), [mutPlaylogCats]);
+  const removePlaylogCat = useCallback((secId: string, id: string) =>
+    mutPlaylogCats(secId, cs => cs.filter(b => b.id !== id)), [mutPlaylogCats]);
+  const setPlaylogCats = useCallback((secId: string, cats: BoardBadge[]) => mutPlaylogCats(secId, () => cats), [mutPlaylogCats]);
   const setReviewStars = useCallback((p: { a?: string; b?: string }) =>
     apply(s => ({ ...s, reviewStars: { ...s.reviewStars, ...p } })), [apply]);
   const setPerPage = useCallback((k: keyof typeof PER_PAGE_DEFAULT, v: number | undefined) =>
     apply(s => ({ ...s, perPage: { ...s.perPage, [k]: v } })), [apply]);
   return {
+    patchSheetCat, addSheetCat, removeSheetCat, setSheetCats,
+    patchPlaylogCat, addPlaylogCat, removePlaylogCat, setPlaylogCats,
     setPerPage, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats, setReviewStars,
     st, loaded, patchSystem, patchCat, addCat, removeCat, setCats, patchGallery,
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
@@ -199,10 +232,8 @@ export function useBoardSettings() {
   };
 }
 
-/** 게시글의 뱃지 결정 — 공지/비밀 우선, 그 외 말머리 매칭(라벨 기준·미등록 말머리는 중립색) */
-export function badgeFor(st: BoardSettings, p: { notice?: boolean; secret?: boolean; category: string }, cats?: BoardBadge[]): BoardBadge {
-  if (p.notice) return st.system[0];
-  if (p.secret) return st.system[1];
+/** 게시글의 뱃지 — 항상 말머리 (공지·비밀·접힘 시스템 뱃지는 없앴다 — 비밀·접힘은 제목 옆 자물쇠로). 라벨 기준·미등록 말머리는 중립색 */
+export function badgeFor(st: BoardSettings, p: { category: string }, cats?: BoardBadge[]): BoardBadge {
   return (cats ?? st.cats).find(c => c.label === p.category)
     ?? { id: 'etc', label: p.category, bg: '#eef0f2', border: '#d7dae0', fg: '#5d636d' };
 }

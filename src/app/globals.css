@@ -1513,7 +1513,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table col.c-pt{width:82px}
 .pl-table col.c-url{width:36px}    /* 맨 끝 클립 칸 */
 .pl-table col.c-mng{width:58px}
-.pl-table col.c-with{width:21%}   /* 22%에서 10px가량 룰 칸으로 — col에는 calc가 안 먹혀 %로 환산 (v2.0) */
+.pl-table col.c-with{width:112px}   /* 22%에서 10px가량 룰 칸으로 — col에는 calc가 안 먹혀 %로 환산 (v2.0) */
 .pl-table th{font-size:calc(10px*var(--fs,1));letter-spacing:.14em;color:var(--faint);font-weight:600;text-align:center;padding:10px 6px;border-bottom:1.5px solid var(--line)}
 .pl-table th.sortable{cursor:var(--cur-pointer,pointer);user-select:none}
 .pl-table th.sortable:hover{color:var(--ink)}
@@ -2070,10 +2070,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .g-pair-i{min-width:0;border-radius:10px;overflow:hidden}
 
 /* ---------- 시트 게시판 (/sheet) ---------- */
-.pl-table.sh-table col.c-shh{width:112px}
+.pl-table.sh-table col.c-shh{width:128px}
 .pl-table.sh-table col.c-shd{width:92px}
-.pl-table.sh-table col.c-shu{width:44px}
-.pl-table.sh-table .td-sc{text-align:left;padding-left:12px}
+.pl-table.sh-table col.c-shu{width:56px}
 .sh-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:calc(11px*var(--fs,1));padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:var(--cur-pointer,pointer);transition:.13s}
 .sh-chip:hover{border-color:var(--accent);color:var(--accent)}
 .sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}

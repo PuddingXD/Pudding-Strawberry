@@ -17,7 +17,7 @@ import { DiaryPost, DIARY_SEED } from '@/lib/diaryStore';
 import { newId } from '@/lib/postStore';
 import {
   useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf, feedCatsOf, roadCatsOf, feedHideAuthorOf,
-  useBoards, Board, BoardSkin, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, PER_PAGE_DEFAULT, reviewCatsOf,
+  useBoards, Board, BoardSkin, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
 } from '@/lib/boardStore';
 import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle, threadCats, threadCatsPatch } from '@/lib/threadStore';
 import { useTrpgSettings, dotoriStatusKeys, dotoriBadgeOn, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
@@ -651,7 +651,9 @@ function WidgetsPane() {
 /** 게시판 관리 탭 (5.2) — 게시판 생성·삭제·스킨·권한 + 게시판별 말머리 + 뱃지 색 */
 function BoardPane() {
   const {
-    st, patchSystem, patchGallery,
+    st, patchGallery,
+    patchSheetCat, addSheetCat, removeSheetCat, setSheetCats,
+    patchPlaylogCat, addPlaylogCat, removePlaylogCat, setPlaylogCats,
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
     patchFeedCat, addFeedCat, removeFeedCat, setFeedCats, setFeedHideAuthor,
     patchRoadCat, addRoadCat, removeRoadCat, setRoadCats,
@@ -676,6 +678,13 @@ function BoardPane() {
   const reviewSecs = secList('treview');
   const [reviewSecSel, setReviewSec] = useState(MAIN_SEC);
   const reviewSec = reviewSecs.some(s2 => s2.id === reviewSecSel) ? reviewSecSel : MAIN_SEC;
+  // 시트 게시판 · 플레이기록 말머리 (v2.1 사용자 요청) — 게시판마다
+  const sheetSecs = secList('sheet');
+  const [sheetSecSel, setSheetSec] = useState(MAIN_SEC);
+  const sheetSec = sheetSecs.some(s2 => s2.id === sheetSecSel) ? sheetSecSel : MAIN_SEC;
+  const playlogSecs = secList('playlog');
+  const [playlogSecSel, setPlaylogSec] = useState(MAIN_SEC);
+  const playlogSec = playlogSecs.some(s2 => s2.id === playlogSecSel) ? playlogSecSel : MAIN_SEC;
   const del = useConfirmDelete();
 
   const sel = boards.find(b => b.id === catBoard) ?? boards[0];
@@ -778,19 +787,6 @@ function BoardPane() {
 
       <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
 
-      <h3>시스템 뱃지</h3>
-      <div className="d">공지 · 비밀 · 접힘 — 색만 수정 (삭제 불가)</div>
-      {st.system.map(b => (
-        <div key={b.id} className="set-row">
-          <div className="l"><span style={boardBadgeStyle(b)}>{b.label}</span></div>
-          <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
-            {colorCells(b, p => patchSystem(b.id, p))}
-          </div>
-        </div>
-      ))}
-
-      <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
-
       <h3>갤러리 유형 뱃지</h3>
       <div className="d">그림백업의 로그/단일 표시 — 라벨·색 수정 (삭제 불가)</div>
       {st.gallery.map(b => (
@@ -864,6 +860,19 @@ function BoardPane() {
           title: 'TRPG 리뷰 말머리 (페어)', desc: 'TRPG 리뷰를 쓸 때 고르는 말머리 — 누구와 했는지(페어)별로 모아 봅니다 · 하나도 없으면 말머리 없이 씁니다',
           secs: reviewSecs, sec: reviewSec, setSec: setReviewSec, cats: reviewCatsOf(st, reviewSec),
           set: setReviewCats, patch: patchReviewCat, add: addReviewCat, remove: removeReviewCat,
+          extra: null as React.ReactNode,
+        },
+        {
+          // 시트 게시판 (v2.1 사용자 요청) — With 칸. 글쓰기에서 이 중에서 고르고, 목록 위 탭으로 모아 본다
+          title: '시트 말머리 (With)', desc: '시트 게시판에 시트를 올릴 때 고르는 말머리 — 목록 위 탭으로 모아 볼 수 있습니다',
+          secs: sheetSecs, sec: sheetSec, setSec: setSheetSec, cats: sheetCatsOf(st, sheetSec),
+          set: setSheetCats, patch: patchSheetCat, add: addSheetCat, remove: removeSheetCat,
+          extra: null as React.ReactNode,
+        },
+        {
+          title: '플레이기록 말머리 (With)', desc: '플레이기록을 올릴 때 고르는 말머리 — 목록 위 탭으로 모아 볼 수 있습니다 · 이미 적어 둔 With 값과 같은 이름으로 만들면 그 기록들이 이 말머리로 모입니다',
+          secs: playlogSecs, sec: playlogSec, setSec: setPlaylogSec, cats: playlogCatsOf(st, playlogSec),
+          set: setPlaylogCats, patch: patchPlaylogCat, add: addPlaylogCat, remove: removePlaylogCat,
           extra: null as React.ReactNode,
         },
       ]).map(blk => (
@@ -2479,6 +2488,19 @@ function MenuPane() {
         <>
           {/* 글쓰기 — 게시판 설정 permWrite + 「글쓰기 멤버」 (v2.1) */}
           {writePermUI(boardHref(bd.id), bd.permWrite, v => patchBoard(bd.id, { permWrite: v as BoardPerm }), '글쓰기')}
+          {/* 비밀글 열람 멤버 — 관리자와 글쓴이는 늘 볼 수 있고, 여기서 고른 회원도 볼 수 있다 */}
+          <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+            onClick={() => setMemAsk({
+              ids: ms.secretMembers?.[boardHref(bd.id)] ?? [],
+              desc: '체크한 회원은 이 게시판의 비밀글을 볼 수 있습니다 (관리자와 글쓴이는 항상 볼 수 있습니다) — 비우면 관리자와 글쓴이만',
+              apply: n => {
+                const next = { ...ms.secretMembers };
+                if (n.length) next[boardHref(bd.id)] = n; else delete next[boardHref(bd.id)];
+                patch({ secretMembers: next });
+              },
+            })}>
+            {ms.secretMembers?.[boardHref(bd.id)]?.length ? `비밀글 멤버 ${ms.secretMembers[boardHref(bd.id)].length}명` : '비밀글 멤버'}
+          </button>
           <KSelect minWidth={110} value={bd.permComment}
             onChange={v => patchBoard(bd.id, { permComment: v as BoardPerm })}
             options={[
