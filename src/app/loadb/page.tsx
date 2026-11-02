@@ -1,6 +1,7 @@
 'use client';
 // 그림게시판 로드뷰 (4.10) — 목록 없이 최신순 즉시 표시 · 좌 그림/우 댓글 · 즉시 업로드 · 접기
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter } from '@/lib/sectionStore';
 import {
@@ -226,7 +227,7 @@ function RoadviewPageInner() {
     const imgId = await putBlob(f); // IndexedDB 실저장 — 새로고침에도 유지
     const it: RoadItem = {
       id: newId(), title: '', author: user!.nickname, authorId: user!.id,
-      date: new Date().toISOString(), imgId, ph: '', ratio: 'auto',
+      date: nowIso(), imgId, ph: '', ratio: 'auto',
       fold: null, comments: [],
       no: nextNo,   // 번호 자동 부여 (v1.9)
       ...(catLabel ? { category: catLabel } : {}),   // 말머리 (v2.1) — 업로드 모달에서 고른 것 (끌어다 놓기는 보고 있는 탭)
@@ -237,7 +238,7 @@ function RoadviewPageInner() {
 
   const addComment = (id: string, text: string, guest?: { name: string }, parentId?: string) => {
     // 게스트 댓글 (방문자 권한, v1.9) — 닉네임만, authorId는 빈 값. parentId가 있으면 대댓글 (v2.0)
-    const base = { id: newId(), text, date: new Date().toISOString(), target: 'road' as const, targetId: id, parentId };
+    const base = { id: newId(), text, date: nowIso(), target: 'road' as const, targetId: id, parentId };
     const c: CommentRow = guest
       ? { ...base, author: guest.name, authorId: '' }
       : { ...base, author: user!.nickname, authorId: user!.id };

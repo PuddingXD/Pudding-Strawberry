@@ -1,6 +1,7 @@
 'use client';
 // 게시글 상세 (4.2) — 본문 렌더(격리 새니타이즈) · 접기 · 댓글+대댓글
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { extraBoardHref } from '@/lib/menuStore';
@@ -17,6 +18,7 @@ import { GuestIdBar } from '@/components/ui/GuestId';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 import { pushNotif } from '@/lib/notifStore';
+import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
 
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
 
@@ -44,6 +46,10 @@ export default function BoardDetailPage() {
   const blocked = useHrefBlock(post && (bid === MAIN_BOARD_ID ? '/board' : extraBoardHref(bid)));
   // loaded 이후에만 본문 렌더 (SSR/하이드레이션 불일치 방지)
   const html = useMemo(() => (post && loaded ? renderBody(post.mode, post.body) : ''), [post, loaded]);
+
+  // 이전글/다음글로 글이 바뀌면 — 접기·댓글 입력 상태를 비우고 맨 위로 (같은 화면이 다른 글로 바뀌는 것이라 상태가 남는다)
+  useEffect(() => { setOpen(false); setCmt(''); setReplyTo(null); setDelAsk(false); }, [id]);
+  useScrollTopOnChange(id);
 
   // 막힌 곳이면 여기서 되돌아간다 — 훅을 모두 부른 뒤여야 렌더마다 개수가 같다
   if (blocked) return blocked;
@@ -74,6 +80,14 @@ export default function BoardDetailPage() {
   const canComment = allow(board.permComment) && (!!user || guestMode);
 
   const canManage = isAdmin || isAuthor;
+
+  // 이전글/다음글 — 같은 게시판에서, 내가 열 수 있는 글만 (비밀글은 작성자·관리자만)
+  const nb = pickNeighbors(
+    posts.filter(x => (x.boardId ?? MAIN_BOARD_ID) === (post.boardId ?? MAIN_BOARD_ID)
+      && (!x.secret || isAdmin || (!!x.authorId && x.authorId === user?.id))),
+    post.id,
+  );
+  const pnOf = (x: Post | null) => (x ? { href: `/board/${x.id}`, title: `${x.secret ? '🔒 ' : ''}${x.title}` } : null);
   const update = (patch: Partial<Post>) =>
     setPosts(posts.map(p => (p.id === post.id ? { ...p, ...patch } : p)));
 
@@ -84,7 +98,7 @@ export default function BoardDetailPage() {
     if (!canComment) { toast('댓글은 로그인 후 작성할 수 있습니다'); return; }
     if (!cmt.trim()) return;
     if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
-    const base = { id: newId(), text: cmt.trim(), date: new Date().toISOString(), parentId: replyTo ?? undefined };
+    const base = { id: newId(), text: cmt.trim(), date: nowIso(), parentId: replyTo ?? undefined };
     const c: CommentRow = user
       ? { ...base, target: 'post', targetId: post.id, author: user.nickname, authorId: user.id }
       : { ...base, target: 'post', targetId: post.id, author: gName.trim(), authorId: '' };
@@ -189,6 +203,8 @@ export default function BoardDetailPage() {
             dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </div>
+
+      <PrevNext prev={pnOf(nb.prev)} next={pnOf(nb.next)} />
 
       {/* 댓글 + 대댓글 */}
       <div className="panel" style={{ padding: 0, marginTop: 16 }}>

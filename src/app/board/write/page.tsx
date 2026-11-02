@@ -2,6 +2,7 @@
 // 게시판 글쓰기/수정 (4.2 / 5.2 다중 게시판) — MD/HTML 모드 선택 + 실시간 미리보기 + 접기/비밀글/공지 설정
 // ?edit=<글 id> 로 진입하면 수정 모드 (작성자·관리자만)
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, BOARD_SEED, Post, newId, FoldType } from '@/lib/postStore';
@@ -128,7 +129,7 @@ function WriteInner() {
     const p: Post = {
       id: newId(), title: title.trim(), body,
       mode: writeMode === 'md' ? 'md' : 'html', category,
-      author: user.nickname, authorId: user.id, date: new Date().toISOString(),
+      author: user.nickname, authorId: user.id, date: nowIso(),
       secret, notice: isAdmin && notice,
       tags: parseTags(tagsText),
       fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },

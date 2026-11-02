@@ -4,6 +4,7 @@
 // AU 선택 시 프로필 전체(이름·스펙·아트·탭·소개)가 그 AU의 값으로 전환 (charWithAu) —
 // 편집은 EDIT → /chars/[id]/edit?au= 전용 페이지에서 새 프로필처럼 작성 (v1.9 사용자 확정)
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
@@ -143,6 +144,12 @@ function CharDetailInner() {
       infoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  // 이전글/다음글 — 같은 리스트(내 캐릭터/상대 캐릭터 · 같은 섹션)에서 목록에 저장된 순서대로, 내가 열 수 있는 캐릭터만
+  const pnList = chars.filter(x => x.own === ch.own && (x.secId || 'main') === (ch.secId || 'main')
+    && !(x.visibility === 'private' && !isAdmin) && !(x.visibility === 'member' && !user));
+  const pnb = pickByList(pnList, ch.id);
+  const pnOf = (x: Character | null) => (x ? { href: `/chars/${x.id}`, title: x.name } : null);
 
   const editHref = auKey ? `/chars/${ch.id}/edit?au=${encodeURIComponent(auKey)}` : `/chars/${ch.id}/edit`;
 
@@ -351,6 +358,7 @@ function CharDetailInner() {
           onClose={() => setArtCropOpen(null)}
           onApply={c => { saveArtCrop(c); setArtCropOpen(null); }} />
       )}
+    <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
     </section>
   );
 }
@@ -368,7 +376,8 @@ function ArtCropModal({ fileRef, ratio, crop, label, onClose, onApply }: {
   );
 }
 
+const CharDetailKeyed = keyedById(CharDetailInner);   // 이전글/다음글로 캐릭터가 바뀌면 화면을 새로 시작
 export default function CharDetailPage() {
   // useSearchParams는 Suspense 경계 필요 (Next App Router)
-  return <Suspense fallback={<section className="page" />}><CharDetailInner /></Suspense>;
+  return <Suspense fallback={<section className="page" />}><CharDetailKeyed /></Suspense>;
 }

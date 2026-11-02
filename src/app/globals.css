@@ -1980,7 +1980,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .topbar{padding:0 16px;gap:12px}
   /* gnb(flex:1)가 숨어 우측 밀림이 사라짐 — 알림·프로필/로그인 우측 정렬 복원 (8장) */
   .user-wrap,.login-link{margin-left:auto}
-  .page{padding:16px 16px 90px}
+  /* 하단 고정 바(BGM 플레이어 + ≡ 메뉴 칸)에 본문 끝이 가리지 않게 — 바 높이(--bgm-h, 없어도 ≡ 칸 36px)만큼 + 여유 */
+  .page{padding:16px 16px calc(56px + max(var(--bgm-h,0px),36px) + env(safe-area-inset-bottom,0px))}
   .page-head h1{font-size:calc(24px*var(--fs,1))}
   /* 페이지 타이틀 모바일 옵션 (v1.9 사용자 요청) — 「생략」이면 모바일에서만 제목·설명 숨김
      (상태·안내 문구는 PC와 동일하게 항상 표시) */
@@ -2050,3 +2051,30 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .up-busy{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);z-index:121;display:flex;align-items:center;gap:9px;padding:10px 18px;border-radius:999px;background:var(--dd-bg);color:var(--dd-fg);font-size:calc(12.5px*var(--fs,1));box-shadow:0 10px 30px rgba(0,0,0,.3);border:1px solid var(--line-dark);backdrop-filter:blur(8px)}
 .up-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--line-dark);border-top-color:var(--accent);animation:upSpin .7s linear infinite;flex-shrink:0}
 @keyframes upSpin{to{transform:rotate(360deg)}}
+
+/* ---------- 이전글 / 다음글 (본문 하단) — 네모 안에 ‹ › 만, 양 끝에 ---------- */
+.pn{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.pn-b{display:grid;place-items:center;width:34px;height:34px;padding:0;border-radius:4px;border:1px solid var(--line);background:var(--panel-solid,#fff);color:var(--ink);cursor:var(--cur-pointer,pointer);transition:.14s}
+.pn-b svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.pn-b:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pn-b:disabled{color:var(--faint);opacity:.55;cursor:default}
+
+/* ---------- 갤러리 상세 — 2열(나란히) 보기 ---------- */
+.g-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.g-pair-i{min-width:0;border-radius:10px;overflow:hidden}
+
+/* ---------- 시트 게시판 (/sheet) ---------- */
+.pl-table.sh-table col.c-shh{width:112px}
+.pl-table.sh-table col.c-shd{width:92px}
+.pl-table.sh-table col.c-shu{width:44px}
+.pl-table.sh-table .td-sc{text-align:left;padding-left:12px}
+.sh-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:calc(11px*var(--fs,1));padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:var(--cur-pointer,pointer);transition:.13s}
+.sh-chip:hover{border-color:var(--accent);color:var(--accent)}
+.sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (max-width:620px){
+  .pl-table.sh-table col.c-shh{width:76px}
+  .pl-table.sh-table col.c-shd{width:64px}
+  .pl-table.sh-table col.c-shu{width:34px}
+  .pl-table.sh-table .td-date{font-size:calc(10.5px*var(--fs,1));letter-spacing:0}
+  .pl-table.sh-table th,.pl-table.sh-table td{padding-left:3px;padding-right:3px}
+}

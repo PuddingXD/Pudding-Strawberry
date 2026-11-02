@@ -10,6 +10,7 @@ import {
   Backend, BackendCheck, BackendConfig, BackendUser, ListItem, diffList, metaOf,
 } from './types';
 import { visFloorOf } from '../visFloor';
+import { stableRows } from '../order';
 
 type FirebaseCfg = Extract<BackendConfig, { kind: 'firebase' }>;
 
@@ -303,7 +304,8 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
         const raw = d.data() as { data?: Record<string, unknown>; sort?: number };
         seen.set(d.id, { sort: raw.sort ?? 0, item: { ...(raw.data ?? {}), id: d.id } as T });
       }));
-      return [...seen.values()].sort((a, b) => a.sort - b.sort).map(v => v.item);
+      // 저장된 순번이 겹쳐도 매번 같은 순서로 — 겹치면 만든 순서로 가른다 (lib/order.ts)
+      return stableRows(coll, [...seen.values()]);
     },
 
     async fetchOne<T extends ListItem>(coll: string, id: string): Promise<T | null> {

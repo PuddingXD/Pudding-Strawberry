@@ -2,6 +2,7 @@
 // 그림백업 작성/수정 공용 폼 (4.11) — 제목/유형/이미지 다중 업로드(원본·최적화·크롭·⠿순서)/설명/설정/접기
 // 수정 모드: 기존 이미지(ref)는 그대로 유지·재정렬·삭제 가능, 새 파일 추가 가능
 import React, { useEffect, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId, FoldType } from '@/lib/postStore';
@@ -61,7 +62,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
   const tt = useSectionTitle(kind, initial ? (initial.secId ?? MAIN_SEC) : sec.id, isNew ? 'WRITE' : 'EDIT');
   const [title, setTitle] = useState(initial?.title ?? '');
   // 큰 그림 게시판은 유형을 고르지 않는다 — 늘 세로 나열(이미지 사이 갭, 클릭 확대)
-  const [type, setType] = useState<'log' | 'single' | 'vlist'>(initial?.type ?? (feed ? 'vlist' : 'log'));
+  const [type, setType] = useState<'log' | 'single' | 'vlist' | 'pair'>(initial?.type ?? (feed ? 'vlist' : 'log'));
   const [files, setFiles] = useState<UpFile[]>(() =>
     (initial?.images ?? []).map((ref, i) => ({
       id: newId(), name: `이미지 ${i + 1}`, ref, original: true,
@@ -146,7 +147,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
         thumbCrop, // 대표 이미지(또는 썸네일 전용 이미지) 크롭 (6.1 · v2.1)
         thumbId: ownId,
         desc, category, tags: parseTags(tagsText), madeDate: madeDate || undefined,
-        date: new Date().toISOString(), author: user.nickname, authorId: user.id,
+        date: nowIso(), author: user.nickname, authorId: user.id,
         visibility,
         fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },
       };
@@ -186,13 +187,15 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
           {!feed && <div className="form-row">
             <label className="k-label" style={{ width: 60 }}>유형</label>
             {/* 모바일에서는 설명(.rd-desc)을 숨겨 한 줄 유지 — 두 줄로 넘어가면 안 예쁨 (v1.9 사용자 확정) */}
-            <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px 18px', alignItems: 'center', flexWrap: 'wrap' }}>
               <KRadio name="wtype" value="log" current={type} onChange={v => setType(v as 'log')}
                 label={<span>로그 <span className="rd-desc">— 웹툰처럼 세로 스크롤</span></span>} />
               <KRadio name="wtype" value="single" current={type} onChange={v => setType(v as 'single')}
                 label={<span>단일 <span className="rd-desc">— 큰 이미지 + 좌우 넘김</span></span>} />
               <KRadio name="wtype" value="vlist" current={type} onChange={v => setType(v as 'vlist')}
                 label={<span>단일(세로) <span className="rd-desc">— 이미지 사이 갭을 두고 세로로 나열</span></span>} />
+              <KRadio name="wtype" value="pair" current={type} onChange={v => setType(v as 'pair')}
+                label="나란히" />
             </div>
           </div>}
           <label className="k-label">이미지</label>

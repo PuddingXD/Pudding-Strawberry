@@ -3,6 +3,7 @@
 // 캐릭터 선택 발화(테마색 말풍선) · 지문(/desc) · 메시지 수정/삭제 · 완결/공개 전환 · 로그(txt/html 저장 · RP LOG 올리기)
 // ※ 실시간 송수신·입력 중 표시·참여자 전원 동의는 Supabase Realtime 연동 시 활성화 (현재 localStorage)
 import React, { useLayoutEffect, useEffect, useMemo, useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useAuth } from '@/lib/auth';
 import { createPortal } from 'react-dom';
 import { useLocalList, newId } from '@/lib/postStore';
@@ -356,7 +357,7 @@ export default function RpPage() {
       // 원래 설정(base)이면 남기지 않는다 — 예전 방과 같은 모습이라 되돌리기도 쉽다
       auId: nRel !== 'none' && nAu !== 'base' ? nAu : undefined,
       memberIds: members, status: 'ongoing', isPublic: false,
-      createdBy: user.id, created: new Date().toISOString(), lastRead: {}, messages: [],
+      createdBy: user.id, created: nowIso(), lastRead: {}, messages: [],
       ...(nStyle === 'imsg' ? { style: 'imsg' as const } : {}),   // 메신저 모양 (커플홈) — 기본이면 남기지 않는다
     };
     setRooms([room, ...rooms]);

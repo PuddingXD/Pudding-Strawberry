@@ -1,6 +1,7 @@
 'use client';
 // 감상타래 작품 등록/수정 폼 (4.17) — 페이지형 (등록: /threads/new · 수정: /threads/[id]/edit)
 import React, { useEffect, useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
@@ -85,7 +86,7 @@ export function ThreadForm({ editId }: { editId?: string }) {
         author: author.trim(), authorRole: role.trim() || undefined,
         catId, visibility: vis, posterId, posterCrop: crop,
         ph: PHS[works.length % PHS.length],
-        created: new Date().toISOString(), posts: [],
+        created: nowIso(), posts: [],
         ...(user ? { createdBy: user.id } : {}),
       };
       setWorks([{ ...w, ...secStamp(sec.id) }, ...works]);

@@ -20,7 +20,7 @@ import { getRawSetting, setSetting } from './settingStore';
 import { newId } from './postStore';
 
 export type SectionKind =
-  | 'gallery' | 'feed' | 'roadview' | 'trpg' | 'dotori' | 'playlog' | 'treview' | 'diary' | 'threads' | 'sched' | 'chars' | 'pchars';
+  | 'gallery' | 'feed' | 'roadview' | 'trpg' | 'dotori' | 'playlog' | 'sheet' | 'treview' | 'diary' | 'threads' | 'sched' | 'chars' | 'pchars';
 
 /** 섹션 종류별 기본 정보 — 설정 탭 이름과 페이지 주소 */
 export const SECTION_META: Record<SectionKind, { label: string; href: string; defName: string }> = {
@@ -31,6 +31,8 @@ export const SECTION_META: Record<SectionKind, { label: string; href: string; de
   trpg:     { label: '로그 백업', href: '/trpg',     defName: '로그 백업' },
   dotori:   { label: '도토리',    href: '/dotori',   defName: '도토리' },
   playlog:  { label: '플레이기록', href: '/playlog', defName: '플레이기록' },
+  // 시트 게시판 — 구글 스프레드시트 링크 모음. 항목은 플레이기록 목록에 `sheet:` 소속으로 함께 저장 (lib/sheetStore.ts)
+  sheet:    { label: '시트',      href: '/sheet',    defName: '시트' },
   // TRPG 리뷰 (v2.1 사용자 요청) — 시나리오마다 별점 + 한줄 평
   treview:  { label: 'TRPG 리뷰',  href: '/treview', defName: 'TRPG 리뷰' },
   diary:    { label: '다이어리',  href: '/diary',    defName: '다이어리' },

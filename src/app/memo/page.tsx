@@ -2,6 +2,7 @@
 // 스티커 메모장 (4.6) — 포스트잇 보드: 드래그 자유 배치 · 색/크기 · 랜덤 기울기 ·
 // 클릭 = 맨 위로 · 우클릭 자체 컨텍스트 메뉴(순서/수정/삭제) · 우측 메모 리스트 · 작성 권한 옵션
 import React, { useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
 import {
@@ -121,7 +122,7 @@ export default function MemoPage() {
         color: mColor, size: mSize,
         x: 6 + Math.random() * 55, y: 6 + Math.random() * 55,
         rot: Math.round((Math.random() * 6 - 3) * 10) / 10, // 랜덤 기울기 (4.6)
-        z: maxZ() + 1, date: new Date().toISOString(),
+        z: maxZ() + 1, date: nowIso(),
       };
       setMemos([...memos, m]);
     }

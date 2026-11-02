@@ -1,6 +1,7 @@
 'use client';
 // 도토리 등록 (4.15) — 페이지형 등록
 import React, { Suspense } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
@@ -39,7 +40,7 @@ function DotoriNewPageInner() {
         onCancel={() => router.push('/dotori' + secQuery('dotori', sec.id))}
         onSave={v => {
           const it: DotoriItem = {
-            id: newId(), ...v, link: v.link, ph: 'cool', date: new Date().toISOString(),
+            id: newId(), ...v, link: v.link, ph: 'cool', date: nowIso(),
             authorId: user.id,   // 등록한 사람을 남긴다 (v2.1) — 수정·삭제는 본인과 관리자
           };
           setItems([{ ...it, ...secStamp(sec.id) }, ...items]);

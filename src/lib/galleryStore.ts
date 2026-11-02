@@ -35,7 +35,7 @@ export interface BackupPost {
   secId?: string;
   id: string;
   title: string;
-  type: 'log' | 'single' | 'vlist';    // 로그형(틈 없이 세로) / 단일형(좌우 넘김) / 단일 세로정렬(갭 있는 세로, v1.9)
+  type: 'log' | 'single' | 'vlist' | 'pair';    // 로그형(틈 없이 세로) / 단일형(좌우 넘김) / 단일 세로정렬(갭 있는 세로, v1.9) / 2열(이미지 2개씩 나란히)
   images: string[];          // 파일 id 또는 URL (비어 있으면 데모 ph — blobStore 참조)
   thumbCrop?: CropValue;     // 대표(첫) 이미지의 썸네일 크롭 (6.1)
   /** 썸네일 전용 이미지 (v2.1 사용자 요청) — 있으면 목록 썸네일은 이 이미지(+thumbCrop)이고 본문에는 나오지 않는다. 없으면 첫 이미지 */

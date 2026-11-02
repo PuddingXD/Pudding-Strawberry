@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PostMode } from './sanitize';
 import { isServerMode } from './supabase';
+import { sortableId } from './order';
 import { TABLE_OF, fetchList, fetchOne, syncList, subscribeTable } from './db';
 import { currentUserId } from './currentUser';
 
@@ -96,7 +97,8 @@ export interface GuestEntry {
 
 export const BOARD_CATEGORIES = ['잡담', '설정', '합작', '기타'];
 
-export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+// 만든 순서대로 커지는 id (lib/order.ts) — 같은 밀리초에 만든 글도 선후가 갈린다
+export const newId = sortableId;
 
 /** 목록 저장소 훅 — 서버 모드면 DB, 아니면 localStorage (v2.0)
  *

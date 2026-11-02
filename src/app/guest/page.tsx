@@ -1,6 +1,7 @@
 'use client';
 // 방명록 (4.7) — 게스트 작성(닉네임) · 비밀글 · 답글(모두, v2.0)
 import React, { useEffect, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useAuth } from '@/lib/auth';
 import {
   useLocalList, GUEST_SEED, GuestEntry, newId, fmtDate, Comment,
@@ -39,7 +40,7 @@ export default function GuestbookPage() {
       id: newId(),
       author: user ? user.nickname : gName.trim(),
       authorId: user?.id,
-      body: body.trim(), secret, date: new Date().toISOString(), reply: null,
+      body: body.trim(), secret, date: nowIso(), reply: null,
     };
     /* **뒤에 붙인다** (v2.0 사용자 발견 — 「방명록을 저장하지 못했습니다 · 권한 없음」).
        앞에 넣으면 기존 글의 순서 번호가 전부 한 칸씩 밀려서, 저장 단계가 그것들을 모두
@@ -80,7 +81,7 @@ export default function GuestbookPage() {
     if (!user && !replyName.trim()) { toast('닉네임을 입력해 주세요'); return; }
     const c: CommentRow = {
       id: newId(), target: 'guest', targetId: target.id,
-      text: replyText.trim(), date: new Date().toISOString(),
+      text: replyText.trim(), date: nowIso(),
       author: user ? user.nickname : replyName.trim(), authorId: user?.id ?? '',
     };
     setCmtRows([...cmtRows, c]);

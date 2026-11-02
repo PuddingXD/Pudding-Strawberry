@@ -2,6 +2,7 @@
 // TRPG 리뷰 상세 (v2.1 사용자 요청) — 왼쪽에 대표 이미지, 오른쪽에 시나리오 정보와 GM 평점 · PC 평점을 나눠서.
 // 사람마다 「이름 ★★★★☆」 아래 한줄평. EDIT(페이지)은 쓴 사람·관리자·글쓰기 권한이 있는 회원(editorIds), DELETE는 쓴 사람·관리자
 import React, { useState } from 'react';
+import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
@@ -14,7 +15,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { PageTitle } from '@/components/ui/PageText';
 
-export default function ReviewDetailPage() {
+function ReviewDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin } = useAuth();
@@ -35,6 +36,10 @@ export default function ReviewDetailPage() {
       </section>
     );
   }
+  // 이전글/다음글 — 같은 리뷰 게시판에서 올린 순서대로, 내가 열 수 있는 리뷰만
+  const pnb = pickNeighbors(rows.filter(x => (x.secId ?? MAIN_SEC) === (r.secId ?? MAIN_SEC)
+    && !(x.visibility === 'private' && !isAdmin && x.authorId !== user?.id) && !(x.visibility === 'member' && !user)), r.id);
+  const pnOf = (x: TrpgReview | null) => (x ? { href: `/treview/${x.id}`, title: x.title } : null);
   const cats = reviewCatsOf(boardSet, r.secId ?? MAIN_SEC);
   // 수정 — 관리자 · 쓴 사람 · 글쓰기 권한이 있는 회원 (가입자도 수정, v2.1 사용자 요청). 삭제는 쓴 사람·관리자
   const canManage = canEditReview(r, isAdmin, user?.id);
@@ -109,6 +114,8 @@ export default function ReviewDetailPage() {
         </div>
       </div>
 
+      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+
       <ConfirmModal open={delAsk} title="이 리뷰를 삭제하시겠습니까?" body="삭제한 리뷰는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}
         buttons={[
@@ -118,3 +125,5 @@ export default function ReviewDetailPage() {
     </section>
   );
 }
+
+export default keyedById(ReviewDetailInner);

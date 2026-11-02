@@ -1,7 +1,7 @@
 'use client';
 // 그림백업 상세 (4.11) — 로그형: 세로 스크롤 뷰어 / 단일형: 큰 이미지 + 썸네일 스트립 + 좌우 넘김
 // v2.1: 큰 그림 게시판(/feed)도 같은 상세를 쓴다 — kind로 저장 자리·돌아갈 곳만 갈린다 (유형 뱃지는 갤러리에만)
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
@@ -13,6 +13,7 @@ import { useBlobUrl } from '@/lib/blobStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
+import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
 import { useBoardSettings, boardBadgeStyle, feedCatsOf, feedHideAuthorOf } from '@/lib/boardStore';
 
 export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
@@ -27,6 +28,9 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   const { st: boardSet } = useBoardSettings(); // 유형 뱃지 색 (환경설정 > 게시판 관리)
 
   const p = posts.find(x => x.id === id);
+  // 이전글/다음글로 글이 바뀌면 — 보던 이미지 순번·확대·삭제창을 비우고 맨 위로
+  useEffect(() => { setCur(0); setLbOpen(false); setDelAsk(false); }, [id]);
+  useScrollTopOnChange(id);
   /* 이 글이 속한 곳이 비공개면 주소로 들어와도 열리지 않게 (v2.0 사용자 요청).
      글 주소에는 섹션이 없어 MenuGuard가 못 막는다 — 글을 읽어 소속을 알아낸 여기서 판정한다.
      **다른 early return보다 먼저 불러야 한다**(훅이므로 렌더마다 개수가 같아야 한다) */
@@ -73,6 +77,13 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
       style={natural ? { width: '100%', height: '100%' } : { aspectRatio: ratio ?? '16/10' }}><span>IMAGE</span></div>;
   };
 
+  const nb = pickNeighbors(
+    posts.filter(x => (x.secId ?? MAIN_SEC) === (p.secId ?? MAIN_SEC)
+      && !(x.visibility === 'private' && !isAdmin) && !(x.visibility === 'member' && !user)),
+    p.id,
+  );
+  const navOf = (x: BackupPost | null) => (x ? { href: `/${kind}/${x.id}`, title: x.title } : null);
+
   return (
     <section className="page">
       <div className="page-head">
@@ -106,6 +117,16 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
           /* 로그형 — 웹툰식 세로 스크롤 · 이미지 사이 틈 없이 이어 붙임 (만화 연결) */
           <div style={{ borderRadius: 10, overflow: 'hidden' }}>
             {imgs.map((im, i) => <Img key={i} im={im} />)}
+          </div>
+        ) : p.type === 'pair' ? (
+          /* 나란히 (이미지 2개씩) — 약간의 공백을 두고 가로로 2개, 클릭 확대 */
+          <div className="g-pair">
+            {imgs.map((im, i) => (
+              <div key={i} className="g-pair-i" style={{ cursor: im.url ? 'zoom-in' : undefined }}
+                onClick={() => { if (im.url) { setCur(i); setLbOpen(true); } }}>
+                <Img im={im} ratio="4/3" />
+              </div>
+            ))}
           </div>
         ) : p.type === 'vlist' ? (
           /* 단일(세로정렬) (v1.9) — 로그와 달리 이미지 사이 갭을 두고 세로로 나열, 클릭 확대 */
@@ -152,8 +173,15 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
         )}
       </div>
 
-      {/* 단일형·단일(세로) 확대 보기 — 뷰어와 같은 순번에서 시작, ‹ ›로 이어 넘김 */}
-      {lbOpen && (p.type === 'single' || p.type === 'vlist') && p.images.length > 0 && (
+      {/* 이전글/다음글 — 같은 갤러리(섹션) 안에서, 내가 볼 수 있는 글만 */}
+      <div style={{ maxWidth: 672, margin: '0 auto' }}>
+        <PrevNext
+          prev={navOf(nb.prev)}
+          next={navOf(nb.next)} />
+      </div>
+
+      {/* 단일형·단일(세로)·나란히 확대 보기 — 뷰어와 같은 순번에서 시작, ‹ ›로 이어 넘김 */}
+      {lbOpen && (p.type === 'single' || p.type === 'vlist' || p.type === 'pair') && p.images.length > 0 && (
         <Lightbox srcs={p.images} index={cur} onClose={() => setLbOpen(false)} />
       )}
 

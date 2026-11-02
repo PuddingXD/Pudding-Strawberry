@@ -3,6 +3,7 @@
 // 위에서부터: 시나리오 이름 → 말머리 · 룰 → 대표 이미지 · 플레이한 날 · 공개범위 →
 // 인물별 평가(GM/PC · 이름 · 별점 · 한줄평). PC가 여럿일 수 있어 아래 「인원 추가」로 줄을 늘린다.
 import React, { useEffect, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
@@ -159,7 +160,7 @@ export function ReviewForm({ initial }: { initial: TrpgReview | null }) {
       if (!initial) {
         const id = newId();
         const r: TrpgReview = {
-          id, ...fields, date: new Date().toISOString(), author: user.nickname, authorId: user.id, ...secStamp(sec.id),
+          id, ...fields, date: nowIso(), author: user.nickname, authorId: user.id, ...secStamp(sec.id),
           editorIds: reviewEditorIds(menuSet, sec.id, members),   // 글쓰기 권한이 있는 회원은 서로의 리뷰에 자기 평가를 적는다
         };
         setAll([r, ...all]);

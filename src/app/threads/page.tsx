@@ -2,6 +2,7 @@
 // 감상타래 (4.17) — 본 것·읽은 것의 감상을 트위터식 타래로.
 // 보기 2종(타래/리스트, 기본 보기는 환경설정) · 분류 필터 · 작품명 검색 · 이어쓰기 컴포저
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { nowIso } from '@/lib/order';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -170,7 +171,7 @@ function ThreadsPageInner() {
     const images: string[] = [];
     for (const f of files) images.push(await putBlob(f));
     const p: ThreadPost = {
-      id: newId(), text: text.trim(), images, date: new Date().toISOString(),
+      id: newId(), text: text.trim(), images, date: nowIso(),
       fold: foldType === 'none' ? undefined : { type: foldType, label: foldType === 'custom' ? foldLabel.trim() || undefined : undefined },
     };
     setWorks(works.map(w => w.id === sel.id ? { ...w, posts: [...w.posts, p] } : w));
@@ -242,7 +243,7 @@ function ThreadsPageInner() {
   const addComment = () => {
     if (!sel || !cmt.trim()) return;
     if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
-    const base = { id: newId(), text: cmt.trim(), date: new Date().toISOString(), parentId: replyTo ?? undefined };
+    const base = { id: newId(), text: cmt.trim(), date: nowIso(), parentId: replyTo ?? undefined };
     const c: CommentRow = user
       ? { ...base, target: 'thread' as const, targetId: sel.id, author: user.nickname, authorId: user.id }
       : { ...base, target: 'thread' as const, targetId: sel.id, author: gName.trim(), authorId: '' };

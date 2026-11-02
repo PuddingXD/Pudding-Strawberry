@@ -3,6 +3,7 @@
 // 하단: TIMELINE / QUESTIONS 탭 (v1.8) + 역극·로그 연동 리스트 · 다인(3인+): 멤버 리스트형
 // 관리자: 멤버 추가(내/상대 캐릭터) · 타임라인 항목 추가 · 질문 추가
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -236,7 +237,7 @@ function EmptyCard({ isAdmin, onAdd }: { isAdmin: boolean; onAdd: () => void }) 
   );
 }
 
-export default function RelDetailPage() {
+function RelDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin } = useAuth();
@@ -519,6 +520,10 @@ export default function RelDetailPage() {
       </section>
     );
   }
+
+  // 이전글/다음글 — 자관 목록에 저장된 순서대로, 내가 열 수 있는 자관만
+  const pnb = pickByList(rels.filter(x => !(x.visibility === 'private' && !isAdmin) && !(x.visibility === 'member' && !user)), rel.id);
+  const pnOf = (x: Relation | null) => (x ? { href: `/rels/${x.id}`, title: x.name } : null);
 
   const updateRel = (patch: Partial<Relation>) =>
     setRels(rels.map(r => (r.id === rel.id ? { ...r, ...patch } : r)));
@@ -1695,7 +1700,11 @@ export default function RelDetailPage() {
       )}
 
       {/* 삭제 확인 — DOM 마지막에 렌더해 다른 모달(AU 관리 등) 위에 뜨게 */}
+      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+
       {del.element}
     </section>
   );
 }
+
+export default keyedById(RelDetailInner);

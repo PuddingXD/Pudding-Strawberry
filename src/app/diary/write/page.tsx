@@ -2,6 +2,7 @@
 // 일기 쓰기 (4.14) — 페이지형
 // v2.1: 섹션(?s=)과 보고 있던 구분 탭(?cat=)을 따라간다 · 구분 탭에 연동한 자관 캐릭터에 권한을 받은 회원도 그 탭에 쓴다
 import React, { Suspense } from 'react';
+import { nowIso } from '@/lib/order';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
@@ -77,7 +78,7 @@ function DiaryWriteInner() {
         onCancel={() => router.push(listHref)}
         onSave={v => {
           // 쓴 사람·시각을 남긴다 (v2.1) — 수정·삭제 권한과 같은 날 일기의 순서에 쓴다
-          const p: DiaryPost = { id: newId(), ...v, authorId: user.id, createdAt: new Date().toISOString(), ...secStamp(sec.id) };
+          const p: DiaryPost = { id: newId(), ...v, authorId: user.id, createdAt: nowIso(), ...secStamp(sec.id) };
           setPosts([p, ...posts]);
           toast('일기가 등록되었습니다');
           router.push(listHref);

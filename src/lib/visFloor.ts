@@ -13,6 +13,7 @@
  */
 import { currentMenuSettings, hrefAccess } from './menuStore';
 import { MAIN_SEC, sectionHref, type SectionKind } from './sectionStore';
+import { isSheetRec, sheetSecId } from './sheetStore';
 import { MAIN_BOARD_ID } from './boardStore';
 import type { Visibility } from './charStore';
 import type { ListItem } from './backend/types';
@@ -48,6 +49,8 @@ export function areaHrefOf(coll: string, item: ListItem): string | null {
     const b = typeof item.boardId === 'string' ? item.boardId : MAIN_BOARD_ID;
     return b === MAIN_BOARD_ID ? '/board' : `/board?b=${b}`;
   }
+  // 시트 게시판 항목은 플레이기록 목록에 `sheet:` 소속으로 들어 있다 — 시트 메뉴의 공개범위를 따른다
+  if (coll === 'playlog' && isSheetRec(item as { secId?: string })) return sectionHref('sheet', sheetSecId(item as { secId?: string }));
   const s = typeof item.secId === 'string' ? item.secId : MAIN_SEC;
   return sectionHref(a.kind!, s);
 }

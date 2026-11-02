@@ -2,6 +2,8 @@
 // RP LOG 상세 (옛 TRPG 로그, 4.3) — HTML이면 원본 스타일 그대로 격리 렌더(iframe 샌드박스, 스크립트 실행 안 됨),
 // 일반 텍스트면 로그용 기본 서식으로 표시
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
+import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, secStamp, useSectionTitle } from '@/lib/sectionStore';
@@ -49,7 +51,7 @@ function LogFrame({ frameRef, html, title, onFrameLoad }: {
   );
 }
 
-export default function TrpgDetailPage() {
+function TrpgDetailInner() {
   const { id: key } = useParams<{ id: string }>();   // id 또는 페이지 주소 별명 (커플홈 — 캐릭터·자관과 같게)
   const router = useRouter();
   const { user, isAdmin } = useAuth();
@@ -225,7 +227,7 @@ export default function TrpgDetailPage() {
     }
   };
   const blankMsg = (prev?: RpMessage): RpMessage =>
-    ({ id: newId(), kind: 'desc', authorId: '', text: '', date: prev?.date ?? new Date().toISOString() });
+    ({ id: newId(), kind: 'desc', authorId: '', text: '', date: prev?.date ?? nowIso() });
   /** 수정·추가 창 SAVE */
   const saveMsgEdit = () => {
     const s = bd?.src, me = msgEdit;
@@ -556,6 +558,14 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
         { time: bd.src.time, forBoard: true, style: 'script', rightIds: [], neutralSides: true, noMeta: bd.src.noMeta }))
     : null;
 
+  // 이전글/다음글 — 같은 로그 백업 목록에서 번호(№) 순서대로, 내가 열 수 있는 로그만 (비밀번호 로그는 눌렀을 때 비밀번호 화면)
+  const pnb = pickByList(
+    [...logs].filter(x => (x.secId ?? MAIN_SEC) === (l.secId ?? MAIN_SEC)
+      && (isAdmin || !!x.password || x.visibility === 'public' || (x.visibility === 'member' && !!user)))
+      .sort((a, b) => a.no - b.no),
+    l.id);
+  const pnOf = (x: TrpgLog | null) => (x ? { href: logPath(x), title: x.title } : null);
+
   return (
     <section className="page">
       <div className="page-head">
@@ -885,6 +895,8 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
           { label: 'CANCEL', kind: 'ghost', onClick: () => setMsgDel(null) },
         ]} />
 
+      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+
       <ConfirmModal open={delAsk} title="로그를 삭제하시겠습니까?" body="삭제한 로그는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}
         buttons={[
@@ -899,3 +911,5 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
     </section>
   );
 }
+
+export default keyedById(TrpgDetailInner);

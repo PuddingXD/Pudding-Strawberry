@@ -22,6 +22,7 @@ export const FEATURES: { href: string; label: string }[] = [
   { href: '/trpg', label: '로그 백업' },
   { href: '/dotori', label: '도토리' },
   { href: '/playlog', label: '플레이기록' },
+  { href: '/sheet', label: '시트' },   // 구글 스프레드시트 게시판
   { href: '/treview', label: 'TRPG 리뷰' },   // TRPG 리뷰 (v2.1)
   { href: '/cal', label: '스케줄러' },
   { href: '/diary', label: '다이어리' },
@@ -57,6 +58,7 @@ export const DEFAULT_MENU: MenuItem[] = [
       { label: '로그 백업', href: '/trpg' },
       { label: '도토리', href: '/dotori' },
       { label: '플레이기록', href: '/playlog' },
+      { label: '시트', href: '/sheet' },
       { label: 'TRPG 리뷰', href: '/treview' },
     ],
   },

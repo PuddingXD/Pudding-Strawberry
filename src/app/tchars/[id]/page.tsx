@@ -1,6 +1,7 @@
 'use client';
 // TRPG 캐릭터 상세 (v1.9) — 좌 큰 이미지(원본/스탠딩, 표정 전환은 여기서) + 우 정보·설명
 import React, { useState } from 'react';
+import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
@@ -21,7 +22,7 @@ function StandingImg({ imgId, ph }: { imgId?: string; ph: string }) {
   return <img src={url} alt="" style={{ maxWidth: '100%', display: 'block' }} />;
 }
 
-export default function TCharDetailPage() {
+function TCharDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin } = useAuth();
@@ -40,6 +41,8 @@ export default function TCharDetailPage() {
     );
   }
 
+  const pnb = pickByList(tchars, c.id);
+  const pnOf = (x: typeof c | null) => (x ? { href: `/tchars/${x.id}`, title: x.name } : null);
   const face = c.faces[Math.min(faceIdx, c.faces.length - 1)] ?? c.faces[0];
   // 수정·삭제 — 등록한 본인과 관리자 (v2.1)
   const canEdit = isAdmin || (!!user && c.authorId === user.id);
@@ -129,6 +132,8 @@ export default function TCharDetailPage() {
           onClose={() => setLbOpen(false)} />
       )}
 
+      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+
       <ConfirmModal open={delAsk} title={`「${c.name}」를 삭제하시겠습니까?`}
         body="삭제한 캐릭터는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}
@@ -139,3 +144,5 @@ export default function TCharDetailPage() {
     </section>
   );
 }
+
+export default keyedById(TCharDetailInner);

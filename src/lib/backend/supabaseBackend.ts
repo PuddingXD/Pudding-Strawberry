@@ -6,6 +6,7 @@ import {
   Backend, BackendCheck, BackendConfig, BackendUser, ListItem, diffList, metaOf,
 } from './types';
 import { visFloorOf } from '../visFloor';
+import { stableRows } from '../order';
 
 const BUCKET = 'ohome';
 const PROBE = ['profiles', 'site_settings', 'posts', 'characters'];
@@ -149,10 +150,11 @@ export async function createSupabaseBackend(
     async fetchList<T extends ListItem>(coll: string): Promise<T[]> {
       const { data, error } = await sb.from(coll).select('id, data, sort').order('sort', { ascending: true });
       if (error) throw error;
-      return (data ?? []).map(r => {
-        const row = r as { id: string; data: Record<string, unknown> };
-        return { ...(row.data ?? {}), id: row.id } as T;
-      });
+      // 저장된 순번이 겹쳐도 매번 같은 순서로 — 겹치면 만든 순서로 가른다 (lib/order.ts)
+      return stableRows(coll, (data ?? []).map(r => {
+        const row = r as { id: string; data: Record<string, unknown>; sort?: number };
+        return { sort: row.sort ?? 0, item: { ...(row.data ?? {}), id: row.id } as T };
+      }));
     },
 
     async fetchOne<T extends ListItem>(coll: string, id: string): Promise<T | null> {
