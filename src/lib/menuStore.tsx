@@ -106,8 +106,8 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
   { key: 'scenario', label: 'Scenario' },
   { key: 'writer', label: 'Writer' },
   // Role 열은 v2.1에서 뺐다 (사용자 요청 — 커플홈이라 GM/PC 구분이 필요 없다). 옛 저장값(role)은 그대로 두되 보이지 않는다
-  { key: 'playtime', label: 'Playtime' },
   { key: 'date', label: 'Date' },
+  { key: 'playtime', label: 'Playtime' },
   { key: 'url', label: 'Url' },
 ];
 

@@ -9,13 +9,23 @@ export interface ColorChip { hex: string; label: string }
 export const chipBorder = (bd?: string): string =>
   (bd === 'none' ? 'none' : `inset 0 0 0 1px ${bd ?? 'rgba(0,0,0,.1)'}`);
 
+/** 추가 탭의 항목(기본 정보 항목처럼 라벨·값) */
+export interface TabItem { id: string; label: string; value: string }
+/** 항목 그룹 — 그룹이 다르면 사이에 작은 여백이 들어간다 */
+export interface TabGroup { id: string; items: TabItem[] }
+
 export interface CharTab {
   id: string;
   icon: string;          // 아이콘 문자 (업로드 아이콘은 후속)
   title: string;
   subtitle?: string;     // 제목 아래 작은 글씨 (선택)
   html: string;          // HTML 에디터 내용 (스크립트 불허 — 렌더 시 sanitize)
+  groups?: TabGroup[];   // 항목 그룹 (제목 아래, 본문 위에 표시) — 새 탭은 Like/Hate · Symbol/Tarot/MBTI가 기본
 }
+
+/** 새 추가 탭의 기본 항목 그룹 — 값은 비워 두고 수정·삭제·추가·순서 변경 가능 */
+export const defaultTabGroups = (mk: () => string): TabGroup[] => [['Like', 'Hate'], ['Symbol', 'Tarot', 'MBTI']]
+  .map(ls => ({ id: mk(), items: ls.map(label => ({ id: mk(), label, value: '' })) }));
 
 export interface Character {
   id: string;

@@ -161,8 +161,8 @@ function PlaylogPageInner() {
             {show('with') && <col className="c-with" />}
             {show('scenario') && <col className="c-sc" />}
             {show('writer') && <col className="c-wr" />}
-            {show('playtime') && <col className="c-pt" />}
             {show('date') && <col className="c-date" />}
+            {show('playtime') && <col className="c-pt" />}
             {show('url') && <col className="c-url" />}
             {canAdd && !isMobile && <col className="c-mng" />}
           </colgroup>
@@ -171,8 +171,8 @@ function PlaylogPageInner() {
               {show('with') && <th className="sortable" onClick={() => clickSort('with')}>With{arrow('with')}</th>}
               {show('scenario') && <th className="sortable" onClick={() => clickSort('scenario')}>Scenario{arrow('scenario')}</th>}
               {show('writer') && <th className="sortable" onClick={() => clickSort('writer')}>Writer{arrow('writer')}</th>}
-              {show('playtime') && <th className="sortable" onClick={() => clickSort('playtime')}>Playtime{arrow('playtime')}</th>}
               {show('date') && <th className="sortable" onClick={() => clickSort('date')}>Date{arrow('date')}</th>}
+              {show('playtime') && <th className="sortable" onClick={() => clickSort('playtime')}>Playtime{arrow('playtime')}</th>}
               {show('url') && <th aria-label="Url" />}
               {canAdd && !isMobile && <th aria-label="관리" />}
             </tr>
@@ -189,13 +189,13 @@ function PlaylogPageInner() {
                   </td>
                 )}
                 {show('writer') && <td>{r.writer}</td>}
+                {show('date') && <td className="td-date">{r.date ? r.date.replace(/-/g, '.') : ''}</td>}
                 {show('playtime') && (
                   <td className={`td-pt ${r.logId ? 'linked' : ''}`}
                     onClick={() => openLogMobile(r)}>
                     {r.playtime}
                   </td>
                 )}
-                {show('date') && <td className="td-date">{r.date ? r.date.replace(/-/g, '.') : ''}</td>}
                 {/* 클립 칸 — 외부 URL 또는 백업 로그 연결 (4.16) */}
                 {show('url') && (
                   <td className="td-url">

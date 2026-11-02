@@ -4,7 +4,7 @@
 // 아트는 여러 장 — 첫 장이 대표 풀 아트이자 리스트 썸네일(3:4 크롭) 원본 (6.1)
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { Character, CharTab, ColorChip, Visibility, CharGrant } from '@/lib/charStore';
+import { Character, CharTab, ColorChip, Visibility, CharGrant, TabGroup, defaultTabGroups } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -266,7 +266,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
         <button className="btn btn-ghost" style={addBtn}
           onClick={() => {
             const id = newId();
-            setTabs(l => [...l, { id, icon: '✦', title: '', html: '' }]);
+            setTabs(l => [...l, { id, icon: '✦', title: '', html: '', groups: defaultTabGroups(newId) }]);
             setView(id); // 바로 전용 편집 화면으로
           }}>＋ ADD TAB</button>
 
@@ -379,6 +379,9 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
   onDelete: () => void;
   onBack: () => void;
 }) {
+  const groups: TabGroup[] = tab.groups ?? [];
+  const setGroups = (g: TabGroup[]) => onChange({ groups: g });
+  const setGroup = (id: string, items: TabGroup['items']) => setGroups(groups.map(x => (x.id === id ? { ...x, items } : x)));
   return (
     <div className="panel" style={{ padding: 24, display: 'grid', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -396,6 +399,40 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
           onChange={e => onChange({ title: e.target.value })} />
         <KInput placeholder="소제목 (선택)" value={tab.subtitle ?? ''}
           onChange={e => onChange({ subtitle: e.target.value })} />
+      </div>
+      {/* 항목 그룹 — 기본 정보 항목처럼 라벨·값을 넣는다. 그룹이 다르면 화면에서 사이가 살짝 벌어진다 */}
+      <label className="k-label" style={{ margin: 0 }}>
+        항목 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 그룹별로 묶어 제목 아래에 표시 · ⠿ 순서 변경</span>
+      </label>
+      {groups.map((g, gi) => (
+        <div key={g.id} style={{ border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', display: 'grid', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>그룹 {gi + 1}</small>
+            <span className="fx" style={{ marginLeft: 'auto' }} data-tip="그룹 삭제"
+              onClick={() => setGroups(groups.filter(x => x.id !== g.id))}>✕</span>
+          </div>
+          <DragList items={g.items} keyOf={x => x.id} onReorder={items => setGroup(g.id, items)}
+            render={x => (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', padding: '2px 0' }}>
+                <span className="drag-h">⠿</span>
+                <KInput placeholder="항목" value={x.label} style={{ fontSize: 12, padding: '7px 10px', width: 90 }}
+                  onChange={e => setGroup(g.id, g.items.map(y => (y.id === x.id ? { ...y, label: e.target.value } : y)))} />
+                <KInput placeholder="값" value={x.value} style={{ fontSize: 12, padding: '7px 10px' }}
+                  onChange={e => setGroup(g.id, g.items.map(y => (y.id === x.id ? { ...y, value: e.target.value } : y)))} />
+                <span className="fx" onClick={() => setGroup(g.id, g.items.filter(y => y.id !== x.id))}>✕</span>
+              </div>
+            )} />
+          <button className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 11, justifySelf: 'center' }}
+            onClick={() => setGroup(g.id, [...g.items, { id: newId(), label: '', value: '' }])}>＋ 항목</button>
+        </div>
+      ))}
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+          onClick={() => setGroups([...groups, { id: newId(), items: [{ id: newId(), label: '', value: '' }] }])}>＋ 그룹 추가</button>
+        {groups.length === 0 && (
+          <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+            onClick={() => setGroups(defaultTabGroups(newId))}>기본 항목 넣기</button>
+        )}
       </div>
       {/* 리치 에디터 (TipTap) — 툴바로 서식·이미지 삽입, 출력은 HTML */}
       <RichEditor value={tab.html} onChange={html => onChange({ html })}

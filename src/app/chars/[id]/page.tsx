@@ -327,6 +327,17 @@ function CharDetailInner() {
             <>
               <h3 className="tab-tt">{curTab?.title}</h3>
               {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
+              {/* 항목 그룹 — 항목명은 캐릭터 테마색·왼쪽 정렬, 값은 같은 열에 맞춰 · 그룹 사이는 살짝만 띄운다 */}
+              {(curTab?.groups ?? []).map(g => {
+                const rows = g.items.filter(x => x.label.trim() && x.value.trim());
+                return rows.length === 0 ? null : (
+                  <dl key={g.id} className="tab-spec">
+                    {rows.map(x => (
+                      <React.Fragment key={x.id}><dt style={{ color: eff.color }}>{x.label}</dt><dd>{x.value}</dd></React.Fragment>
+                    ))}
+                  </dl>
+                );
+              })}
               <div className="prose" dangerouslySetInnerHTML={{ __html: tabHtml }} />
             </>
           )}

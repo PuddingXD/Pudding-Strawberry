@@ -1140,6 +1140,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .spec{display:grid;grid-template-columns:76px 1fr;gap:7px 10px;font-size:calc(12.5px*var(--fs,1));margin-bottom:18px}
 .spec dt{color:var(--faint);letter-spacing:.06em}
 .spec dd{color:var(--ink)}
+/* 추가 탭 항목 그룹 — 항목명(캐릭터 테마색, 왼쪽 정렬) + 값(여백을 두고 같은 열에 정렬). 그룹 사이는 한 줄(엔터)보다 좁게 */
+.tab-spec{display:grid;grid-template-columns:minmax(64px,max-content) 1fr;gap:5px 18px;font-size:calc(12.5px*var(--fs,1));margin:0 0 14px;text-align:left}
+.tab-spec dt{font-weight:600;letter-spacing:.04em;text-align:left}
+.tab-spec dd{color:var(--ink);margin:0;text-align:left;word-break:break-word}
 .prose{font-size:calc(14px*var(--fs,1));line-height:1.85;color:#3a3f47}
 .prose b{display:block;margin-bottom:4px}
 .tabnote{margin-top:16px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:calc(11px*var(--fs,1));color:var(--faint)}
