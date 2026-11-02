@@ -76,6 +76,20 @@ export function loadImg(url: string): Promise<HTMLImageElement | null> {
   });
 }
 
+/** 이미지를 "내 쪽 파일"로 불러온다 — 저장소 주소(https)를 그대로 캔버스에 그리면 보안상 캔버스가 잠겨
+ *  PNG를 만들 수 없으므로(저장 단계에서 멈춤), 받아서 blob으로 바꾼 뒤 그린다. 실패하면 null(그 이미지는 생략) */
+export async function loadLocalImg(url: string): Promise<HTMLImageElement | null> {
+  try {
+    if (/^(blob:|data:)/.test(url)) return await loadImg(url);
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) return null;
+    const u = URL.createObjectURL(await r.blob());
+    const im = await loadImg(u);
+    setTimeout(() => URL.revokeObjectURL(u), 10000);
+    return im;
+  } catch { return null; }
+}
+
 /** CSS 색(hex·rgb·var 해석 포함)을 [r,g,b]로 */
 function rgbOf(c: string): [number, number, number] {
   const el = document.createElement('span');
@@ -94,7 +108,7 @@ export async function exportTimelinePng(list: HTMLElement, filename: string, o: 
   const lr = list.getBoundingClientRect();
   if (lr.width < 10 || lr.height < 10) return false;
 
-  const hdrImg = o.header ? await loadImg(o.header.url) : null;
+  const hdrImg = o.header ? await loadLocalImg(o.header.url) : null;
   const hh = hdrImg && o.header ? Math.round(o.header.height) : 0;
   const CARD = '#ffffff';
 
@@ -106,6 +120,7 @@ export async function exportTimelinePng(list: HTMLElement, filename: string, o: 
   // 스티커 — 타임라인 칸 기준 상대 위치를 그대로 옮긴다 (카드 밖으로 나온 것도 바깥 배경 위에 그려짐)
   type St = { im: HTMLImageElement; cx: number; cy: number; w: number; h: number; rot: number };
   const sts: St[] = [];
+  const stSrc: { el: HTMLElement; im: HTMLImageElement }[] = [];
   let minX = 0, minY = 0, maxX = cardW + MARGIN * 2, maxY = cardH + MARGIN * 2;
   if (o.stickers) {
     document.querySelectorAll<HTMLElement>('[data-sticker]').forEach(el => {
@@ -121,11 +136,16 @@ export async function exportTimelinePng(list: HTMLElement, filename: string, o: 
       const cx = LX + (cxp - lr.left), cy = LY + (cyp - lr.top);
       // 타임라인 주변(160px)에 걸친 것만
       if (cx + bw / 2 < LX - 160 || cx - bw / 2 > LX + lr.width + 160 || cy + bh / 2 < LY - 160 || cy - bh / 2 > LY + lr.height + 160) return;
+      stSrc.push({ el, im });
       sts.push({ im, cx, cy, w, h, rot });
       minX = Math.min(minX, cx - bw / 2 - 20); maxX = Math.max(maxX, cx + bw / 2 + 20);
       minY = Math.min(minY, cy - bh / 2 - 20); maxY = Math.max(maxY, cy + bh / 2 + 20);
     });
   }
+
+  // 스티커 이미지도 내 쪽 파일로 교체 (못 받으면 그 스티커만 뺀다)
+  const local = await Promise.all(sts.map((s, i) => loadLocalImg(stSrc[i].im.currentSrc || stSrc[i].im.src)));
+  for (let i = sts.length - 1; i >= 0; i--) { const li = local[i]; if (li) sts[i].im = li; else sts.splice(i, 1); }
 
   const W = Math.ceil(maxX - minX), H = Math.ceil(maxY - minY);
   if (W * SCALE > 16000 || H * SCALE > 16000) return false;   // 너무 큰 이미지는 브라우저가 못 만든다

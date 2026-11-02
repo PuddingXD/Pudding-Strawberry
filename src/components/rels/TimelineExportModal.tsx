@@ -79,11 +79,14 @@ export function TimelineExportModal({ open, onClose, filename, getList, base, au
     const list = getList();
     if (!list) { toast('타임라인을 찾지 못했습니다'); return; }
     setBusy(true);
-    const ok = await exportTimelinePng(list, filename, {
-      ...base, title: title.trim(), bgStrength, stickers: stickers && hasStickers,
-      header: url ? { url, height, zoom, px, py } : undefined,
-    });
-    setBusy(false);
+    let ok = false;
+    try {
+      ok = await exportTimelinePng(list, filename, {
+        ...base, title: title.trim(), bgStrength, stickers: stickers && hasStickers,
+        header: url ? { url, height, zoom, px, py } : undefined,
+      });
+    } catch { ok = false; }
+    finally { setBusy(false); }   // 오류가 나도 버튼이 "만드는 중…"에 갇히지 않게
     toast(ok ? '이미지로 저장했습니다' : '이미지 저장에 실패했습니다 (너무 길면 브라우저가 못 만들 수 있어요)');
     if (ok) onClose();
   };
