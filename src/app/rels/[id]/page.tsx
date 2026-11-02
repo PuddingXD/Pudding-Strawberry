@@ -14,7 +14,7 @@ import {
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
-  findByKey, charPath,
+  findByKey, charPath, specGroupsOf,
 } from '@/lib/charStore';
 import { RelQuestionSet, CP_LABEL, useRelqSets } from '@/lib/relqStore';
 import { putBlob } from '@/lib/blobStore';
@@ -93,6 +93,13 @@ function RelArtCropModal({ fileRef, ratio, crop, onClose, onApply }: {
   );
 }
 
+/** 색 코드를 #RRGGBB(대문자 여섯 자리)로 — 3자리 표기는 펼쳐서 */
+const hex6 = (h: string) => {
+  let x = h.trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(x)) x = x.split('').map(c => c + c).join('');
+  return `#${x.toUpperCase()}`;
+};
+
 const noteOf = (m: RelMember) => (m.linkedNote === '상대 캐릭터' ? '' : m.linkedNote ?? '');
 
 function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side, onMoveSide, onFaceCrop }: {
@@ -162,13 +169,18 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         </div>
       </div>
       <div className="specs">
-        {char.specs.map(s => <div key={s.label}><b>{s.label}</b> {s.value}</div>)}
+        {/* 기본 정보 그룹 — 캐릭터 프로필과 같은 그룹 나눔, 그룹 사이에 여백 */}
+        {specGroupsOf(char).filter(g => g.items.length > 0).map(g => (
+          <div key={g.id} className="spec-grp">
+            {g.items.map(s => <div key={s.id}><b>{s.label}</b> {s.value}</div>)}
+          </div>
+        ))}
       </div>
       {/* 캐릭터의 지금 색 팔레트를 그대로 읽는다 (v2.0 사용자 발견).
           예전엔 멤버를 추가할 때 복사해 둔 member.palette 스냅샷을 보여 줘서, 캐릭터 쪽에서 색을
           지우거나 더 넣어도 자관 페이지는 추가 당시 상태에 멈춰 있었다("지웠는데 안 사라져",
           "더 등록해도 추가로 안 떠"의 원인). 옛 저장분은 캐릭터에 색이 하나도 없을 때만 fallback */}
-      <div className="palette-row" data-tip="캐릭터 테마색 팔레트">
+      <div className="palette-row">
         {/* `?? `(nullish)로 판단 — 빈 배열은 "색을 다 지웠다"는 뜻이라 그대로 비워야 한다.
             length로 보면 전부 지웠을 때 옛 스냅샷이 되살아난다 (v2.0 사용자 재신고) */}
         {/* 색 점 테두리 — 캐릭터의 colorBd 설정을 여기서도 (v2.0 사용자 요청: 카드 배경과
@@ -177,7 +189,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         {(char.colors ?? member.palette).map(p => {
           const bd = char.colorBd === 'none' ? null : (char.colorBd ?? 'rgba(0,0,0,.14)');
           return (
-            <Tip key={p.hex + p.label} tip={p.label}>
+            <Tip key={p.hex + p.label} tip={hex6(p.hex)}>
               <span className="gem" style={{ background: bd ?? p.hex }}>
                 {bd && <i style={{ background: p.hex }} />}
               </span>
@@ -1101,17 +1113,21 @@ function RelDetailInner() {
         </div>
       )}
 
+      {/* 문서 — 별도 네모 아이콘. 누르면 바로 전체 읽기 화면 (자캐의 아이콘 탭과 같은 모양) */}
+      {(rel.docs ?? []).some(d => d.html.trim() && d.html.trim() !== '<p></p>') && (
+        <div className="rel-doc-icons">
+          {(rel.docs ?? []).filter(d => d.html.trim() && d.html.trim() !== '<p></p>').map(d => (
+            <button key={d.id} data-tip={d.title || '문서'} onClick={() => router.push(`/rels/${rel.id}/read?doc=${d.id}`)}>{d.icon}</button>
+          ))}
+        </div>
+      )}
+
       {/* 타임라인 / 페어 문답 탭 (v1.8) */}
       <div className={`panel timeline ${!isDuo ? 'multi' : ''}`} style={{ fontFamily: familyOf(auBodyFont) }}>
         <div className="rel-tabs">
           <button className={tab === 'tl' ? 'on' : ''} onClick={() => setTab('tl')}><span className="lb-pc">TIMELINE</span><span className="lb-m">T</span></button>
           {/* QUESTIONS 섹션은 ＋로 추가해야 생김 (v1.9) — 처음에는 타임라인만 */}
           {qaOn && <button className={tab === 'qa' ? 'on' : ''} onClick={() => setTab('qa')}><span className="lb-pc">QUESTIONS</span><span className="lb-m">Q</span></button>}
-          {/* 문서 탭 — 긴 글. 아이콘을 누르면 바로 전체 읽기 화면 (v2.2 사용자 요청) */}
-          {(rel.docs ?? []).filter(d => d.html.trim() && d.html.trim() !== '<p></p>').map(d => (
-            <button key={d.id} data-tip={d.title || '문서'} style={{ fontSize: 15, padding: '0 8px' }}
-              onClick={() => router.push(`/rels/${rel.id}/read?doc=${d.id}`)}>{d.icon}</button>
-          ))}
           {/* QUESTIONS 탭 숨기기 (v2.1 사용자 요청 — 타임라인만 보이게 되돌리기). 문답 자료는 남고 ＋로 다시 켠다 */}
           {isAdmin && qaOn && (
             <button data-tip="QUESTIONS 탭 숨기기 — 질문·답변은 지워지지 않고 ＋로 다시 켤 수 있습니다" style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}

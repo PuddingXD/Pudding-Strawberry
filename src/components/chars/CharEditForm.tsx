@@ -4,7 +4,8 @@
 // 아트는 여러 장 — 첫 장이 대표 풀 아트이자 리스트 썸네일(3:4 크롭) 원본 (6.1)
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth';
-import { Character, CharTab, ColorChip, Visibility, CharGrant, TabGroup, defaultTabGroups } from '@/lib/charStore';
+import { Character, CharTab, ColorChip, Visibility, CharGrant, TabGroup, defaultTabGroups, defaultSpecGroups, specGroupsOf } from '@/lib/charStore';
+import { GroupsEditor } from '@/components/chars/GroupsEditor';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -12,6 +13,7 @@ import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { KInput, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
+import { DEFAULT_DOC_SIZE } from '@/lib/docs';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
@@ -32,9 +34,6 @@ function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   if (!src) return <div className="ph" style={{ width: '100%', height: '100%' }} />;
   return <CropImg src={src} crop={crop} />;
 }
-
-/** 새 캐릭터의 기본 정보 항목 — 값은 비워 두고, 순서·이름·개수는 그대로 고칠 수 있다 (내 캐릭터·상대 캐릭터 공통) */
-export const DEFAULT_SPECS = ['나이', '성별', '키', '체중', '혈액형', '생일'].map(label => ({ label, value: '' }));
 
 export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }: {
   initial: Character | null;               // null = 신규 등록
@@ -60,8 +59,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [nameSize, setNameSize] = useState(initial?.nameSize ?? 38);   // 상세 큰 이름 크기 (v2.0)
   const [nameBold, setNameBold] = useState(initial?.nameBold ?? true); // 상세 이름 볼드 (v2.0 — 기본 켜짐)
   const [bodyFontId, setBodyFontId] = useState(initial?.bodyFontId ?? 'default');
-  const [specs, setSpecs] = useState<SpecRow[]>(
-    (initial?.specs ?? DEFAULT_SPECS).map(s => ({ ...s, id: newId() })));
+  // 기본 정보 항목 — 그룹 단위 (새 캐릭터: 나이·성별 / 키·체중·혈액형·생일)
+  const [specGroups, setSpecGroups] = useState<TabGroup[]>(() => (initial
+    ? specGroupsOf(initial).map(g => ({ id: newId(), items: g.items.map(x => ({ ...x, id: newId() })) }))
+    : defaultSpecGroups(newId)));
   const [colors, setColors] = useState<ColorRow[]>((initial?.colors ?? []).map(c => ({ ...c, id: newId() })));
   const [colorTipMode, setColorTipMode] = useState<'hex' | 'both' | 'label'>(initial?.colorTipMode ?? 'hex');
   // 색 점 테두리 (v2.0 사용자 요청) — 없음 / 1px(색 지정). 미지정이면 지금까지의 옅은 테두리
@@ -108,7 +109,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       colors: colors.filter(x => x.hex).map(({ hex, label }) => ({ hex, label })),
       colorTipMode,
       colorBd,
-      specs: specs.filter(s => s.label.trim()).map(({ label, value }) => ({ label: label.trim(), value })),
+      specGroups: specGroups
+        .map(g => ({ id: g.id, items: g.items.filter(x => x.label.trim()).map(x => ({ id: x.id, label: x.label.trim(), value: x.value })) }))
+        .filter(g => g.items.length > 0),
+      specs: specGroups.flatMap(g => g.items).filter(x => x.label.trim()).map(x => ({ label: x.label.trim(), value: x.value })),
       tabs,   // 제목이 비어도 유지 — 필터로 사라지던 버그 수정 (v1.9 사용자 지적)
       basicHtml,
       visibility,
@@ -196,23 +200,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
 
         {/* 기본 정보 스펙 */}
         <label className="k-label" style={{ margin: 0 }}>기본 정보 항목</label>
-        <DragList items={specs} keyOf={s => s.id} onReorder={setSpecs}
-          render={s => (
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', padding: '2px 0' }}>
-              <span className="drag-h">⠿</span>
-              <KInput placeholder="항목" value={s.label} style={{ ...rowInp, width: 90 }}
-                onChange={e => setSpecs(l => l.map(x => x.id === s.id ? { ...x, label: e.target.value } : x))} />
-              <KInput placeholder="값" value={s.value} style={rowInp}
-                onChange={e => setSpecs(l => l.map(x => x.id === s.id ? { ...x, value: e.target.value } : x))} />
-              <span className="fx" onClick={() => {
-                const remove = () => setSpecs(l => l.filter(x => x.id !== s.id));
-                if (s.label.trim() || s.value.trim()) del.ask('이 항목을 삭제하시겠습니까?', remove, `${s.label} — ${s.value}`);
-                else remove();
-              }}>✕</span>
-            </div>
-          )} />
-        <button className="btn btn-ghost" style={addBtn}
-          onClick={() => setSpecs(l => [...l, { id: newId(), label: '', value: '' }])}>＋ ADD</button>
+        <GroupsEditor groups={specGroups} onChange={setSpecGroups} defaults={() => defaultSpecGroups(newId)} />
 
         {/* 테마 컬러 — 한 줄에 2개 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
@@ -382,9 +370,8 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
 }) {
   const groups: TabGroup[] = tab.groups ?? [];
   const setGroups = (g: TabGroup[]) => onChange({ groups: g });
-  const setGroup = (id: string, items: TabGroup['items']) => setGroups(groups.map(x => (x.id === id ? { ...x, items } : x)));
   return (
-    <div className="panel" style={{ padding: 24, display: 'grid', gap: 12 }}>
+    <div className="panel" style={{ padding: 24, display: 'grid', gap: 12, overflow: 'visible' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <button className="btn btn-ghost" onClick={onBack}>‹ 돌아가기</button>
         <b style={{ fontSize: 14 }}>탭 편집</b>
@@ -405,39 +392,18 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
       <label className="k-label" style={{ margin: 0 }}>
         항목 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 그룹별로 묶어 제목 아래에 표시 · ⠿ 순서 변경</span>
       </label>
-      {groups.map((g, gi) => (
-        <div key={g.id} style={{ border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px', display: 'grid', gap: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>그룹 {gi + 1}</small>
-            <span className="fx" style={{ marginLeft: 'auto' }} data-tip="그룹 삭제"
-              onClick={() => setGroups(groups.filter(x => x.id !== g.id))}>✕</span>
-          </div>
-          <DragList items={g.items} keyOf={x => x.id} onReorder={items => setGroup(g.id, items)}
-            render={x => (
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', padding: '2px 0' }}>
-                <span className="drag-h">⠿</span>
-                <KInput placeholder="항목" value={x.label} style={{ fontSize: 12, padding: '7px 10px', width: 90 }}
-                  onChange={e => setGroup(g.id, g.items.map(y => (y.id === x.id ? { ...y, label: e.target.value } : y)))} />
-                <KInput placeholder="값" value={x.value} style={{ fontSize: 12, padding: '7px 10px' }}
-                  onChange={e => setGroup(g.id, g.items.map(y => (y.id === x.id ? { ...y, value: e.target.value } : y)))} />
-                <span className="fx" onClick={() => setGroup(g.id, g.items.filter(y => y.id !== x.id))}>✕</span>
-              </div>
-            )} />
-          <button className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 11, justifySelf: 'center' }}
-            onClick={() => setGroup(g.id, [...g.items, { id: newId(), label: '', value: '' }])}>＋ 항목</button>
-        </div>
-      ))}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-        <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
-          onClick={() => setGroups([...groups, { id: newId(), items: [{ id: newId(), label: '', value: '' }] }])}>＋ 그룹 추가</button>
-        {groups.length === 0 && (
-          <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
-            onClick={() => setGroups(defaultTabGroups(newId))}>기본 항목 넣기</button>
-        )}
+      <GroupsEditor groups={groups} onChange={setGroups} defaults={() => defaultTabGroups(newId)} />
+      {/* 전체 읽기 · 글자 크기 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <KCheck label="전체 읽기 사용" checked={!!tab.fullRead} onChange={v => onChange({ fullRead: v })} />
+        <span className="hint" style={{ margin: 0 }}>켜면 탭에는 제목·소제목·항목만 보이고, 본문은 「전체 읽기 &gt;」 화면에서 읽습니다</span>
+        <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label className="k-label" style={{ margin: 0 }}>본문 글자 크기</label>
+          <KStep value={tab.size ?? DEFAULT_DOC_SIZE} min={8} max={24} step={1} suffix="px" onChange={v => onChange({ size: v })} />
+        </span>
       </div>
-      {/* 리치 에디터 (TipTap) — 툴바로 서식·이미지 삽입, 출력은 HTML */}
       <DocImport html={tab.html} onChange={html => onChange({ html })} />
-      <RichEditor value={tab.html} onChange={html => onChange({ html })}
+      <RichEditor doc size={tab.size ?? DEFAULT_DOC_SIZE} value={tab.html} onChange={html => onChange({ html })}
         placeholder="탭 내용을 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
       <button className="btn btn-dark" style={{ justifySelf: 'end' }} onClick={onBack}>완료 — 목록으로</button>
     </div>

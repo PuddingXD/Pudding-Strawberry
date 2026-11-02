@@ -8,6 +8,7 @@ import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
 import { SymbolInput } from '@/components/ui/SymbolInput';
 import { newId as newDocId } from '@/lib/postStore';
+import { DEFAULT_DOC_SIZE } from '@/lib/docs';
 import { ColorField } from '@/components/ui/ColorField';
 import { isValidSlug, slugify } from '@/lib/link';
 import { CP_LABEL } from '@/lib/relqStore';
@@ -372,7 +373,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   return (
     <div className="write-grid">
       {/* 좌: 유형 · 내 캐릭터 연동(등록 시) · 아트 */}
-      <div className="panel" style={{ padding: 24, display: 'grid', gap: 14, alignContent: 'start' }}>
+      <div className="panel" style={{ padding: 24, display: 'grid', gap: 14, alignContent: 'start', overflow: 'visible' }}>
         <div>
           <label className="k-label">유형</label>
           {isNew ? (
@@ -669,8 +670,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                         <KInput placeholder="문서 제목" value={d.title} onChange={e => patch({ title: e.target.value })} />
                         <KInput placeholder="소제목 (선택)" value={d.subtitle ?? ''} onChange={e => patch({ subtitle: e.target.value })} />
                       </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <label className="k-label" style={{ margin: 0 }}>본문 글자 크기</label>
+                        <KStep value={d.size ?? DEFAULT_DOC_SIZE} min={8} max={24} step={1} suffix="px" onChange={v => patch({ size: v })} />
+                      </div>
                       <DocImport html={d.html} onChange={html => patch({ html })} />
-                      <RichEditor value={d.html} onChange={html => patch({ html })} placeholder="긴 글을 작성하거나 파일에서 불러오세요" />
+                      <RichEditor doc size={d.size ?? DEFAULT_DOC_SIZE} value={d.html} onChange={html => patch({ html })} placeholder="긴 글을 작성하거나 파일에서 불러오세요" />
                     </>
                   )}
                 </div>

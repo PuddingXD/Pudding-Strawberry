@@ -5,9 +5,9 @@
 import React, { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, Relation, REL_SEED , findByKey } from '@/lib/charStore';
-import { CharEditForm, DEFAULT_SPECS } from '@/components/chars/CharEditForm';
+import { useLocalList, newId } from '@/lib/postStore';
+import { Character, CHAR_SEED, charGrant, charWithAu, Relation, REL_SEED , findByKey, defaultSpecGroups } from '@/lib/charStore';
+import { CharEditForm } from '@/components/chars/CharEditForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
 
@@ -51,7 +51,7 @@ function CharEditInner() {
       ? charWithAu(ch, auKey)
       : {
         ...ch, name: '', sub: '', basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
-        specs: DEFAULT_SPECS,
+        specs: [], specGroups: defaultSpecGroups(newId),
         arts: [], artId: undefined, thumbId: undefined, thumbCrop: undefined,
       })
     : ch;
@@ -79,7 +79,7 @@ function CharEditInner() {
                   ...x.auProfiles?.[auKey],
                   name: c.name, sub: c.sub, color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorTipMode: c.colorTipMode,
-                  specs: c.specs, tabs: c.tabs, basicHtml: c.basicHtml,
+                  specs: c.specs, specGroups: c.specGroups, tabs: c.tabs, basicHtml: c.basicHtml,
                   arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop,
                   fontId: c.fontId, nameSize: c.nameSize, nameBold: c.nameBold, bodyFontId: c.bodyFontId,
                 },

@@ -1141,7 +1141,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .spec dt{color:var(--faint);letter-spacing:.06em}
 .spec dd{color:var(--ink)}
 /* 추가 탭 항목 그룹 — 모양은 기본 정보(.spec)와 똑같고, 그룹 사이만 넉넉히 띄운다 */
-.tab-spec{margin-bottom:34px}
+.tab-spec{margin-bottom:17px}
 .tab-spec dd{word-break:break-word}
 .prose{font-size:calc(14px*var(--fs,1));line-height:1.85;color:#3a3f47}
 .prose b{display:block;margin-bottom:4px}
@@ -1192,6 +1192,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .mini-prof .specs{padding:11px 16px;font-size:calc(11.5px*var(--fs,1));color:var(--sub)}
 .mini-prof .specs div{display:flex;gap:8px;padding:2.5px 0}
 .mini-prof .specs b{color:var(--faint);font-weight:600;min-width:34px}
+.mini-prof .specs .spec-grp{display:block;padding:0;gap:0}
+.mini-prof .specs .spec-grp + .spec-grp{margin-top:10px}   /* 항목 그룹 사이 여백 (프로필과 같은 나눔) */
 .mini-prof .foot{padding:9px 15px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;font-size:calc(9.5px*var(--fs,1));color:var(--faint)}
 .palette-row{display:flex;gap:6px;padding:0 15px 11px}
 .palette-row .gem{display:inline-block;width:14px;height:14px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);cursor:help;position:relative}
@@ -2111,10 +2113,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-toc.l2{padding-left:30px}
 .doc-toc.l3{padding-left:42px;font-size:calc(11px*var(--fs,1))}
 .doc-toc-btn{display:none}
-.doc-main{background:var(--panel-bg,#fff);border:1px solid var(--line);border-radius:var(--radius,14px);padding:30px 34px;min-width:0}
+.doc-main{padding:30px 34px;min-width:0;overflow:visible}   /* .panel과 함께 — 테마색을 따르고, 안의 에디터 툴바가 따라다닐 수 있게 overflow 해제 */
 .doc-title{font-size:calc(21px*var(--fs,1));margin:0 0 4px}
 .doc-sub{font-size:calc(12px*var(--fs,1));color:var(--faint);margin-bottom:18px}
-.doc-body{font-size:calc(15px*var(--fs,1));line-height:2;color:var(--ink);word-break:break-word}
+.doc-body{font-size:calc(var(--doc-fs,10px)*var(--fs,1));line-height:2;color:var(--ink);word-break:break-word}
 .doc-body p{margin:0 0 1.1em}
 .doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
 .doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
@@ -2136,3 +2138,23 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-preview.cut{-webkit-mask-image:linear-gradient(#000 62%,transparent);mask-image:linear-gradient(#000 62%,transparent)}
 .doc-open{margin-top:10px}
 @keyframes ptr-spin{to{transform:rotate(360deg)}}
+
+/* 문서 본문 공통 모양 — 읽기 화면 · 탭 본문 · 편집기가 똑같이 보이도록 (엔터로 만든 빈 줄도 그대로) */
+.doc-body p:empty::after,.re-content.doc-body p:empty::after{content:"\00a0"}
+.doc-body ul,.doc-body ol,.re-wrap .re-content.doc-body ul,.re-wrap .re-content.doc-body ol{margin:0 0 1.1em;padding:0;list-style-position:inside}
+.doc-body li>p,.re-wrap .re-content.doc-body li>p{display:inline;margin:0}
+.re-wrap .re-content.doc-body{font-size:calc(var(--doc-fs,10px)*var(--fs,1));line-height:2}
+.re-wrap .re-content.doc-body p{margin:0 0 1.1em}
+.re-wrap .re-content.doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
+.re-wrap .re-content.doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
+.re-wrap .re-content.doc-body h3{font-size:1.1em;margin:1.4em 0 .4em;line-height:1.4}
+/* 에디터 툴바는 글이 길어져도 위에 붙어 따라온다 (패널 overflow를 풀어야 동작) */
+.re-wrap{overflow:visible}
+.re-toolbar{position:sticky;top:0;z-index:20;border-radius:var(--radius-s) var(--radius-s) 0 0}
+/* 전체 읽기 > — 네모 없이 글자만, 오른쪽 정렬 */
+.doc-more{display:block;margin:0 0 0 auto;padding:2px 0;font-style:italic;font-weight:700;font-size:calc(12.5px*var(--fs,1));color:var(--accent);background:none;border:none;cursor:var(--cur-pointer,pointer);letter-spacing:.02em}
+.doc-more:hover{opacity:.7}
+/* 자관 문서 아이콘 — 자캐 왼쪽 아이콘 탭과 같은 네모 */
+.rel-doc-icons{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 14px}
+.rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}

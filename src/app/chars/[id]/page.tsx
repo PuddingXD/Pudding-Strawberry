@@ -8,7 +8,7 @@ import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey} from '@/lib/charStore';
+import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey, specGroupsOf } from '@/lib/charStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
 import { useTheme } from '@/lib/ThemeProvider';
@@ -19,7 +19,7 @@ import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/Crop
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useSectionTitle } from '@/lib/sectionStore';
 import { ConfirmModal } from '@/components/ui/Modal';
-import { DocPreview } from '@/components/ui/DocReader';
+import { DocBody, ReadMore } from '@/components/ui/DocReader';
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -293,10 +293,15 @@ function CharDetailInner() {
             <>
               {/* 기본 정보 탭은 제목을 두지 않는다 — 처음 보이는 화면이라 안내가 필요 없다
                   (다른 탭은 무엇을 보는 중인지 알아야 하므로 제목을 그대로 둔다) */}
+              {/* 기본 정보 — 그룹 사이에 여백 (추가 탭 항목 그룹과 같은 17px) */}
+              {specGroupsOf(eff).filter(g => g.items.length > 0).map(g => (
+                <dl key={g.id} className="spec tab-spec">
+                  {g.items.map(s => (
+                    <React.Fragment key={s.id}><dt>{s.label}</dt><dd>{s.value}</dd></React.Fragment>
+                  ))}
+                </dl>
+              ))}
               <dl className="spec">
-                {eff.specs.map(s => (
-                  <React.Fragment key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></React.Fragment>
-                ))}
                 {eff.colors.length > 0 && (
                   <>
                     <dt>테마컬러</dt>
@@ -322,22 +327,32 @@ function CharDetailInner() {
             </>
           ) : (
             <>
-              <h3 className="tab-tt">{curTab?.title}</h3>
-              {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
-              {/* 항목 그룹 — 항목명은 캐릭터 테마색·왼쪽 정렬, 값은 같은 열에 맞춰 · 그룹 사이는 살짝만 띄운다 */}
-              {(curTab?.groups ?? []).map(g => {
-                const rows = g.items.filter(x => x.label.trim() && x.value.trim());
-                return rows.length === 0 ? null : (
-                  <dl key={g.id} className="spec tab-spec">
-                    {rows.map(x => (
-                      <React.Fragment key={x.id}><dt>{x.label}</dt><dd>{x.value}</dd></React.Fragment>
+              {/* 제목 · 소제목 · 항목 그룹 — 사이 간격은 모두 17px로 같다 */}
+              {(() => {
+                const groups = (curTab?.groups ?? []).map(g => ({ g, rows: g.items.filter(x => x.label.trim() && x.value.trim()) })).filter(x => x.rows.length > 0);
+                const gap = groups.length > 0 ? 17 : undefined;
+                return (
+                  <>
+                    <h3 className="tab-tt" style={curTab?.subtitle ? undefined : { marginBottom: gap ?? 4 }}>{curTab?.title}</h3>
+                    {curTab?.subtitle && <div className="sub" style={{ marginBottom: gap }}>{curTab.subtitle}</div>}
+                    {groups.map(({ g, rows }) => (
+                      <dl key={g.id} className="spec tab-spec">
+                        {rows.map(x => (
+                          <React.Fragment key={x.id}><dt>{x.label}</dt><dd>{x.value}</dd></React.Fragment>
+                        ))}
+                      </dl>
                     ))}
-                  </dl>
+                  </>
                 );
-              })}
-              {/* 긴 글은 미리보기만 — 전체는 읽기 화면에서 (목차·제목 이동) */}
-              <DocPreview html={curTab?.html ?? ''}
-                onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab?.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`)} />
+              })()}
+              {curTab?.fullRead ? (
+                /* 전체 읽기를 쓰는 탭 — 본문은 읽기 화면에서 (미리보기 없음) */
+                curTab.html.trim() && curTab.html.trim() !== '<p></p>' && (
+                  <ReadMore onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`)} />
+                )
+              ) : (
+                <DocBody html={curTab?.html ?? ''} size={curTab?.size} />
+              )}
             </>
           )}
         </div>

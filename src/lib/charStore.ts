@@ -20,11 +20,21 @@ export interface CharTab {
   title: string;
   subtitle?: string;     // 제목 아래 작은 글씨 (선택)
   html: string;          // HTML 에디터 내용 (스크립트 불허 — 렌더 시 sanitize)
+  fullRead?: boolean;    // 「전체 읽기」 화면을 쓰는 탭 — 켜면 탭에는 제목·소제목·항목만 보이고 본문은 읽기 화면에서
+  size?: number;         // 본문 글자 크기(px) — 기본 10
   groups?: TabGroup[];   // 항목 그룹 (제목 아래, 본문 위에 표시) — 새 탭은 Like/Hate · Symbol/Tarot/MBTI가 기본
 }
 
+/** 기본 정보 항목 그룹 — 그룹 단위로 묶고, 그룹 사이에 여백이 들어간다. 옛 데이터(specs 한 줄 목록)는 한 그룹으로 읽는다 */
+export const specGroupsOf = (c: { specs?: { label: string; value: string }[]; specGroups?: TabGroup[] }): TabGroup[] =>
+  c.specGroups ?? (c.specs?.length ? [{ id: 'g0', items: c.specs.map((s, i) => ({ id: `s${i}`, label: s.label, value: s.value })) }] : []);
+
+/** 새 캐릭터의 기본 정보 그룹 — 값은 비워 두고 수정·삭제·추가·순서 변경 가능 */
+export const defaultSpecGroups = (mk: () => string): TabGroup[] => [['나이', '성별'], ['키', '체중', '혈액형', '생일']]
+  .map(ls => ({ id: mk(), items: ls.map(label => ({ id: mk(), label, value: '' })) }));
+
 /** 새 추가 탭의 기본 항목 그룹 — 값은 비워 두고 수정·삭제·추가·순서 변경 가능 */
-export const defaultTabGroups = (mk: () => string): TabGroup[] => [['Like', 'Hate'], ['Symbol', 'Tarot', 'MBTI']]
+export const defaultTabGroups = (mk: () => string): TabGroup[] => [['Like', 'Hate'], ['Wand', 'Symbol', 'Tarot', 'MBTI']]
   .map(ls => ({ id: mk(), items: ls.map(label => ({ id: mk(), label, value: '' })) }));
 
 export interface Character {
@@ -39,7 +49,8 @@ export interface Character {
    *  미지정이면 지금까지와 같은 옅은 테두리(안 정한 홈은 모습이 안 바뀐다) */
   colorBd?: string;
   colorTipMode?: 'hex' | 'both' | 'label'; // 색 점 툴팁 표기: hex / 이름+hex / 이름만
-  specs: { label: string; value: string }[];
+  specs: { label: string; value: string }[];     // 항목을 한 줄로 편 목록 (다른 화면용) — 그룹은 specGroups
+  specGroups?: TabGroup[];                         // 기본 정보 항목 그룹 (없으면 specs를 한 그룹으로)
   tabs: CharTab[];       // 기본 정보 외 추가 탭
   basicHtml: string;     // 기본 정보 탭의 소개 본문 (HTML)
   visibility: Visibility;
@@ -90,6 +101,7 @@ export interface AuCharProfile {
   colors?: ColorChip[];
   colorTipMode?: 'hex' | 'both' | 'label';
   specs?: { label: string; value: string }[];
+  specGroups?: TabGroup[];
   tabs?: CharTab[];
   thumbId?: string;
   thumbCrop?: import("@/components/ui/CropEditor").CropValue;
@@ -113,7 +125,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.themeMode !== undefined ? { themeMode: p.themeMode } : {}),
     ...(p.colors !== undefined ? { colors: p.colors } : {}),
     ...(p.colorTipMode !== undefined ? { colorTipMode: p.colorTipMode } : {}),
-    ...(p.specs !== undefined ? { specs: p.specs } : {}),
+    ...(p.specs !== undefined ? { specs: p.specs, specGroups: p.specGroups } : {}),
     ...(p.tabs !== undefined ? { tabs: p.tabs } : {}),
     ...(p.basicHtml !== undefined ? { basicHtml: p.basicHtml } : {}),
     // 이미지는 **물려받지 않는다** (v2.0 사용자 요청) — AU 프로필에 안 넣었으면 비워 둔다.
@@ -371,7 +383,7 @@ export interface RelAu {
 }
 
 /** 자관 문서 탭 — 긴 글. 아이콘을 누르면 바로 전체 읽기 화면으로 간다 (자캐 추가 탭과 같은 읽기 화면) */
-export interface RelDoc { id: string; icon: string; title: string; subtitle?: string; html: string }
+export interface RelDoc { id: string; icon: string; title: string; subtitle?: string; html: string; size?: number }
 
 export interface Relation {
   id: string;

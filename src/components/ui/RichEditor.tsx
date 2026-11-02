@@ -27,10 +27,12 @@ function TBtn({ on, label, title, onClick }: { on?: boolean; label: React.ReactN
   );
 }
 
-export function RichEditor({ value, onChange, placeholder }: {
+export function RichEditor({ value, onChange, placeholder, doc, size }: {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  doc?: boolean;   // 긴 글(문서) 모양 — 읽기 화면과 같은 글자·문단·목록 모양으로 편집
+  size?: number;   // 문서 글자 크기(px)
 }) {
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -46,7 +48,7 @@ export function RichEditor({ value, onChange, placeholder }: {
     content: value || '<p></p>',
     immediatelyRender: false,
     editorProps: {
-      attributes: { class: 're-content prose' },
+      attributes: { class: doc ? 're-content prose doc-body' : 're-content prose' },
     },
     onUpdate: ({ editor: e }) => onChange(e.getHTML()),
   });
@@ -102,7 +104,7 @@ export function RichEditor({ value, onChange, placeholder }: {
   };
 
   return (
-    <div className="re-wrap">
+    <div className="re-wrap" style={size ? ({ '--doc-fs': `${size}px` } as React.CSSProperties) : undefined}>
       <div className="re-toolbar">
         <TBtn title="굵게" label={<b>B</b>} on={editor.isActive('bold')}
           onClick={() => editor.chain().focus().toggleBold().run()} />
