@@ -1612,7 +1612,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 단일형 뷰어 */
 /* 배경 하드코딩(남색) 제거 — 투명 이미지가 패널(테마) 색 위에 그대로 놓이게.
    뷰어는 16:10 고정 프레임 — 이미지 크기가 바뀌어도 창 크기는 불변, 작은 이미지는 가운데 */
-.single-viewer{position:relative;border-radius:var(--radius);overflow:hidden;aspect-ratio:16/10}
+.single-viewer{position:relative;border-radius:var(--radius);overflow:hidden}
 .single-viewer .nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(15,17,20,.45);color:#fff;display:grid;place-items:center;font-size:calc(15px*var(--fs,1));opacity:0;transition:.15s;z-index:2}
 .single-viewer:hover .nav{opacity:1}
 .single-viewer .nav:hover{background:rgba(15,17,20,.75)}
