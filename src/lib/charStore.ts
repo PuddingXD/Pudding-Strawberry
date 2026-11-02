@@ -82,6 +82,9 @@ export interface Character {
   quote?: string;        // 한마디 — 대표 아트 위 가운데 (자관의 한마디와 같은 모양)
   quoteColor?: string;   // 한마디 글씨색 (미지정: 기본)
   quoteMarkColor?: string;   // 한마디 따옴표색 (미지정: 포인트 소프트)
+  quoteSize?: number;        // 한마디 글자 크기 px (미지정: 15)
+  /** 아트별 상세 화면 보기 위치 (아트 ref → 크롭). 대표 썸네일 크롭과 별개 */
+  artCrops?: Record<string, import("@/components/ui/CropEditor").CropValue>;
   own: boolean;          // true = 운영자 자캐 (리스트 노출), false = 상대 캐릭터
   // 회원-캐릭터 연결 (3차, v1.9) — 상대 캐릭터에 회원 권한 부여:
   // play = 역극에서 이 캐릭터로 발화 가능, edit = 캐릭터 편집까지 가능 (play 포함)
@@ -108,6 +111,8 @@ export interface AuCharProfile {
   quote?: string;
   quoteColor?: string;
   quoteMarkColor?: string;
+  quoteSize?: number;
+  artCrops?: Record<string, import("@/components/ui/CropEditor").CropValue>;
   tabs?: CharTab[];
   thumbId?: string;
   thumbCrop?: import("@/components/ui/CropEditor").CropValue;
@@ -134,7 +139,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.specs !== undefined ? { specs: p.specs, specGroups: p.specGroups } : {}),
     ...(p.tabs !== undefined ? { tabs: p.tabs } : {}),
     // 한마디는 AU마다 따로 — AU 프로필에 한마디 칸이 있으면(비워도) 그것, 없으면 원본
-    ...(p.quote !== undefined ? { quote: p.quote, quoteColor: p.quoteColor, quoteMarkColor: p.quoteMarkColor } : {}),
+    ...(p.quote !== undefined ? { quote: p.quote, quoteColor: p.quoteColor, quoteMarkColor: p.quoteMarkColor, quoteSize: p.quoteSize } : {}),
     ...(p.basicHtml !== undefined ? { basicHtml: p.basicHtml } : {}),
     // 이미지는 **물려받지 않는다** (v2.0 사용자 요청) — AU 프로필에 안 넣었으면 비워 둔다.
     // 글씨(이름·소개·스펙)는 AU에서 안 고쳤으면 base를 쓰는 게 자연스럽지만, 그림은 다르다:
@@ -147,6 +152,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     // 상세 대표 아트 위치도 AU 자기 것 (루넬갠홈에서 이식 — 「이미지 위치 조정이 안 돼」). 저장은 AU 프로필에 하는데
     // 여기서 빠져 있어서, AU 화면은 원본 캐릭터의 위치(대개 없음 = 가운데)를 계속 썼다. 그림처럼 물려받지 않는다
     artCrop: p.artCrop,
+    artCrops: p.artCrops,
     ...(p.fontId !== undefined ? { fontId: p.fontId } : {}),
     ...(p.bodyFontId !== undefined ? { bodyFontId: p.bodyFontId } : {}),
     // nameSize는 여태 병합에 빠져 있었다 — AU에 저장은 되는데 표시가 base 크기를 따랐다 (v2.0 수정)

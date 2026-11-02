@@ -147,7 +147,7 @@ function DotoriPageInner() {
             <div className="bd">
               {/* 이름 클릭 = 시나리오 링크 (새 탭) · 카드 클릭 = 편집 (관리자) */}
               <b className={`nm ${it.link ? 'has-link' : ''}`}
-                onClick={e => { if (it.link) { e.stopPropagation(); window.open(it.link, '_blank'); } }}
+                onClick={e => { if (it.link) { e.stopPropagation(); if (/^https?:\/\//i.test(it.link)) window.open(it.link, '_blank', 'noopener,noreferrer'); } }}
                 data-tip={it.link ? '시나리오 링크 열기 (새 탭)' : undefined}>
                 {it.name}
               </b>

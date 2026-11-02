@@ -2,7 +2,7 @@
 // 캐릭터 등록/프로필 편집 — 전용 페이지 폼 (4.4)
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 아트는 여러 장 — 첫 장이 대표 풀 아트이자 리스트 썸네일(3:4 크롭) 원본 (6.1)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { Character, CharTab, ColorChip, Visibility, CharGrant, TabGroup, defaultTabGroups, defaultSpecGroups, specGroupsOf } from '@/lib/charStore';
 import { GroupsEditor } from '@/components/chars/GroupsEditor';
@@ -63,6 +63,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [quote, setQuote] = useState(initial?.quote ?? '');
   const [quoteColor, setQuoteColor] = useState<string | undefined>(initial?.quoteColor);
   const [quoteMarkColor, setQuoteMarkColor] = useState<string | undefined>(initial?.quoteMarkColor);
+  const [quoteSize, setQuoteSize] = useState(initial?.quoteSize ?? 15);
   // 기본 정보 항목 — 그룹 단위 (새 캐릭터: 나이·성별 / 키·체중·혈액형·생일)
   const [specGroups, setSpecGroups] = useState<TabGroup[]>(() => (initial
     ? specGroupsOf(initial).map(g => ({ id: newId(), items: g.items.map(x => ({ ...x, id: newId() })) }))
@@ -77,7 +78,28 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
     const refs = initial?.arts ?? (initial?.artId ? [initial.artId] : initial?.thumbId ? [initial.thumbId] : []);
     return refs.map(r => ({ id: newId(), ref: r }));
   });
+  // 저장돼 있던 보기 위치를 항목 id로 연결 (최초 1회)
+  const cropsInit = useRef(false);
+  useEffect(() => {
+    if (cropsInit.current) return;
+    cropsInit.current = true;
+    const src = initial?.artCrops ?? {};
+    const o: Record<string, CropValue> = {};
+    arts.forEach((a, i) => {
+      const c = (a.ref && src[a.ref]) || (i === 0 ? initial?.artCrop : undefined);
+      if (c) o[a.id] = c;
+    });
+    if (Object.keys(o).length) setViewCrops(o);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [thumbCrop, setThumbCrop] = useState<CropValue | undefined>(initial?.thumbCrop);
+  // 상세 화면 보기 위치 — 아트(목록 항목 id)별. 저장 때 아트 ref 키로 바꿔 담는다
+  const [viewCrops, setViewCrops] = useState<Record<string, CropValue>>(() => {
+    const o: Record<string, CropValue> = {};
+    // 목록 항목 id는 위 arts 초기화에서 새로 만들어지므로, 여기서는 ref 기준 임시 보관 후 아래 effect에서 연결
+    return o;
+  });
+  const [viewEdit, setViewEdit] = useState<string | null>(null);   // 보기 위치 편집 중인 아트 항목 id
   const [grants, setGrants] = useState<CharGrant[]>(initial?.grants ?? []); // 상대 캐릭터 회원 권한 (v1.9)
   const [cropOpen, setCropOpen] = useState(false);
   const [lb, setLb] = useState<number | null>(null);   // 아트 썸네일 클릭 → 원본 보기
@@ -101,6 +123,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       if (existingIds?.includes(slug)) { toast('이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요'); return; }
     }
     const artIds = await Promise.all(arts.map(a => (a.file ? putBlob(a.file) : Promise.resolve(a.ref!))));
+    const artCropsOut: Record<string, CropValue> = {};
+    arts.forEach((a, i) => { const c = viewCrops[a.id]; if (c) artCropsOut[artIds[i]] = c; });
     onSave({
       id: initial?.id ?? (slug || newId()),
       // 수정에서 정한 주소는 별명으로 (v2.0) — 신규는 주소가 곧 id라 따로 남기지 않는다
@@ -116,6 +140,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       quote: quote.trim() || undefined,
       quoteColor: quote.trim() ? quoteColor : undefined,
       quoteMarkColor: quote.trim() ? quoteMarkColor : undefined,
+      quoteSize: quote.trim() && quoteSize !== 15 ? quoteSize : undefined,
+      artCrops: Object.keys(artCropsOut).length ? artCropsOut : undefined,
+      artCrop: artCropsOut[artIds[0]],
       specGroups: specGroups
         .map(g => ({ id: g.id, items: g.items.filter(x => x.label.trim()).map(x => ({ id: x.id, label: x.label.trim(), value: x.value })) }))
         .filter(g => g.items.length > 0),
@@ -192,6 +219,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
                 ) : (
                   <span className="pill">추가 아트</span>
                 )}
+                <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5, lineHeight: '13px' }}
+                  data-tip="상세 페이지에서 이 아트가 보일 모습 미리보기·조절"
+                  onClick={() => setViewEdit(a.id)}>{viewCrops[a.id] ? '✂ 보기 조절 ✓' : '✂ 보기 조절'}</button>
                 <span className="fx" style={{ marginLeft: 'auto' }}
                   onClick={() => del.ask('이 아트를 삭제하시겠습니까?', () => setArts(l => l.filter(x => x.id !== a.id)))}>✕</span>
               </div>
@@ -214,6 +244,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
             <ColorField value={quoteColor ?? '#d7dae0'} onChange={setQuoteColor} />
             <span className="cp-lb">따옴표</span>
             <ColorField value={quoteMarkColor ?? '#c96a73'} onChange={setQuoteMarkColor} />
+            <span className="cp-lb">크기</span>
+            <KStep value={quoteSize} onChange={setQuoteSize} min={10} max={40} step={1} suffix="px" />
             {(quoteColor || quoteMarkColor) && (
               <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
                 onClick={() => { setQuoteColor(undefined); setQuoteMarkColor(undefined); }}>색 기본값</button>
@@ -374,6 +406,12 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
         <FirstArtCrop open={cropOpen} item={arts[0]} crop={thumbCrop}
           onClose={() => setCropOpen(false)}
           onApply={c => { setThumbCrop(c); setCropOpen(false); }} />
+      )}
+      {/* 상세 화면 보기 조절 — 상세 아트 칸(3:4)과 같은 비율로 미리보기 */}
+      {viewEdit && arts.find(a => a.id === viewEdit) && (
+        <FirstArtCrop open item={arts.find(a => a.id === viewEdit)!} crop={viewCrops[viewEdit]}
+          onClose={() => setViewEdit(null)}
+          onApply={c => { setViewCrops(m => ({ ...m, [viewEdit]: c })); setViewEdit(null); }} />
       )}
       {/* 아트 원본 보기 — 아직 저장 전 파일은 url, 저장된 것은 ref (Lightbox가 둘 다 처리) */}
       {lb !== null && (

@@ -103,7 +103,7 @@ export function TopBar() {
   // 지금 보고 있는 메뉴를 다시 누르면 그 페이지를 새로 불러옴 — 다시 접속하는 느낌 (v1.9 사용자 요청)
   const nav = (href: string) => {
     // 커스텀 링크에 다른 사이트 풀주소를 걸 수 있다 (v2.0) — 외부는 새 창으로
-    if (/^https?:\/\//.test(href)) { window.open(href, '_blank'); return; }
+    if (/^https?:\/\//.test(href)) { window.open(href, '_blank', 'noopener,noreferrer'); return; }
     if (guardNav(href)) return;
     // 같은 메뉴 재클릭 — 브라우저 새로고침 대신 페이지만 처음 상태로 다시 그림 (BGM이 끊기지 않게, v1.9).
     // **쿼리까지 비교해야 한다** (v2.0 사용자 문의로 발견) — 경로만 보면 /board?b=2 에서 /board 를

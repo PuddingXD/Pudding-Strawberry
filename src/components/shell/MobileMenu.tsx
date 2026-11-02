@@ -27,7 +27,7 @@ export function MobileMenu() {
     : [];
   const go = (href: string) => {
     setOpen(false);
-    if (/^https?:\/\//.test(href)) window.open(href, '_blank');   // 커스텀 링크의 외부 주소는 새 창 (상단 메뉴와 같은 규칙)
+    if (/^https?:\/\//.test(href)) window.open(href, '_blank', 'noopener,noreferrer');   // 커스텀 링크의 외부 주소는 새 창 (상단 메뉴와 같은 규칙)
     else router.push(href);
   };
   return (

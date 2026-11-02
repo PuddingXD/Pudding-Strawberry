@@ -58,7 +58,7 @@ export function BannerWidget({ conf }: { conf: WidgetConf }) {
     if (editOn || !s.link) return;
     // 기존 저장분에 풀주소가 있어도 같은 사이트면 내부 이동으로 (v1.9)
     const l = normalizeInternalLink(s.link);
-    if (/^https?:\/\//.test(l)) window.open(l, '_blank');
+    if (/^https?:\/\//.test(l)) window.open(l, '_blank', 'noopener,noreferrer');
     else router.push(l);
   };
 
@@ -124,12 +124,12 @@ export function MenuListWidget() {
             <div className="msub">
               {/* 커스텀 링크의 외부 주소는 새 창 (v2.0) — 상단 메뉴와 같은 규칙 */}
               {m.children.map(c => (
-                <a key={c.href} onClick={() => (/^https?:\/\//.test(c.href) ? window.open(c.href, '_blank') : router.push(c.href))}>{c.label}</a>
+                <a key={c.href} onClick={() => (/^https?:\/\//.test(c.href) ? window.open(c.href, '_blank', 'noopener,noreferrer') : router.push(c.href))}>{c.label}</a>
               ))}
             </div>
           </div>
         ) : (
-          <a key={m.label} onClick={() => (/^https?:\/\//.test(m.href!) ? window.open(m.href!, '_blank') : router.push(m.href!))}>{m.label}</a>
+          <a key={m.label} onClick={() => (/^https?:\/\//.test(m.href!) ? window.open(m.href!, '_blank', 'noopener,noreferrer') : router.push(m.href!))}>{m.label}</a>
         )
       )}
     </div>
@@ -499,7 +499,7 @@ export function DecoWidget({ conf }: { conf: WidgetConf }) {
     if (editOn) return;
     if (cur?.link) {
       const l = normalizeInternalLink(cur.link);
-      if (/^https?:\/\//.test(l)) window.open(l, '_blank');
+      if (/^https?:\/\//.test(l)) window.open(l, '_blank', 'noopener,noreferrer');
       else router.push(l);
     }
   };

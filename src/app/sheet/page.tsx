@@ -2,6 +2,7 @@
 // 시트 게시판 — 구글 스프레드시트 링크 모음 (표 형식)
 // With(말머리) · Name(시트 이름) · Check(관리자/회원 2칸) · Url · 말머리 탭으로 모아보기 · With/Name 정렬(기본: 등록 순) · 검색 · 페이지
 // 말머리는 환경설정 > 게시판 관리에서 정한다. 항목은 같은 목록(playlog)에 `sheet:` 소속으로 저장된다 (lib/sheetStore.ts)
+import { safeHref } from '@/lib/link';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -148,7 +149,7 @@ function SheetPageInner() {
                 {show('with') && <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>}
                 {show('name') && <td className="td-sc">
                   {r.url
-                    ? <a href={r.url} target="_blank" rel="noreferrer">{r.scenario}</a>
+                    ? <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer">{r.scenario}</a>
                     : r.scenario}
                 </td>}
                 {show('check') && <td className="td-chk">
@@ -160,7 +161,7 @@ function SheetPageInner() {
                     onClick={() => toggle(r, 'chkMember')} />
                 </td>}
                 {show('url') && <td className="td-url">
-                  {r.url && <a href={r.url} target="_blank" rel="noreferrer" aria-label="시트 열기 (새 탭)"><ClipIcon /></a>}
+                  {r.url && <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" aria-label="시트 열기 (새 탭)"><ClipIcon /></a>}
                 </td>}
                 {canAdd && (
                   <td className="td-mng">

@@ -1,6 +1,7 @@
 'use client';
 // TRPG 플레이기록 (4.16) — 표 형식 · Date 정렬 · 검색 · 페이지네이션 ·
 // Url 열은 클립 픽토그램(새 탭) · 로그 연결 시 Playtime 클릭으로 로그 이동
+import { safeHref } from '@/lib/link';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -184,7 +185,7 @@ function PlaylogPageInner() {
                 {show('scenario') && (
                   <td className="td-sc">
                     {r.scenarioLink
-                      ? <a href={r.scenarioLink} target="_blank" rel="noreferrer" data-tip="시나리오 링크 (새 탭)">{r.scenario}</a>
+                      ? <a href={r.scenarioLink} target="_blank" rel="noopener noreferrer" data-tip="시나리오 링크 (새 탭)">{r.scenario}</a>
                       : r.scenario}
                   </td>
                 )}
@@ -200,7 +201,7 @@ function PlaylogPageInner() {
                 {show('url') && (
                   <td className="td-url">
                     {r.url ? (
-                      <a href={r.url} target="_blank" rel="noreferrer" data-tip="링크 열기 (새 탭)"><ClipIcon /></a>
+                      <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" data-tip="링크 열기 (새 탭)"><ClipIcon /></a>
                     ) : r.logId ? (
                       <a data-tip="백업 로그 보기" style={{ cursor: 'var(--cur-pointer,pointer)' }}
                         onClick={() => router.push(`/trpg/${r.logId}`)}><ClipIcon /></a>

@@ -74,14 +74,19 @@ function CharDetailInner() {
   const eff = ch ? charWithAu(ch, auKey) : undefined;
 
   /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에 */
-  const saveArtCrop = (c: CropValue | undefined) => {
+  const saveArtCrop = (c: CropValue | undefined, ref?: string) => {
     if (!ch) return;
     setChars(chars.map(x => {
       // 주소의 값(id)이 아니라 찾은 캐릭터의 진짜 id로 (루넬갠홈에서 이식 — 「우클릭으로 위치를 조절해도 안 바뀐다」).
       // 별명 주소(/chars/별명)로 열면 주소 값이 id와 달라 어느 캐릭터에도 저장되지 않았다
       if (x.id !== ch.id) return x;
-      if (!auKey) return { ...x, artCrop: c };
-      return { ...x, auProfiles: { ...x.auProfiles, [auKey]: { ...x.auProfiles?.[auKey], artCrop: c } } };
+      const base = auKey ? x.auProfiles?.[auKey] : x;
+      const map = { ...(base?.artCrops ?? {}) };
+      if (ref) { if (c) map[ref] = c; else delete map[ref]; }
+      const first = (base?.arts ?? (x.artId ? [x.artId] : []))[0];
+      const patch = { artCrops: map, ...(ref && ref === first ? { artCrop: c } : {}) };
+      if (!auKey) return { ...x, ...patch };
+      return { ...x, auProfiles: { ...x.auProfiles, [auKey]: { ...x.auProfiles?.[auKey], ...patch } } };
     }));
   };
 
@@ -244,6 +249,7 @@ function CharDetailInner() {
         {eff.quote?.trim() && (
           <div className="profile-quote" style={{
             color: eff.quoteColor,
+            fontSize: eff.quoteSize ? `calc(${eff.quoteSize}px * var(--fs, 1))` : undefined,
             ['--q-mark' as string]: eff.quoteMarkColor,
           } as React.CSSProperties}>{eff.quote}</div>
         )}
@@ -259,16 +265,16 @@ function CharDetailInner() {
               onClick={() => { if (arts.length > 1) setArtIdx(i => (i + 1) % arts.length); }}
               /* 대표 아트 우클릭 → 이 화면에 보일 위치 조정 (관리자, v2.0 사용자 확정) */
               onContextMenu={e => {
-                if (!(isAdmin || charGrant(ch, user?.id) === 'edit') || cur !== 0) return;
+                if (!(isAdmin || charGrant(ch, user?.id) === 'edit')) return;
                 e.preventDefault();
-                setArtCtx({ x: e.clientX, y: e.clientY, ref: arts[0] });
+                setArtCtx({ x: e.clientX, y: e.clientY, ref: arts[cur] });
               }}>
               {/* 지정한 크롭 위치를 여기서도 쓴다 — 예전에는 가운데 기준으로 잘려서
                   리스트에서 맞춰 둔 위치와 다른 곳이 보였다 (대표 아트에만 적용) */}
               {/* 리스트 썸네일 크롭은 3:4 기준이라 여기(화면 높이에 따라 비율이 달라지는 영역)에는
                   맞지 않는다 — 여기서 따로 잡은 값이 있을 때만 쓰고, 없으면 가운데 기준 (v2.0) */}
               <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
-                crop={cur === 0 ? eff.artCrop : undefined}
+                crop={eff.artCrops?.[arts[cur]] ?? (cur === 0 ? eff.artCrop : undefined)}
                 ph={ch.thumbClass} label="CHARACTER FULL ART" />
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
@@ -370,12 +376,12 @@ function CharDetailInner() {
       {/* 대표 아트 우클릭 메뉴 (v2.0) — 상세 화면에 보일 위치 조정 */}
       {artCtx && createPortal(
         <div className="ctx-menu on" style={{ left: artCtx.x, top: artCtx.y }} onClick={e => e.stopPropagation()}>
-          <div className="ctx-ttl">대표 아트</div>
+          <div className="ctx-ttl">아트 보기 위치</div>
           <button onClick={() => { setArtCropOpen({ ref: artCtx.ref, ratio: artBoxRatio() }); setArtCtx(null); }}>
             이미지 위치 조정
           </button>
-          {(eff?.artCrop) && (
-            <button onClick={() => { saveArtCrop(undefined); setArtCtx(null); }}>위치 지정 해제</button>
+          {(eff?.artCrops?.[artCtx.ref] || (eff?.artCrop && artCtx.ref === eff.arts?.[0])) && (
+            <button onClick={() => { saveArtCrop(undefined, artCtx.ref); setArtCtx(null); }}>위치 지정 해제</button>
           )}
         </div>,
         document.body,
@@ -387,9 +393,9 @@ function CharDetailInner() {
           onApply={c => { saveChipCrop(chipEdit.key, c); setChipEdit(null); }} />
       )}
       {artCropOpen && (
-        <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrop}
+        <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrops?.[artCropOpen.ref] ?? (artCropOpen.ref === eff?.arts?.[0] ? eff?.artCrop : undefined)}
           onClose={() => setArtCropOpen(null)}
-          onApply={c => { saveArtCrop(c); setArtCropOpen(null); }} />
+          onApply={c => { saveArtCrop(c, artCropOpen.ref); setArtCropOpen(null); }} />
       )}
     <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
     </section>
