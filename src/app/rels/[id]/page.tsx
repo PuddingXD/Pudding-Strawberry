@@ -1726,7 +1726,7 @@ function RelDetailInner() {
       )}
 
       {/* 삭제 확인 — DOM 마지막에 렌더해 다른 모달(AU 관리 등) 위에 뜨게 */}
-      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+      <PrevNext ltr prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
 
       {del.element}
     </section>
