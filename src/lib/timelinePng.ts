@@ -2,7 +2,11 @@
 //  · 화면에 보이는 타임라인(.tl-list)의 칸 위치·글꼴·색을 그대로 읽어 같은 모양으로 그린다
 //  · 페이지에 이미 불러온 글꼴을 쓰므로 자관 본문 폰트가 이미지에도 그대로 나온다
 const SCALE = 2;      // 선명하게 (2배)
-const PAD = 28;       // 이미지 바깥 여백(px)
+const MARGIN = 40;    // 바깥 배경 여백(px)
+const PADX = 44;      // 카드 안쪽 좌우 여백
+const HEAD_H = 72;    // 카드 윗줄(이름·제목) 높이
+const FOOT_H = 60;    // 카드 아랫줄(범례) 높이
+const BODY_PAD = 36;  // 타임라인 위·아래 여백
 
 type Cs = CSSStyleDeclaration;
 const fontOf = (cs: Cs) => `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
@@ -39,40 +43,179 @@ function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
   ctx.lineTo(x, y + tl); ctx.arcTo(x, y, x + tl, y, tl); ctx.closePath();
 }
 
-const solid = (c: string) => {
-  const m = c.match(/rgba?\(([^)]+)\)/);
-  if (!m) return false;
-  const p = m[1].split(',').map(s => parseFloat(s));
-  return p.length < 4 || p[3] > 0.9;
-};
 
-export async function exportTimelinePng(list: HTMLElement, filename: string): Promise<boolean> {
+// ── 내보내기 옵션 ──
+export interface PngLegend { label: string; kind: 'solid' | 'half'; c1: string; c2?: string }
+export interface PngPerson { name: string; sub?: string; color: string }
+export interface PngOpts {
+  title: string;                 // 가운데 제목 (예: MEMORY)
+  left?: PngPerson; right?: PngPerson;   // 페어일 때 양 끝 이름 (다인관은 생략)
+  theme: string;                 // 페어(자관) 테마색 — 배경을 이 색의 옅은 톤으로
+  bgStrength: number;            // 배경에 섞는 테마색 비율 0.1~0.6
+  legend: PngLegend[];
+  stickers: boolean;             // 스티커도 함께 내보내기
+  header?: { url: string; height: number; zoom: number; px: number; py: number };
+}
+
+/** 헤더 이미지를 영역에 꽉 채워 그린다(cover) — zoom 1 = 딱 맞게, px/py = 어느 부분을 보일지 0~1. 미리보기도 같은 함수 */
+export function drawCover(ctx: CanvasRenderingContext2D, img: CanvasImageSource & { width: number; height: number },
+  x: number, y: number, w: number, h: number, zoom: number, px: number, py: number) {
+  const iw = (img as HTMLImageElement).naturalWidth || img.width, ih = (img as HTMLImageElement).naturalHeight || img.height;
+  if (!iw || !ih) return;
+  const s = Math.max(w / iw, h / ih) * Math.max(1, zoom);
+  const dw = iw * s, dh = ih * s;
+  ctx.drawImage(img, x - (dw - w) * px, y - (dh - h) * py, dw, dh);
+}
+
+export function loadImg(url: string): Promise<HTMLImageElement | null> {
+  return new Promise(res => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => res(null);
+    im.src = url;
+  });
+}
+
+/** CSS 색(hex·rgb·var 해석 포함)을 [r,g,b]로 */
+function rgbOf(c: string): [number, number, number] {
+  const el = document.createElement('span');
+  el.style.color = c || '#c96a73';
+  document.body.appendChild(el);
+  const v = getComputedStyle(el).color;
+  el.remove();
+  const m = v.match(/[\d.]+/g)?.map(Number) ?? [201, 106, 115];
+  return [m[0], m[1], m[2]];
+}
+const mixWhite = (c: [number, number, number], k: number) =>
+  `rgb(${c.map(v => Math.round(v * k + 255 * (1 - k))).join(',')})`;
+
+export async function exportTimelinePng(list: HTMLElement, filename: string, o: PngOpts): Promise<boolean> {
   try { await document.fonts?.ready; } catch { /* 무시 */ }
   const lr = list.getBoundingClientRect();
   if (lr.width < 10 || lr.height < 10) return false;
 
-  const panel = list.closest('.panel') as HTMLElement | null;
-  const pbg = panel ? getComputedStyle(panel).backgroundColor : '';
-  const bg = solid(pbg) ? pbg : '#ffffff';
+  const hdrImg = o.header ? await loadImg(o.header.url) : null;
+  const hh = hdrImg && o.header ? Math.round(o.header.height) : 0;
+  const CARD = '#ffffff';
 
-  const W = Math.ceil(lr.width) + PAD * 2, H = Math.ceil(lr.height) + PAD * 2;
+  // 카드 크기 (레이아웃 좌표: 카드 왼쪽 위 = MARGIN,MARGIN)
+  const cardW = Math.ceil(lr.width) + PADX * 2;
+  const cardH = HEAD_H + hh + BODY_PAD + Math.ceil(lr.height) + BODY_PAD + FOOT_H;
+  const LX = MARGIN + PADX, LY = MARGIN + HEAD_H + hh + BODY_PAD;   // 타임라인 왼쪽 위
+
+  // 스티커 — 타임라인 칸 기준 상대 위치를 그대로 옮긴다 (카드 밖으로 나온 것도 바깥 배경 위에 그려짐)
+  type St = { im: HTMLImageElement; cx: number; cy: number; w: number; h: number; rot: number };
+  const sts: St[] = [];
+  let minX = 0, minY = 0, maxX = cardW + MARGIN * 2, maxY = cardH + MARGIN * 2;
+  if (o.stickers) {
+    document.querySelectorAll<HTMLElement>('[data-sticker]').forEach(el => {
+      const im = el.querySelector('img');
+      const par = el.offsetParent as HTMLElement | null;
+      if (!im || !par || !el.offsetWidth || !im.complete || !im.naturalWidth) return;
+      const pr = par.getBoundingClientRect();
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const cxp = pr.left + el.offsetLeft + w / 2, cyp = pr.top + el.offsetTop + h / 2;
+      const rot = parseFloat(el.style.transform.match(/rotate\(([-\d.]+)deg\)/)?.[1] ?? '0') * Math.PI / 180;
+      const bw = Math.abs(w * Math.cos(rot)) + Math.abs(h * Math.sin(rot));
+      const bh = Math.abs(w * Math.sin(rot)) + Math.abs(h * Math.cos(rot));
+      const cx = LX + (cxp - lr.left), cy = LY + (cyp - lr.top);
+      // 타임라인 주변(160px)에 걸친 것만
+      if (cx + bw / 2 < LX - 160 || cx - bw / 2 > LX + lr.width + 160 || cy + bh / 2 < LY - 160 || cy - bh / 2 > LY + lr.height + 160) return;
+      sts.push({ im, cx, cy, w, h, rot });
+      minX = Math.min(minX, cx - bw / 2 - 20); maxX = Math.max(maxX, cx + bw / 2 + 20);
+      minY = Math.min(minY, cy - bh / 2 - 20); maxY = Math.max(maxY, cy + bh / 2 + 20);
+    });
+  }
+
+  const W = Math.ceil(maxX - minX), H = Math.ceil(maxY - minY);
+  if (W * SCALE > 16000 || H * SCALE > 16000) return false;   // 너무 큰 이미지는 브라우저가 못 만든다
   const canvas = document.createElement('canvas');
   canvas.width = W * SCALE; canvas.height = H * SCALE;
   const ctx = canvas.getContext('2d');
   if (!ctx) return false;
   ctx.scale(SCALE, SCALE);
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'top';
+  ctx.fillStyle = mixWhite(rgbOf(o.theme), Math.max(0.05, Math.min(0.8, o.bgStrength)));
+  ctx.fillRect(0, 0, W, H);
+  ctx.translate(-minX, -minY);
+  const bodyCs = getComputedStyle(list);
+  const fam = bodyCs.fontFamily;
 
-  const ox = PAD - lr.left, oy = PAD - lr.top;   // 화면 좌표 → 이미지 좌표
+  // 둥근 카드 + 은은한 그림자
+  ctx.save();
+  ctx.shadowColor = 'rgba(40,40,60,.10)'; ctx.shadowBlur = 36; ctx.shadowOffsetY = 10;
+  rr(ctx, MARGIN, MARGIN, cardW, cardH, 28, 28, 28, 28);
+  ctx.fillStyle = CARD; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  rr(ctx, MARGIN, MARGIN, cardW, cardH, 28, 28, 28, 28);
+  ctx.clip();
+
+  // 윗줄 — 이름(양 끝) · 제목(가운데)
+  const person = (p: PngPerson, side: 'l' | 'r') => {
+    const sw = 34, y = MARGIN + (HEAD_H - sw) / 2;
+    const bx = side === 'l' ? MARGIN + 28 : MARGIN + cardW - 28 - sw;
+    rr(ctx, bx, y, sw, sw, 10, 10, 10, 10); ctx.fillStyle = p.color; ctx.fill();
+    const tx = side === 'l' ? bx + sw + 12 : bx - 12;
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = '0px';
+    ctx.textAlign = side === 'l' ? 'left' : 'right';
+    ctx.fillStyle = '#222'; ctx.font = `700 16px ${fam}`;
+    ctx.fillText(p.name, tx, y + (p.sub ? 1 : 9));
+    if (p.sub) { ctx.fillStyle = '#9a9fa8'; ctx.font = `400 11.5px ${fam}`; ctx.fillText(p.sub, tx, y + 20); }
+    ctx.textAlign = 'left';
+  };
+  if (o.left) person(o.left, 'l');
+  if (o.right) person(o.right, 'r');
+  if (o.title) {
+    ctx.textAlign = 'center'; ctx.fillStyle = '#2a2d33';
+    ctx.font = `600 19px "Cormorant Garamond", "Playfair Display", Georgia, serif`;
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = '4px';
+    ctx.fillText(o.title.toUpperCase(), MARGIN + cardW / 2 + 2, MARGIN + (HEAD_H - 22) / 2);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = '0px';
+    ctx.textAlign = 'left';
+  }
+  ctx.fillStyle = '#eceef1'; ctx.fillRect(MARGIN, MARGIN + HEAD_H - 1, cardW, 1);
+
+  // 헤더 이미지
+  if (hdrImg && o.header && hh > 0) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(MARGIN, MARGIN + HEAD_H, cardW, hh); ctx.clip();
+    drawCover(ctx, hdrImg, MARGIN, MARGIN + HEAD_H, cardW, hh, o.header.zoom, o.header.px, o.header.py);
+    ctx.restore();
+    ctx.fillStyle = '#e4e6ea'; ctx.fillRect(MARGIN, MARGIN + HEAD_H + hh, cardW, 1);
+  }
+
+  // 아랫줄 — 범례
+  const fy = MARGIN + cardH - FOOT_H;
+  ctx.fillStyle = '#eceef1'; ctx.fillRect(MARGIN, fy, cardW, 1);
+  {
+    ctx.font = `700 12px ${fam}`;
+    const gap = 26, dotW = 14 + 8;
+    const ws = o.legend.map(l => dotW + ctx.measureText(l.label).width);
+    const total = ws.reduce((a, b) => a + b, 0) + gap * Math.max(0, o.legend.length - 1);
+    let x = MARGIN + (cardW - total) / 2;
+    const cy = fy + FOOT_H / 2 + 0.5;
+    o.legend.forEach((l, i) => {
+      if (l.kind === 'half' && l.c2) {
+        ctx.fillStyle = l.c1; ctx.beginPath(); ctx.arc(x + 7, cy, 7, Math.PI / 2, Math.PI * 1.5); ctx.fill();
+        ctx.fillStyle = l.c2; ctx.beginPath(); ctx.arc(x + 7, cy, 7, -Math.PI / 2, Math.PI / 2); ctx.fill();
+      } else { ctx.fillStyle = l.c1; ctx.beginPath(); ctx.arc(x + 7, cy, 7, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = '#666b74'; ctx.font = `700 12px ${fam}`;
+      ctx.fillText(l.label, x + dotW, cy - 7);
+      x += ws[i] + gap;
+    });
+  }
+
+  // 타임라인 본체 — 화면 좌표를 카드 안 좌표로
+  const ox = LX - lr.left, oy = LY - lr.top;
+  const bg = CARD;
 
   // 가운데 선
   const lineCs = getComputedStyle(list, '::before');
   if (lineCs.backgroundColor) {
     ctx.fillStyle = lineCs.backgroundColor as string;
-    ctx.fillRect(PAD + lr.width / 2 - 1, PAD, 2, lr.height);
+    ctx.fillRect(LX + lr.width / 2 - 1, LY, 2, lr.height);
   }
-
   // 원
   list.querySelectorAll<HTMLElement>('.tl-dot').forEach(d => {
     const r = d.getBoundingClientRect(), cs = getComputedStyle(d);
@@ -126,6 +269,17 @@ export async function exportTimelinePng(list: HTMLElement, filename: string): Pr
       }
     });
   });
+
+  ctx.restore();   // 카드 클립 해제
+
+  // 스티커 (맨 위)
+  for (const s of sts) {
+    ctx.save();
+    ctx.translate(s.cx, s.cy);
+    if (s.rot) ctx.rotate(s.rot);
+    ctx.drawImage(s.im, -s.w / 2, -s.h / 2, s.w, s.h);
+    ctx.restore();
+  }
 
   const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/png'));
   if (!blob) return false;

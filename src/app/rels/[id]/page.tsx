@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { createPortal } from 'react-dom';
-import { exportTimelinePng } from '@/lib/timelinePng';
+import { TimelineExportModal } from '@/components/rels/TimelineExportModal';
 import { StickerLayer } from '@/components/rels/StickerLayer';
 import { useMainStore } from '@/lib/mainStore';
 import { useParams, useRouter } from 'next/navigation';
@@ -256,7 +256,8 @@ function RelDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin: siteAdmin } = useAuth();
-  const { editOn } = useMainStore();   // 홈과 같은 편집모드 (프로필 메뉴 > 편집모드 켜기) — 스티커 편집
+  const { editOn, setPageEditGrant } = useMainStore();
+  const [pngOpen, setPngOpen] = useState(false);   // 홈과 같은 편집모드 (프로필 메뉴 > 편집모드 켜기) — 스티커 편집
   const toast = useToast();
   const { familyOf } = useFonts();
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -395,6 +396,11 @@ function RelDetailInner() {
   const rel = findByKey(rels, id);
   // 관리자이거나 이 자관의 수정 가능 회원으로 지정된 회원이면 이 화면의 편집 기능을 쓸 수 있다
   const isAdmin = siteAdmin || canManageRel(rel, user?.id);
+  // 편집모드(스티커)는 관리자 + 이 자관 편집 권한을 받은 회원
+  useEffect(() => {
+    setPageEditGrant(isAdmin);
+    return () => setPageEditGrant(false);
+  }, [isAdmin, setPageEditGrant]);
   // 주소의 ?au=<AU id>로 들어오면 그 AU를 펼친 채 시작 (JN 이식 — 로그 백업 상세의 자관·AU 버튼이 여기로 온다)
   useEffect(() => {
     if (!rel) return;
@@ -865,7 +871,31 @@ function RelDetailInner() {
 
   return (
     <section className="page page-rel-detail" style={{ position: 'relative' }}>
-      <StickerLayer stickers={(isBaseAu ? rel.stickers : au?.stickers) ?? []} editable={editOn && siteAdmin}
+      <TimelineExportModal open={pngOpen} onClose={() => setPngOpen(false)}
+        filename={`${rel.name || 'timeline'}-timeline.png`}
+        getList={() => document.querySelector<HTMLElement>('.panel.timeline .tl-list')}
+        auHeaderId={(isBaseAu ? rel.headerImgId : (au?.headerImgId ?? undefined)) ?? undefined}
+        hasStickers={((isBaseAu ? rel.stickers : au?.stickers) ?? []).length > 0}
+        base={(() => {
+          const col = (cid?: string) => charOf(cid ?? '')?.color ?? '#5d636d';
+          const theme = pageColor ?? 'var(--accent)';
+          const per = (m: RelMember | null) => (m ? { name: charOf(m.charId)?.name ?? '', sub: charOf(m.charId)?.sub, color: col(m.charId) } : undefined);
+          const half = isDuo && pairSlots[0] && pairSlots[1];
+          return {
+            left: isDuo ? per(pairSlots[0]) : undefined,
+            right: isDuo ? per(pairSlots[1]) : undefined,
+            theme,
+            legend: [
+              ...(isDuo
+                ? pairSlots.filter((m): m is RelMember => !!m).map(m => ({ label: charOf(m.charId)?.name ?? '', kind: 'solid' as const, c1: col(m.charId) }))
+                : rel.members.map(m => ({ label: charOf(m.charId)?.name ?? '', kind: 'solid' as const, c1: col(m.charId) }))),
+              half
+                ? { label: '공동', kind: 'half' as const, c1: col(pairSlots[0]?.charId), c2: col(pairSlots[1]?.charId) }
+                : { label: '공동', kind: 'solid' as const, c1: theme },
+            ],
+          };
+        })()} />
+      <StickerLayer stickers={(isBaseAu ? rel.stickers : au?.stickers) ?? []} editable={editOn && isAdmin}
         onChange={next => patchAuData({ stickers: next })} />
       {/* 헤더 이미지 (v1.5) — 풀폭 블러 + 아래로 페이드아웃.
           AU별 완전 분리 (v1.9 사용자 확정): AU는 자기 헤더만 — base 것을 물려받지 않음.
@@ -1194,11 +1224,7 @@ function RelDetailInner() {
               {/* 완성한 타임라인을 이미지(PNG)로 저장 */}
               {tab === 'tl' && auTimeline.length > 0 && !tlSort && (
                 <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11.5 }} data-tip="타임라인을 PNG 이미지로 저장"
-                  onClick={async () => {
-                    const el = document.querySelector<HTMLElement>('.panel.timeline .tl-list');
-                    const ok = el ? await exportTimelinePng(el, `${rel.name || 'timeline'}-timeline.png`) : false;
-                    toast(ok ? '이미지로 저장했습니다' : '이미지 저장에 실패했습니다');
-                  }}>
+                  onClick={() => setPngOpen(true)}>
                   <span className="lb-pc">⤓ PNG</span><span className="lb-m">⤓</span>
                 </button>
               )}

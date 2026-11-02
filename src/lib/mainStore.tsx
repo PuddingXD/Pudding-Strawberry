@@ -99,6 +99,8 @@ interface MainCtx {
   state: MainState;
   editOn: boolean;
   editAvailable: boolean;               // 현재 페이지에서 편집모드를 켤 수 있는지 (메뉴 노출 조건)
+  canEditHere: boolean;                 // 이 회원이 이 페이지에서 편집모드를 켤 수 있는가 — 관리자, 또는 자관 편집 권한을 받은 회원
+  setPageEditGrant: (v: boolean) => void;   // 자관 상세 페이지가 "이 회원은 이 자관 편집 권한이 있음"을 알린다
   gridOn: boolean;
   setGridOn: (v: boolean) => void;
   toggleEdit: () => void;               // 프로필 드롭다운의 편집모드 항목
@@ -123,6 +125,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<MainState>(DEFAULT_STATE);
   const [editOn, setEditOn] = useState(false);
   const [gridOn, setGridOn] = useState(false);
+  const [pageEditGrant, setPageEditGrant] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const pendingNav = useRef<string | null>(null);
@@ -178,9 +181,9 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
   }, [pathname, state]);
 
   const endEdit = useCallback((save: boolean) => {
-    if (save) persist(state);
+    if (save && isAdmin) persist(state);   // 홈 설정은 관리자만 저장 (지정 회원은 스티커만 — 스티커는 바로 저장됨)
     // 되돌릴 때도 저장 — 편집 중 위젯 설정 모달이 즉시 저장한 값까지 스냅샷으로 원복 (v1.9)
-    else if (snapshot.current) { setState(snapshot.current); persist(snapshot.current); }
+    else if (snapshot.current) { setState(snapshot.current); if (isAdmin) persist(snapshot.current); }
     snapshot.current = null;
     setEditOn(false);
     setGridOn(false); // 편집 종료 시 그리드 자동 해제 (v1.8)
@@ -190,13 +193,13 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
       pendingNav.current = null;
       router.push(t);
     }
-  }, [state, persist, router]);
+  }, [state, persist, router, isAdmin]);
 
   const toggleEdit = useCallback(() => {
-    if (!isAdmin) return;
+    if (!isAdmin && !(pageEditGrant && /^\/rels\/[^/]+$/.test(pathname))) return;
     if (editOn) setExitOpen(true);
     else startEdit();
-  }, [isAdmin, editOn, startEdit]);
+  }, [isAdmin, pageEditGrant, pathname, editOn, startEdit]);
 
   const requestExit = useCallback((pendingHref?: string) => {
     pendingNav.current = pendingHref ?? null;
@@ -273,7 +276,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      state, editOn, editAvailable: isEditPage(pathname), gridOn, setGridOn, toggleEdit, requestExit, guardNav,
+      state, editOn, editAvailable: isEditPage(pathname), canEditHere: isAdmin || pageEditGrant, setPageEditGrant, gridOn, setGridOn, toggleEdit, requestExit, guardNav,
       updateWidget, addWidget, removeWidget, setLayoutMode, setMobileOff, setMobileOrder, saveNow, resetMain,
     }}>
       {children}

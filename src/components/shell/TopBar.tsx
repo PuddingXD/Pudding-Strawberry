@@ -31,7 +31,7 @@ const BellIcon = () => (
 
 export function TopBar() {
   const { user, isAdmin, logout } = useAuth();
-  const { editOn, editAvailable, gridOn, setGridOn, toggleEdit, requestExit, guardNav } = useMainStore();
+  const { editOn, editAvailable, canEditHere, gridOn, setGridOn, toggleEdit, requestExit, guardNav } = useMainStore();
   const router = useRouter();
   const pathname = usePathname();
   const toast = useToast();
@@ -299,14 +299,14 @@ export function TopBar() {
           </div>
           <div className={`user-menu ${menuOpen ? 'open' : ''}`}>
             <button onClick={() => { setMenuOpen(false); nav('/mypage'); }}>정보수정</button>
+            {/* 편집모드 항목은 지원 페이지에서만 노출 (편집 중이면 끄기 위해 항상 표시) — 자관 편집 권한이 있는 회원도 (스티커) */}
+            {canEditHere && (editAvailable || editOn) && (
+              <button onClick={() => { setMenuOpen(false); toggleEdit(); }}>
+                편집모드 {editOn ? '끄기' : '켜기'}
+              </button>
+            )}
             {isAdmin && (
               <>
-                {/* 편집모드 항목은 지원 페이지에서만 노출 (편집 중이면 끄기 위해 항상 표시) */}
-                {(editAvailable || editOn) && (
-                  <button onClick={() => { setMenuOpen(false); toggleEdit(); }}>
-                    편집모드 {editOn ? '끄기' : '켜기'}
-                  </button>
-                )}
                 <button onClick={() => { setMenuOpen(false); nav('/settings'); }}>환경설정</button>
               </>
             )}
