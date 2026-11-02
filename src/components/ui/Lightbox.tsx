@@ -2,7 +2,7 @@
 // 이미지 라이트박스 — 클릭 확대 보기 (배경 클릭/✕/ESC 닫기, 여러 장이면 ‹ › · 방향키 이동)
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef } from '@/lib/blobStore';
 
 export function Lightbox({ srcs, index, onClose }: {
   srcs: string[];              // IndexedDB 파일 id 또는 URL 혼용 가능
@@ -31,7 +31,9 @@ export function Lightbox({ srcs, index, onClose }: {
   return createPortal(
     <div className="lightbox" onClick={onClose}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {url && <img src={url} alt="" onClick={e => e.stopPropagation()} />}
+      {url && (isVideoRef(raw)
+        ? <video key={url} src={url} controls autoPlay loop playsInline onClick={e => e.stopPropagation()} style={{ maxWidth: '92vw', maxHeight: '88vh' }} />
+        : <img src={url} alt="" onClick={e => e.stopPropagation()} />)}
       {srcs.length > 1 && (
         <>
           <button className="nv l" onClick={e => { e.stopPropagation(); setI(x => (x - 1 + srcs.length) % srcs.length); }}>‹</button>

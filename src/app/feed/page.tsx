@@ -10,7 +10,7 @@ import { useLocalList, fmtDate } from '@/lib/postStore';
 import { BackupPost, FEED_KEY, FEED_SEED } from '@/lib/galleryStore';
 import { useBoardSettings, feedCatsOf, boardBadgeStyle, feedHideAuthorOf, perPageOf } from '@/lib/boardStore';
 import { useMenuSettings, canWriteAt, writeKeyOf } from '@/lib/menuStore';
-import { useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef } from '@/lib/blobStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
@@ -20,6 +20,8 @@ const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 function FeedImg({ fileRef, ph }: { fileRef?: string; ph?: string }) {
   const url = useBlobUrl(fileRef);
   if (!url) return <div className={`ph ${ph ?? 'cool'}`} style={{ aspectRatio: '16/10' }}><span>IMAGE</span></div>;
+  // 영상이면 첫 장면 (목록에서는 재생하지 않고, 글을 열면 재생)
+  if (isVideoRef(fileRef)) return <video src={`${url}#t=0.1`} muted playsInline preload="metadata" style={{ maxWidth: '100%', display: 'block', margin: '0 auto', pointerEvents: 'none' }} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={url} alt="" />;
 }

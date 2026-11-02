@@ -6,7 +6,7 @@
 // 잘려나가는 영역이 없어, 이동하면 원본의 어느 부분이든 볼 수 있음.
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
-import { useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef, VideoThumb } from '@/lib/blobStore';
 
 /** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율 */
 export interface CropValue { x: number; y: number; scale: number }
@@ -68,6 +68,7 @@ export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt }: {
   if (!url) {
     return <div className={`ph ${ph ?? ''}`} style={{ width: '100%', height: '100%', ...phStyle }}>{label && <span>{label}</span>}</div>;
   }
+  if (isVideoRef(fileRef)) return <VideoThumb src={url} />;   // 영상은 크롭 없이 첫 장면을 꽉 채워
   return <CropImg src={url} crop={crop} alt={alt} />;
 }
 

@@ -16,7 +16,7 @@ import { KInput, KSelect, KRadio, KCheck, KDate } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue } from '@/components/ui/CropEditor';
-import { putBlob, useBlobUrl } from '@/lib/blobStore';
+import { putBlob, useBlobUrl, isVideoRef } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
@@ -33,6 +33,7 @@ function FilePreview({ f }: { f: UpFile }) {
   const loaded = useBlobUrl(f.ref);
   const src = f.url ?? loaded;
   if (!src) return null;
+  if (f.file?.type.startsWith('video/') || isVideoRef(f.ref)) return <video src={`${src}#t=0.1`} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={f.name} />;
 }
@@ -127,7 +128,9 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
     if (!list || list.length === 0) return;
     // input.files는 라이브 FileList — 핸들러가 끝나며 value가 초기화되면 비워지므로
     // 상태 업데이터(나중에 실행) 안이 아니라 지금 즉시 복사해야 함 (업로드가 번갈아 씹히던 버그)
-    const items: UpFile[] = Array.from(list).map(x => ({
+    const big = Array.from(list).find(x => x.type.startsWith('video/') && x.size > 50 * 1048576);
+    if (big) toast('영상이 50MB를 넘으면 서버 저장소 한도에 걸려 업로드가 실패할 수 있습니다');
+    const items: UpFile[] = Array.from(list).filter(x => x.type.startsWith('image/') || x.type.startsWith('video/')).map(x => ({
       id: newId(), name: x.name, size: x.size, url: URL.createObjectURL(x), file: x, original: true,
     }));
     setFiles(f => [...f, ...items]);
@@ -202,11 +205,11 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
             onDragOver={e => e.preventDefault()}
             onDrop={e => { e.preventDefault(); addFiles(e.dataTransfer.files); }}>
             <b style={{ display: 'block', marginBottom: 3 }}>
-              {files.length === 0 ? '이미지를 끌어다 놓거나 클릭해서 선택' : '＋ ADD IMAGE'}
+              {files.length === 0 ? '이미지·영상을 끌어다 놓거나 클릭해서 선택' : '＋ ADD IMAGE / VIDEO'}
             </b>
-            여러 장 선택 가능 · ⠿ 드래그로 순서 조정
+            여러 장 선택 가능 · 이미지·GIF·영상(mp4, webm) · ⠿ 드래그로 순서 조정
           </div>
-          <input id="bkFiles" type="file" accept="image/*" multiple style={{ display: 'none' }}
+          <input id="bkFiles" type="file" accept="image/*,video/mp4,video/webm,video/quicktime,video/*" multiple style={{ display: 'none' }}
             onChange={e => { addFiles(e.target.files); e.target.value = ''; }} />
           {files.length > 0 && (
             <div className="upfile-count">✓ {files.length}장 — 아래 순서대로 게시됩니다</div>
@@ -224,15 +227,15 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
                   <b>{f.name}</b>
                   <small>{f.ref && !f.file ? '저장된 이미지' : fmtSize(f.size)}{f.crop ? ' · 썸네일 지정됨' : ''}</small>
                 </div>
-                {/* 원본/최적화 — 원본은 항상 서버 보존, 열람 제공본 선택 (6.1) */}
-                <div className="mini-seg">
+                {/* 원본/최적화 — 원본은 항상 서버 보존, 열람 제공본 선택 (6.1) — 영상은 해당 없음 */}
+                {!(f.file?.type.startsWith('video/') || isVideoRef(f.ref)) && <div className="mini-seg">
                   <button className={f.original ? 'on' : ''}
                     onClick={() => setFiles(l => l.map(x => x.id === f.id ? { ...x, original: true } : x))}>원본</button>
                   <button className={!f.original ? 'on' : ''}
                     onClick={() => setFiles(l => l.map(x => x.id === f.id ? { ...x, original: false } : x))}>최적화</button>
-                </div>
-                <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' }}
-                  onClick={() => setCropFor(f)}>✂ 썸네일</button>
+                </div>}
+                {!(f.file?.type.startsWith('video/') || isVideoRef(f.ref)) && <button className="btn btn-ghost" style={{ padding: '5px 10px', fontSize: 10, whiteSpace: 'nowrap' }}
+                  onClick={() => setCropFor(f)}>✂ 썸네일</button>}
                 <span className="fx" data-tip="제거"
                   onClick={() => del.ask('이 이미지를 목록에서 빼시겠습니까?',
                     () => setFiles(l => l.filter(x => x.id !== f.id)), f.name)}>✕</span>

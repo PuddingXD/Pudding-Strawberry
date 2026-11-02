@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useLocalList, fmtDate } from '@/lib/postStore';
 import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED } from '@/lib/galleryStore';
 import { ConfirmModal } from '@/components/ui/Modal';
-import { useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef } from '@/lib/blobStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
@@ -66,6 +66,12 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   // natural: 고정 프레임 안에서 확대 없이 원본 크기 그대로 가운데 (단일형 — 프레임보다 크면 축소만)
   const Img = ({ im, ratio, natural }: { im: { url?: string; ph?: string }; ratio?: string; natural?: boolean }) => {
     const u = useBlobUrl(im.url);
+    if (u && isVideoRef(im.url)) {
+      // 영상 — 직접 재생 (소리·전체화면은 컨트롤로). 사진과 같은 폭 규칙
+      return <video src={u} controls playsInline preload="metadata" style={natural
+        ? { maxWidth: '100%', maxHeight: '100%', display: 'block' }
+        : { maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} />;
+    }
     if (u) {
       // eslint-disable-next-line @next/next/no-img-element
       // 원본보다 크게 늘리지 않는다 — 폭이 모자랄 때만 줄이고, 작은 그림은 작은 그대로 (v2.0 사용자 확정)

@@ -13,6 +13,12 @@ const STORE = 'files';
 /** 확장자 추론 — Storage에 올릴 때 파일 이름에 쓴다 */
 function extOf(blob: Blob): string {
   const t = blob.type || '';
+  if (t.startsWith('video/')) {   // 갤러리 영상 — 확장자가 있어야 나중에 주소만 보고도 영상인 줄 안다
+    if (t.includes('webm')) return 'webm';
+    if (t.includes('quicktime')) return 'mov';
+    if (t.includes('ogg')) return 'ogv';
+    return 'mp4';
+  }
   if (t.includes('png')) return 'png';
   if (t.includes('gif')) return 'gif';
   if (t.includes('webp')) return 'webp';
@@ -73,7 +79,8 @@ async function hashOf(blob: Blob): Promise<string | null> {
 
 /** Blob 저장 → 참조 문자열 반환 (서버 모드: 공개 URL · 로컬 모드: 파일 id) */
 export async function putBlob(blob: Blob): Promise<string> {
-  const key = await hashOf(blob);
+  // 큰 영상은 중복 검사를 건너뛴다 — 해시를 구하려면 파일 전체를 메모리에 올려야 해서 부담이 크다
+  const key = blob.size > 30 * 1048576 ? null : await hashOf(blob);
   const hit = key ? sent.get(key) : undefined;
   if (hit) return hit;
   const job = putBlobNew(blob);
@@ -97,7 +104,7 @@ async function putBlobNew(blob: Blob): Promise<string> {
 async function putBlobRaw(blob: Blob): Promise<string> {
   const be = isServerMode() ? backend() : null;
   if (be) return be.uploadFile(blob, extOf(blob));   // 서버 모드 — 공개 URL 반환
-  const id = newId();
+  const id = (blob.type.startsWith('video/') ? 'vid-' : '') + newId();   // 영상은 id만 보고도 알아보게 접두어
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
@@ -241,6 +248,18 @@ export async function blobUrlOf(ref?: string): Promise<string | undefined> {
   } catch { return undefined; }
 }
 
+/** 파일 참조가 영상인가 — 서버 주소는 확장자(.mp4 등), 이 브라우저에만 있는 파일은 id 접두어(vid-)로 안다 */
+export function isVideoRef(ref?: string): boolean {
+  if (!ref) return false;
+  return /^vid-/.test(ref) || /^data:video\//.test(ref) || /\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/i.test(ref);
+}
+
+/** 영상 한 장면 미리보기(썸네일) — 소리 없이 첫 장면만. 주소 뒤 #t=0.1 로 첫 프레임을 잡는다 */
+export function VideoThumb({ src, style }: { src: string; style?: React.CSSProperties }) {
+  return <video src={`${src}#t=0.1`} muted playsInline preload="metadata" draggable={false}
+    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none', ...style }} />;
+}
+
 /** 파일 참조 이미지 — 없으면 플레이스홀더(ph) 폴백 */
 export function BlobImg({ fileRef, ph, alt, style, imgStyle, label }: {
   fileRef?: string; ph?: string; alt?: string;
@@ -248,6 +267,7 @@ export function BlobImg({ fileRef, ph, alt, style, imgStyle, label }: {
 }) {
   const url = useBlobUrl(fileRef);
   if (url) {
+    if (isVideoRef(fileRef)) return <VideoThumb src={url} style={imgStyle} />;
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={url} alt={alt ?? ''} style={{ width: '100%', height: '100%', objectFit: 'cover', ...imgStyle }} />;
   }

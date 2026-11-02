@@ -10,7 +10,7 @@ import { BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { createPortal } from 'react-dom';
 import { CroppedBlobImg, CropEditor, CropValue } from '@/components/ui/CropEditor';
-import { useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef } from '@/lib/blobStore';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useMainStore } from '@/lib/mainStore';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
@@ -210,7 +210,7 @@ function ThumbCropModal({ post, onClose, onApply }: {
   post: BackupPost; onClose: () => void; onApply: (c: CropValue) => void;
 }) {
   const url = useBlobUrl(post.thumbId ?? post.images[0]);   // 썸네일 전용 이미지가 있으면 그것을 자른다 (v2.1)
-  if (!url) return null;
+  if (!url || isVideoRef(post.thumbId ?? post.images[0])) return null;   // 영상은 자를 수 없다
   return <CropEditor open src={url} aspect="4:3" initial={post.thumbCrop} onClose={onClose} onApply={onApply} />;
 }
 
