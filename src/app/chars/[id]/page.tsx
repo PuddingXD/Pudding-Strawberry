@@ -397,7 +397,7 @@ function CharDetailInner() {
           onClose={() => setArtCropOpen(null)}
           onApply={c => { saveArtCrop(c, artCropOpen.ref); setArtCropOpen(null); }} />
       )}
-    <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
+    <PrevNext ltr prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
     </section>
   );
 }
