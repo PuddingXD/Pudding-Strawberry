@@ -377,16 +377,24 @@ export function SearchBar({ placeholder = '검색', light, onSearch }: {
 }
 
 /* ---------- 페이지네이션 (v1.6) ---------- */
-export function Pager({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
+export function Pager({ page, total, onChange, keep }: { page: number; total: number; onChange: (p: number) => void; keep?: boolean }) {
   if (total <= 1) return null;
+  // 페이지를 넘기면 목록 맨 위로 (keep이면 제자리 — 설정 화면처럼 긴 화면 안의 작은 목록용)
+  const go = (p: number) => {
+    onChange(p);
+    if (!keep && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0 });
+      document.getElementById('appMain')?.scrollTo({ top: 0 });
+    }
+  };
   const pages = Array.from({ length: total }, (_, i) => i + 1);
   return (
     <div className="pager">
-      <button disabled={page <= 1} onClick={() => onChange(page - 1)}>‹</button>
+      <button disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>
       {pages.map(p => (
-        <button key={p} className={p === page ? 'on' : ''} onClick={() => onChange(p)}>{p}</button>
+        <button key={p} className={p === page ? 'on' : ''} onClick={() => go(p)}>{p}</button>
       ))}
-      <button disabled={page >= total} onClick={() => onChange(page + 1)}>›</button>
+      <button disabled={page >= total} onClick={() => go(page + 1)}>›</button>
     </div>
   );
 }
