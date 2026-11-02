@@ -365,7 +365,7 @@ function CharDetailInner() {
                   <ReadMore onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`)} />
                 )
               ) : (
-                <DocBody html={curTab?.html ?? ''} size={curTab?.size} />
+                <DocBody flat html={curTab?.html ?? ''} size={curTab?.size} />
               )}
             </>
           )}
