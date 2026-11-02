@@ -232,7 +232,7 @@ export function LatestWidget() {
           const it = latest[i];
           return (
             <div key={it?.id ?? i} style={{ aspectRatio: '1', borderRadius: 9, overflow: 'hidden', position: 'relative', cursor: it ? 'pointer' : undefined }}
-              onClick={() => { if (it) router.push(it.href); }} data-tip={it?.tip}>
+              onClick={() => { if (it) router.push(it.href); }}>
               <BlobImg fileRef={it?.ref} ph={it?.ph || phFallback[i]} />
             </div>
           );
