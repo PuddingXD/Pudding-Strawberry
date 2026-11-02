@@ -22,6 +22,7 @@ import { UploadBusy } from '@/components/shell/UploadBusy';
 import { SpellCheck } from '@/components/shell/SpellCheck';
 import { PageFrame } from '@/lib/pageRefresh';
 import { PullToRefresh } from '@/components/shell/PullToRefresh';
+import { Shortcuts } from '@/components/shell/Shortcuts';
 import { MenuGuard } from '@/components/shell/MenuGuard';
 import { ServerBoot } from '@/components/shell/ServerBoot';
 import { siteMeta } from '@/lib/siteMeta';
@@ -96,6 +97,7 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                   {/* MenuGuard: 비공개로 둔 메뉴는 주소로 들어와도 열리지 않게 (v2.0 사용자 요청) */}
                   <main id="appMain"><PageFrame><MenuGuard>{children}</MenuGuard></PageFrame></main>
                   <PullToRefresh />
+                  <Shortcuts />
                   {/* BGM 미니 플레이어 — 전역 상주, 페이지 이동에도 유지 (4.1) */}
                   <BgmPlayer />
                   {/* 전역 커스텀 툴팁 — data-tip 요소 공통 (7장) */}
