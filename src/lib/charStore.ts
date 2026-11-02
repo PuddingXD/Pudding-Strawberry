@@ -421,7 +421,15 @@ export interface RelAu {
 }
 
 /** 자관 문서 탭 — 긴 글. 아이콘을 누르면 바로 전체 읽기 화면으로 간다 (자캐 추가 탭과 같은 읽기 화면) */
-export interface RelDoc { id: string; icon: string; title: string; subtitle?: string; html: string; size?: number }
+export interface RelDoc {
+  id: string; icon: string; title: string; subtitle?: string; html: string; size?: number;
+  /** 아이콘을 눌렀을 때 — 'read'(기본): 전체 읽기 화면 / 'link': 걸어 둔 주소를 새 창으로 */
+  mode?: 'read' | 'link';
+  linkUrl?: string;   // mode 'link'일 때 열 주소 (http(s)·사이트 내부 경로만)
+  linkTip?: string;   // 아이콘에 마우스를 올렸을 때 툴팁 (비우면 문서 제목)
+}
+/** 새 창 링크로 동작하는 문서인가 — 주소가 있어야 한다 */
+export const isLinkDoc = (d: RelDoc) => d.mode === 'link';
 
 export interface Relation {
   id: string;

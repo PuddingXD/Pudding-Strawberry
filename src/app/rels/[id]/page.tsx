@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { createPortal } from 'react-dom';
+import { safeHref, normalizeInternalLink } from '@/lib/link';
 import { TimelineExportModal } from '@/components/rels/TimelineExportModal';
 import { StickerLayer } from '@/components/rels/StickerLayer';
 import { useMainStore } from '@/lib/mainStore';
@@ -13,7 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useLocalList, newId } from '@/lib/postStore';
 import {
-  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, TlSide, tlSidesOf, RelSticker, findChar, Visibility, CharGrant,
+  Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, TlSide, tlSidesOf, RelSticker, isLinkDoc, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant, canManageRel,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
@@ -1184,13 +1185,24 @@ function RelDetailInner() {
       )}
 
       {/* 문서 — 별도 네모 아이콘. 누르면 바로 전체 읽기 화면 (자캐의 아이콘 탭과 같은 모양) */}
-      {(rel.docs ?? []).some(d => d.html.trim() && d.html.trim() !== '<p></p>') && (
-        <div className="rel-doc-icons">
-          {(rel.docs ?? []).filter(d => d.html.trim() && d.html.trim() !== '<p></p>').map(d => (
-            <button key={d.id} data-tip={d.title || '문서'} onClick={() => router.push(`/rels/${rel.id}/read?doc=${d.id}`)}>{d.icon}</button>
-          ))}
-        </div>
-      )}
+      {/* 문서 아이콘 — 전체 읽기 화면으로 / 「링크」 방식이면 걸어 둔 주소를 새 창으로 */}
+      {(() => {
+        const shown = (rel.docs ?? []).filter(d => (isLinkDoc(d) ? !!d.linkUrl?.trim() : d.html.trim() && d.html.trim() !== '<p></p>'));
+        if (!shown.length) return null;
+        return (
+          <div className="rel-doc-icons">
+            {shown.map(d => (
+              <button key={d.id} data-tip={(isLinkDoc(d) ? d.linkTip?.trim() : '') || d.title || '문서'}
+                onClick={() => {
+                  if (isLinkDoc(d)) {
+                    const href = safeHref(normalizeInternalLink(d.linkUrl ?? ''));
+                    if (href !== '#') window.open(href, '_blank', 'noopener,noreferrer');
+                  } else router.push(`/rels/${rel.id}/read?doc=${d.id}`);
+                }}>{d.icon}</button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* 타임라인 / 페어 문답 탭 (v1.8) */}
       <div className={`panel timeline ${!isDuo ? 'multi' : ''}`} style={{ fontFamily: familyOf(auBodyFont) }}>

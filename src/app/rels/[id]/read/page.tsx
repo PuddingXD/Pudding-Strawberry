@@ -4,7 +4,7 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
-import { Relation, REL_SEED, findByKey, auStyle } from '@/lib/charStore';
+import { Relation, REL_SEED, findByKey, auStyle, isLinkDoc } from '@/lib/charStore';
 import { useTheme } from '@/lib/ThemeProvider';
 import { useFonts } from '@/lib/fontStore';
 import { PageTitle } from '@/components/ui/PageText';
@@ -21,6 +21,7 @@ function RelReadInner() {
   const rel = findByKey(rels, id);
   const [justAdded, setJustAdded] = useState<string | undefined>(undefined);   // 방금 추가한 문서 — 열리면 바로 수정 모드
   const docs = useMemo<DocItem[]>(() => (rel?.docs ?? [])
+    .filter(d => !isLinkDoc(d))   // 새창 링크 문서는 읽기 화면에 없다
     .filter(d => isAdmin || (d.html.trim() && d.html.trim() !== '<p></p>'))   // 비어 있는 문서는 관리자에게만 보인다(새로 추가하면 바로 채울 수 있게)
     .map(d => ({ id: d.id, icon: d.icon, title: d.title, subtitle: d.subtitle, html: d.html, size: d.size })), [rel, isAdmin]);
 

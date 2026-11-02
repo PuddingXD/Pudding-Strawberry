@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { useAuth } from '@/lib/auth';
-import { CharGrant, Character, Relation, Visibility, RelCpTag, RelMember, RelDoc, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import { CharGrant, Character, Relation, Visibility, RelCpTag, RelMember, RelDoc, isLinkDoc, auMember, auStyle, fullShadow } from '@/lib/charStore';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
 import { SymbolInput } from '@/components/ui/SymbolInput';
@@ -17,7 +17,7 @@ import { CP_LABEL } from '@/lib/relqStore';
 import { newId } from '@/lib/postStore';
 import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
-import { KInput, KSelect, KCheck, KStep } from '@/components/ui/Kit';
+import { KInput, KSelect, KCheck, KStep, KRadio } from '@/components/ui/Kit';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
 import { Lightbox } from '@/components/ui/Lightbox';
@@ -663,7 +663,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                     <span className="drag-h">⠿</span>
                     <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef0f2', display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{d.icon}</span>
                     <b style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.title || '(제목 없음)'}</b>
-                    <small style={{ color: 'var(--faint)', fontSize: 10.5, flexShrink: 0 }}>{d.html.trim() ? `${d.html.length.toLocaleString()}자` : '비어 있음'}</small>
+                    <small style={{ color: 'var(--faint)', fontSize: 10.5, flexShrink: 0 }}>{isLinkDoc(d) ? '새창 링크' : d.html.trim() ? `${d.html.length.toLocaleString()}자` : '비어 있음'}</small>
                     <button type="button" className="btn btn-dark" style={{ marginLeft: 'auto', height: 27, padding: '0 12px', fontSize: 11 }}
                       onClick={() => setDocOpen(open ? null : d.id)}>{open ? '접기' : '편집 ›'}</button>
                     <span className="fx" onClick={() => del.ask(`문서 「${d.title || '제목 없음'}」을 삭제하시겠습니까?`,
@@ -675,14 +675,30 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                       <div style={{ display: 'flex', gap: 8 }}>
                         <SymbolInput value={d.icon} maxLength={2} style={{ width: 56, textAlign: 'center' }} onChange={v => patch({ icon: v })} />
                         <KInput placeholder="문서 제목" value={d.title} onChange={e => patch({ title: e.target.value })} />
-                        <KInput placeholder="소제목 (선택)" value={d.subtitle ?? ''} onChange={e => patch({ subtitle: e.target.value })} />
+                        {!isLinkDoc(d) && <KInput placeholder="소제목 (선택)" value={d.subtitle ?? ''} onChange={e => patch({ subtitle: e.target.value })} />}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <label className="k-label" style={{ margin: 0 }}>본문 글자 크기</label>
-                        <KStep value={d.size ?? DEFAULT_DOC_SIZE} min={8} max={24} step={1} suffix="px" onChange={v => patch({ size: v })} />
+                      {/* 아이콘을 눌렀을 때 — 전체 읽기 화면 / 걸어 둔 링크를 새 창으로 */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+                        <label className="k-label" style={{ margin: 0 }}>아이콘을 누르면</label>
+                        <KRadio name={`docmode-${d.id}`} value="read" current={d.mode ?? 'read'} label="전체 읽기 화면" onChange={() => patch({ mode: 'read' })} />
+                        <KRadio name={`docmode-${d.id}`} value="link" current={d.mode ?? 'read'} label="링크를 새 창으로" onChange={() => patch({ mode: 'link' })} />
                       </div>
-                      <DocImport html={d.html} onChange={html => patch({ html })} />
-                      <RichEditor doc size={d.size ?? DEFAULT_DOC_SIZE} value={d.html} onChange={html => patch({ html })} placeholder="긴 글을 작성하거나 파일에서 불러오세요" />
+                      {isLinkDoc(d) ? (
+                        <div style={{ display: 'grid', gap: 8 }}>
+                          <KInput placeholder="열 주소 — https://… (사이트 안 주소는 /rels/… 처럼)" value={d.linkUrl ?? ''} onChange={e => patch({ linkUrl: e.target.value })} />
+                          <KInput placeholder="마우스를 올렸을 때 보일 툴팁 (비우면 문서 제목)" value={d.linkTip ?? ''} onChange={e => patch({ linkTip: e.target.value })} />
+                          <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>http(s) 주소와 사이트 내부 주소만 쓸 수 있습니다. 주소가 비어 있으면 자관 페이지에 아이콘이 나타나지 않습니다. (아래 본문은 링크 방식에서는 쓰이지 않습니다)</small>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <label className="k-label" style={{ margin: 0 }}>본문 글자 크기</label>
+                            <KStep value={d.size ?? DEFAULT_DOC_SIZE} min={8} max={24} step={1} suffix="px" onChange={v => patch({ size: v })} />
+                          </div>
+                          <DocImport html={d.html} onChange={html => patch({ html })} />
+                          <RichEditor doc size={d.size ?? DEFAULT_DOC_SIZE} value={d.html} onChange={html => patch({ html })} placeholder="긴 글을 작성하거나 파일에서 불러오세요" />
+                        </>
+                      )}
                     </>
                   )}
                 </div>
