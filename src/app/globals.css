@@ -2150,7 +2150,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .re-wrap{overflow:visible}
 .re-toolbar{position:sticky;top:var(--re-top,0px);z-index:20;border-radius:var(--radius-s) var(--radius-s) 0 0}
 /* 전체 읽기 > — 네모 없이 글자만, 오른쪽 정렬 */
-.doc-more{display:block;margin:0 0 0 auto;padding:2px 0;font-style:italic;font-weight:700;font-size:calc(12.5px*var(--fs,1));color:var(--accent);background:none;border:none;cursor:var(--cur-pointer,pointer);letter-spacing:.02em}
+.doc-more{display:block;margin:0 0 0 auto;padding:2px 0;font-weight:700;font-size:calc(12.5px*var(--fs,1));color:var(--accent);background:none;border:none;cursor:var(--cur-pointer,pointer);letter-spacing:.02em}
 .doc-more:hover{opacity:.7}
 /* 자관 문서 아이콘 — 자캐 왼쪽 아이콘 탭과 같은 네모 */
 .rel-doc-icons{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 14px}
