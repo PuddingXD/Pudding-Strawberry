@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './skin.css';   // B 디자인 스킨 (왼쪽 레일 메뉴·카드·알약 버튼) — 빼면 예전 모습
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import { AuthProvider } from '@/lib/auth';
 import { MainStoreProvider } from '@/lib/mainStore';

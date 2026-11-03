@@ -1,0 +1,220 @@
+/* ==========================================================
+   B 디자인 스킨 (자캐홈 밀키트 레이아웃 이식)
+   - 색은 전부 환경설정 > 디자인의 테마 변수를 그대로 쓴다 (지금 쓰는 핑크·크림 팔레트가 그대로 입혀진다)
+   - globals.css 다음에 불러와서 같은 선택자를 덮는다. 이 파일을 지우고 layout.tsx의 import 한 줄을 빼면 예전 모습으로 돌아간다
+   ========================================================== */
+:root{
+  --rail:196px;                 /* PC 왼쪽 메뉴 폭 */
+  --rail-x:30px;                /* 메뉴 세로선 위치 (왼쪽에서) */
+  /* 세로선 그라데이션 — B의 청록→흰색→빨강을 테마 색으로: 포인트 → 연한 카드색 → 로고 글씨색 */
+  --rail-c1:var(--accent);
+  --rail-c2:color-mix(in srgb,var(--accent) 18%,#fff);
+  --rail-c3:var(--top-brand);
+  /* 카드 얇은 테두리 (B 카드 느낌) */
+  --b-line:color-mix(in srgb,var(--accent) 38%,transparent);
+  --b-line-soft:color-mix(in srgb,var(--accent) 22%,transparent);
+  --b-grad:linear-gradient(90deg,var(--rail-c1),var(--rail-c2) 50%,var(--rail-c3));
+}
+
+/* ---------------------------------------------------------
+   1) PC: 상단 바 → 왼쪽 레일 메뉴 (621px 이상)
+   --------------------------------------------------------- */
+@media (min-width:621px){
+  body{flex-direction:row}
+  #appMain{min-width:0;height:100vh}
+
+  .topbar{
+    position:relative;z-index:60;flex:0 0 var(--rail);width:var(--rail);height:100vh;
+    display:flex;flex-direction:column;align-items:stretch;gap:0;
+    padding:26px 0 18px;
+    background:color-mix(in srgb,var(--top-bg) 72%,transparent);backdrop-filter:blur(10px);
+    border-bottom:none;border-right:none;
+  }
+  /* 세로선 — 화면 위에서 아래까지 */
+  .topbar::before{
+    content:"";position:absolute;left:var(--rail-x);top:0;bottom:0;width:2px;border-radius:2px;pointer-events:none;
+    background:linear-gradient(180deg,var(--rail-c1),var(--rail-c2) 50%,var(--rail-c3));
+  }
+  .brand{
+    position:relative;z-index:1;padding:0 14px 0 calc(var(--rail-x) + 14px);margin-bottom:auto;
+    font-size:calc(17px*var(--fs,1));letter-spacing:.14em;white-space:normal;line-height:1.35;word-break:keep-all;
+  }
+  .brand small{margin-top:4px;letter-spacing:.32em}
+
+  /* 메뉴 목록 — 가운데쯤에 세로로 */
+  .gnb{
+    flex:0 0 auto;flex-direction:column;align-items:flex-start;gap:4px;
+    padding:28px 10px 28px calc(var(--rail-x) + 16px);overflow:visible;
+  }
+  .gnb > button,.gnb > .grp > button{
+    position:relative;padding:7px 4px;background:transparent !important;border-radius:0;
+    font-size:calc(11.5px*var(--fs,1));letter-spacing:.16em;text-transform:uppercase;
+    color:var(--top-fg);opacity:.78;transition:color .2s,opacity .2s,font-size .2s,padding .2s;
+  }
+  /* 선 위의 점 */
+  .gnb > button::before,.gnb > .grp > button::before{
+    content:"";position:absolute;top:50%;left:-18.5px;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
+    background:var(--top-fg);box-shadow:0 0 0 2px color-mix(in srgb,var(--top-bg) 80%,transparent);transition:.2s;
+  }
+  .gnb > button:hover,.gnb > .grp:hover > button{color:var(--top-hv);opacity:1;padding-left:7px}   /* 글자만 살짝 밀고 점은 선 위에 그대로 */
+  .gnb > button:hover::before,.gnb > .grp:hover > button::before{background:var(--top-hv)}
+  /* 지금 보고 있는 메뉴 — 크게·진하게, 점에 빛 */
+  .gnb > button.on,.gnb > .grp.cur > button{
+    color:var(--top-brand);opacity:1;font-size:calc(14.5px*var(--fs,1));font-weight:700;letter-spacing:.12em;
+  }
+  .gnb > button.on::before,.gnb > .grp.cur > button::before{
+    width:11px;height:11px;margin-top:-5.5px;left:-20.5px;background:var(--top-brand);
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--top-brand) 25%,transparent),0 0 12px color-mix(in srgb,var(--top-brand) 55%,transparent);
+  }
+  .grp > button::after{content:none}
+  .gnb .nd{margin-left:6px}
+
+  /* 하위 메뉴: 평소엔 오른쪽에 펼침, 지금 그룹이면 아래에 펼쳐 둔다 (B의 묶음 메뉴) */
+  .grp{width:100%}
+  .grp::after{left:100%;top:0;width:14px;height:100%}
+  .grp .sub{left:calc(100% - 4px);top:-4px;max-height:80vh}
+  .grp .sub::before{top:0;left:-10px;right:auto;width:10px;height:100%}
+  .grp.cur .sub{
+    display:block;position:static;animation:none;min-width:0;max-height:none;
+    background:transparent;border:none;box-shadow:none;padding:2px 0 6px 2px;
+  }
+  .grp.cur::after{content:none}
+  .grp.cur .sub button{
+    position:relative;padding:5px 8px 5px 14px;font-size:calc(11.5px*var(--fs,1));letter-spacing:.06em;
+    color:var(--top-fg);opacity:.8;border-radius:6px;
+  }
+  .grp.cur .sub button::before{content:"";position:absolute;left:2px;top:50%;width:6px;height:1px;background:currentColor;opacity:.6}
+  .grp.cur .sub button:hover{background:transparent;color:var(--top-hv);opacity:1}
+  .grp .sub button.on{color:var(--top-brand) !important;opacity:1;font-weight:700;background:color-mix(in srgb,var(--accent) 14%,transparent)}
+  .grp.cur .sub button.on{background:transparent}
+  .grp.more{display:none}
+
+  /* 아래쪽: 편집 표시 · 알림 · 로그인 */
+  .topbar > .btn,.k-toggle.grid-chip.show,.edit-flag.show{align-self:flex-start;margin:6px 0 0 calc(var(--rail-x) + 14px)}
+  .user-wrap,.login-link{margin:auto 0 0 calc(var(--rail-x) + 12px);align-self:flex-start;position:relative}
+  .user-chip{padding:6px 8px;gap:8px;max-width:calc(var(--rail) - var(--rail-x) - 20px);overflow:hidden}
+  /* 드롭다운은 위로 열고 메뉴 오른쪽으로 넘쳐도 되게 */
+  .user-menu{left:0;right:auto;top:auto;bottom:calc(100% + 8px)}
+  .login-link{border-color:var(--b-line)}
+
+  /* BGM 왼쪽 배치일 때 레일 위를 덮지 않게 */
+  .bgm.bgm-left{left:calc(var(--rail) + 16px)}
+}
+/* 노트북·태블릿 — 메인 위젯 캔버스(1180px)가 1366px 화면에서도 가로 스크롤 없이 들어가게 메뉴 폭을 줄인다 */
+@media (min-width:621px) and (max-width:1439px){
+  :root{--rail:164px;--rail-x:24px}
+  .brand{font-size:calc(15px*var(--fs,1))}
+  .gnb > button,.gnb > .grp > button{letter-spacing:.1em}
+}
+
+/* ---------------------------------------------------------
+   2) 모바일 상단 바 — 기존 ≡ 버튼 구조 그대로, 밑줄만 B 그라데이션
+   --------------------------------------------------------- */
+@media (max-width:620px){
+  .topbar{border-bottom:none;position:sticky}
+  .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--b-grad);opacity:.85}
+  .mmenu-pop{border-color:var(--b-line);border-radius:var(--radius)}
+  .mmenu-pop button.top{letter-spacing:.14em;text-transform:uppercase;font-size:calc(12.5px*var(--fs,1))}
+  .mmenu-pop .g.open > .top{color:var(--top-brand)}
+  .mmenu-pop .sub{position:relative;margin-left:14px;padding-left:12px}
+  .mmenu-pop .sub::before{content:"";position:absolute;left:0;top:4px;bottom:8px;width:1.5px;background:linear-gradient(180deg,var(--rail-c1),var(--rail-c3))}
+}
+
+/* ---------------------------------------------------------
+   3) 목록 머리 — 제목 · 말머리 알약 · 둥근 검색 · 그라데이션 구분선
+   --------------------------------------------------------- */
+@media (min-width:621px){   /* 모바일은 제목을 숨기는 설정이 있어 선만 남지 않게 PC에서만 */
+  .page-head:has(h1):not(:has(+ .toolrow)){padding-bottom:16px;margin-bottom:22px;background:var(--b-grad) left bottom/100% 1.5px no-repeat}
+  .page-head:has(h1):not(:has(+ .toolrow)) .head-actions:not(.stack){bottom:14px}
+}
+/* 말머리·검색 줄이 있으면 그 아래에 선 (B 목록과 같은 자리) */
+.toolrow{padding-bottom:14px;margin-bottom:20px;background:var(--b-grad) left bottom/100% 1.5px no-repeat}
+.page-head h1{letter-spacing:.18em}
+
+/* 말머리 탭·보기 전환 → 알약 버튼 */
+.seg{background:transparent;border:none;padding:0;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--b-line);border-radius:999px;padding:5px 14px;background:color-mix(in srgb,var(--seg-bg,#fff) 70%,transparent);letter-spacing:.04em}
+.seg button:hover{border-color:var(--accent);color:var(--btn-dark-hv,var(--accent))}
+.seg button.on{border-color:transparent;box-shadow:0 2px 10px color-mix(in srgb,var(--btn-dark,var(--accent)) 35%,transparent)}
+.seg.in-panel{border:none}
+.mini-seg{border:1px solid var(--b-line-soft);border-radius:999px}
+.mini-seg button{border-radius:999px}
+
+/* 검색 — 둥근 알약 */
+.searchbar{border-radius:999px;border-width:1px}
+.searchbar button{border-radius:50%}
+
+/* ---------------------------------------------------------
+   4) 카드·패널 — 얇은 테두리, 낮은 그림자, 올리면 테두리가 진해짐
+   --------------------------------------------------------- */
+.panel{border:1px solid var(--b-line-soft)}
+.panel.flush{border-color:var(--b-line-soft)}
+.g-item,.feed-item,.bticket,.char-card,.rel-card{border:1px solid var(--b-line-soft);transition:transform .22s,border-color .22s,box-shadow .22s}
+.g-item:hover,.feed-item:hover,.bticket:hover,.char-card:hover,.rel-card:hover{border-color:var(--accent);box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 22%,transparent)}
+.pill{border-radius:999px}
+
+/* 게시판 줄 — 올리면 은은한 포인트색 */
+.brow:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.brow{border-bottom-color:var(--b-line-soft)}
+
+/* 버튼 — 알약형 (B) */
+.btn{border-radius:999px}
+.btn-ghost{border-width:1px;border-color:var(--b-line);background:color-mix(in srgb,#fff 80%,transparent)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--btn-dark-hv,var(--accent))}
+
+/* ---------------------------------------------------------
+   5) 캐릭터 목록 — B 프로필 선택 화면처럼 세로 카드 + 그림 위 이름
+   --------------------------------------------------------- */
+.char-card{position:relative;border-radius:var(--radius)}
+.char-card .thumb{aspect-ratio:3/4.4}
+.char-card .thumb img{transition:transform .5s}
+.char-card:hover .thumb img{transform:scale(1.04)}
+.char-card .nm{
+  position:absolute;left:0;right:0;bottom:0;padding:36px 16px 14px;z-index:2;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));color:#fff;
+}
+.char-card .nm b{font-family:var(--serif);font-size:calc(17px*var(--fs,1));letter-spacing:.14em;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+.char-card .nm i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+@media (max-width:620px){.char-card .nm{padding:26px 10px 9px}.char-card .nm b{font-size:calc(13px*var(--fs,1));letter-spacing:.06em}}
+
+/* 캐릭터 상세 — 정보 표를 B처럼 줄 긋기 */
+.spec{gap:0;column-gap:14px}
+.spec dt,.spec dd{padding:9px 0;border-bottom:1px solid var(--b-line-soft)}
+.spec dt{font-size:calc(11.5px*var(--fs,1));letter-spacing:.1em}
+.profile-info h3.tab-tt{font-size:calc(22px*var(--fs,1));letter-spacing:.16em}
+.profile-info .sub{position:relative;padding-bottom:12px;background:var(--b-grad) left bottom/56px 1.5px no-repeat}
+.side-icons button{border-radius:50%;border-color:var(--b-line-soft)}
+.side-icons button.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+
+/* 자관 카드 — 이름 아래 B식 그라데이션 짧은 선 */
+.rel-card .nm b{padding-bottom:8px;margin-bottom:6px;background:var(--b-grad) left bottom/40px 1.5px no-repeat}
+
+/* ---------------------------------------------------------
+   6) 메인 위젯 — 제목을 명조·대문자 간격으로, 테두리는 위젯 설정 그대로
+   --------------------------------------------------------- */
+.widget h4,.login-box h3{font-family:var(--serif);letter-spacing:.2em;text-transform:uppercase}
+.dday-row{border-bottom-style:dotted;border-bottom-color:var(--b-line)}
+.banner .cap b{letter-spacing:.24em}
+
+/* ---------------------------------------------------------
+   7) 방명록 — 글마다 카드 (B 방명록)
+   --------------------------------------------------------- */
+.gb-item{border:1px solid var(--b-line-soft);border-radius:var(--radius);margin:0 0 12px;background:color-mix(in srgb,var(--panel-solid,#fff) 85%,transparent)}
+.gb-item:last-child{border-bottom:1px solid var(--b-line-soft)}
+.panel:has(> .gb-item){background:transparent;box-shadow:none;border:none;padding:0}
+.gb-item .reply{background:color-mix(in srgb,var(--accent) 9%,transparent);border-left:2px solid var(--accent)}
+
+/* ---------------------------------------------------------
+   8) BGM 플레이어 — 알약 → B 카드형(둥근 네모)
+   --------------------------------------------------------- */
+@media (min-width:621px){
+  .bgm{border-radius:calc(var(--radius) + 6px);border-color:var(--b-line);padding:10px 16px 10px 10px}
+  .bgm.folded{border-radius:50%}
+  .bgm-list{border-color:var(--b-line);border-radius:var(--radius)}
+}
+
+/* ---------------------------------------------------------
+   9) 본문 — 이전/다음 칸, 구분선
+   --------------------------------------------------------- */
+.post-body hr{border-top:none;height:1.5px;background:var(--b-grad);opacity:.7}
+.post-body blockquote{border-left-color:var(--accent)}
