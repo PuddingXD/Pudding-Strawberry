@@ -49,6 +49,29 @@ const Chev = ({ dir }: { dir: 'l' | 'r' }) => (
 
 export function PrevNext({ prev, next, ltr }: { prev?: PnItem | null; next?: PnItem | null; ltr?: boolean }) {
   const router = useRouter();
+  // 화면에 보이는 자리 기준 — 게시판은 왼쪽 = 다음글, 자캐·자관(ltr)은 왼쪽 = 이전글
+  const leftIt = ltr ? prev : next;
+  const rightIt = ltr ? next : prev;
+  /* 단축키 (사용자 요청) — Q(ㅂ)·← = 왼쪽 ‹ 버튼, E(ㄷ)·→ = 오른쪽 › 버튼.
+     이전글/다음글이 아니라 「화면의 어느 쪽 버튼인가」를 따르므로 게시판·자캐·자관 모두 누르는 쪽으로 간다.
+     글을 쓰는 중(입력칸·에디터)이거나 창(모달·확대 보기)이 떠 있으면 반응하지 않는다 */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.isComposing) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || t.closest('input,textarea,select,[contenteditable]'))) return;
+      if (document.querySelector('.modal-ov, .lightbox')) return;
+      // 한글 입력 상태에서도 되게 자판 자리(code)로 본다 — Q 자리 = ㅂ, E 자리 = ㄷ
+      const left = e.code === 'KeyQ' || e.key === 'ArrowLeft';
+      const right = e.code === 'KeyE' || e.key === 'ArrowRight';
+      const it = left ? leftIt : right ? rightIt : null;
+      if (!it) return;
+      e.preventDefault();
+      router.push(it.href);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [leftIt?.href, rightIt?.href, router]);   // eslint-disable-line react-hooks/exhaustive-deps
   if (!prev && !next) return null;
   /* 왼쪽 ‹ = 다음글, 오른쪽 › = 이전글 (v2.1 사용자 요청 — 최신 글이 위에 오는 목록 기준으로 왼쪽이 더 최신).
      툴팁에는 「이전글/다음글」 말 없이 글 제목만 */
