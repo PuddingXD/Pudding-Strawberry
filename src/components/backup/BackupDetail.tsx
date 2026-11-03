@@ -1,7 +1,7 @@
 'use client';
 // 그림백업 상세 (4.11) — 로그형: 세로 스크롤 뷰어 / 단일형: 큰 이미지 + 썸네일 스트립 + 좌우 넘김
 // v2.1: 큰 그림 게시판(/feed)도 같은 상세를 쓴다 — kind로 저장 자리·돌아갈 곳만 갈린다 (유형 뱃지는 갤러리에만)
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useLocalList, fmtDate } from '@/lib/postStore';
 import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED } from '@/lib/galleryStore';
 import { ConfirmModal } from '@/components/ui/Modal';
-import { useBlobUrl, isVideoRef } from '@/lib/blobStore';
+import { useBlobUrl, isVideoRef, blobUrlOf } from '@/lib/blobStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
@@ -35,6 +35,37 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
      글 주소에는 섹션이 없어 MenuGuard가 못 막는다 — 글을 읽어 소속을 알아낸 여기서 판정한다.
      **다른 early return보다 먼저 불러야 한다**(훅이므로 렌더마다 개수가 같아야 한다) */
   const blocked = useHrefBlock(p && sectionHref(kind, p.secId ?? MAIN_SEC));
+  /* 화살표(단일형) 보기 — 넘겨도 모든 그림이 같은 세로 높이 (사용자 요청).
+     그림들의 「칸 폭에 맞춘 높이」 중 가장 큰 값으로 무대 높이를 고정하고(화면의 80%까지), 각 그림은 그 높이에 맞춘다.
+     화살표 위치도 넘길 때마다 들썩이지 않는다 */
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [stageH, setStageH] = useState<number | null>(null);
+  const singleKey = p && p.type !== 'log' && p.type !== 'pair' && p.type !== 'vlist' ? p.images.join('|') : '';
+  useEffect(() => {
+    setStageH(null);
+    if (!singleKey) return;
+    let alive = true;
+    const refs = singleKey.split('|').filter(Boolean);
+    void (async () => {
+      const dims = await Promise.all(refs.map(async r => {
+        if (isVideoRef(r)) return null;
+        const u = await blobUrlOf(r);
+        if (!u) return null;
+        return new Promise<{ w: number; h: number } | null>(res => {
+          const im = new Image();
+          im.onload = () => res(im.naturalWidth > 0 ? { w: im.naturalWidth, h: im.naturalHeight } : null);
+          im.onerror = () => res(null);
+          im.src = u;
+        });
+      }));
+      if (!alive) return;
+      const W = stageRef.current?.clientWidth || 632;
+      const hs = dims.filter((d): d is { w: number; h: number } => !!d).map(d => Math.min(d.h, (W * d.h) / d.w));
+      if (!hs.length) return;
+      setStageH(Math.round(Math.min(Math.max(...hs), window.innerHeight * 0.8)));
+    })();
+    return () => { alive = false; };
+  }, [singleKey]);
   // 큰 글씨 — 추가 섹션이면 그 이름, 눌렀을 때도 그 목록으로 (v2.0 사용자 제보)
   const tt = useSectionTitle(kind, p?.secId, feed ? 'WORKS' : 'GALLERY');
   if (blocked) return blocked;
@@ -64,8 +95,16 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
 
   // 파일 id/URL 모두 지원 — blobStore에서 로드 (새로고침에도 유지)
   // natural: 고정 프레임 안에서 확대 없이 원본 크기 그대로 가운데 (단일형 — 프레임보다 크면 축소만)
-  const Img = ({ im, ratio, natural }: { im: { url?: string; ph?: string }; ratio?: string; natural?: boolean }) => {
+  const Img = ({ im, ratio, natural, stage }: { im: { url?: string; ph?: string }; ratio?: string; natural?: boolean; stage?: boolean }) => {
     const u = useBlobUrl(im.url);
+    // 화살표 보기 무대 — 무대 높이에 맞춤 (가로로 넓어 폭이 모자라면 그만큼만 줄어든다)
+    const stageSt: React.CSSProperties = { height: '100%', width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' };
+    if (u && stage) {
+      return isVideoRef(im.url)
+        ? <video src={u} controls playsInline preload="metadata" style={stageSt} />
+        // eslint-disable-next-line @next/next/no-img-element
+        : <img src={u} alt="" style={stageSt} />;
+    }
     if (u && isVideoRef(im.url)) {
       // 영상 — 직접 재생 (소리·전체화면은 컨트롤로). 사진과 같은 폭 규칙
       return <video src={u} controls playsInline preload="metadata" style={natural
@@ -148,10 +187,10 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
         ) : (
           /* 단일형 — 큰 이미지 + 좌우 넘김 + 썸네일 스트립 */
           <>
-            <div className="single-viewer">
-              <div style={{ cursor: imgs[cur].url ? 'zoom-in' : undefined }}
+            <div className="single-viewer" ref={stageRef} style={stageH ? { height: stageH } : undefined}>
+              <div style={{ cursor: imgs[cur].url ? 'zoom-in' : undefined, height: stageH ? '100%' : undefined }}
               onClick={() => { if (imgs[cur].url) setLbOpen(true); }}>
-              <Img im={imgs[cur]} />
+              <Img im={imgs[cur]} stage={!!stageH} />
               </div>
               {imgs.length > 1 && (
                 <>
