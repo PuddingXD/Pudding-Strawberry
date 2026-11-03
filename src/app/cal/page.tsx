@@ -162,8 +162,11 @@ function CalInner() {
             <button className="btn btn-ghost" style={{ padding: '6px 12px' }}
               onClick={() => setView(v => ({ y: v.m === 11 ? v.y + 1 : v.y, m: (v.m + 1) % 12 }))}>›</button>
           </div>
-          <div className="cal-grid">
+          {/* 요일 줄은 달력 판 바깥 위에 — 판 안은 날짜만 선으로 나눈다 (사용자 요청) */}
+          <div className="cal-dows">
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(w => <div key={w} className="dow">{w}</div>)}
+          </div>
+          <div className="cal-grid">
             {cells.map((c, i) => {
               const date = fmt(c.y, c.m, c.d);
               const evs = eventsOn(date);
@@ -172,7 +175,7 @@ function CalInner() {
                   className={`cal-cell ${c.dimmed ? 'dim' : ''} ${date === todayStr ? 'today' : ''} ${date === picked ? 'picked' : ''}`}
                   /* 칸을 누르면 등록창이 아니라 그 날짜를 고른다 — 등록·순서는 오른쪽 카드에서 (v2.0) */
                   onClick={() => setPicked(date)}>
-                  {c.d}
+                  <span className="dn">{c.d}</span>
                   {/* 칸에는 위에서 3개까지만 — 나머지는 오른쪽 카드에서 본다 */}
                   {evs.slice(0, 3).map(e => (
                     <div key={e.id} className="ev" style={{ background: `${eventColor(e, st.cats)}22`, color: eventColor(e, st.cats) }}
