@@ -91,7 +91,7 @@ export function DiscordPanel({ parsed, rels, relId, auId, onRel, onAu, relChars,
   return (
     <div style={{ display: 'grid', gap: 8, padding: '10px 12px', border: '1px dashed var(--line)', borderRadius: 8 }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <b style={{ fontSize: 12 }}>디스코드 복사본으로 읽었습니다</b>
+        <b style={{ fontSize: 12 }}>{'avatars' in parsed ? '마스토돈 타래 백업으로 읽었습니다' : '디스코드 복사본으로 읽었습니다'}</b>
         <small className="hint" style={{ margin: 0 }}>발화 {parsed.messages.length}개 · 발화자 {parsed.speakers.length}명</small>
         <div className="mini-seg" style={{ marginLeft: 'auto' }}>
           <button className={value.convert ? 'on' : ''} onClick={() => set({ convert: true })}>역극 로그로 변환</button>

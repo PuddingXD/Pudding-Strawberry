@@ -28,6 +28,9 @@ import { DragList } from '@/components/ui/DragList';
 import { OrderMenu, orderNoOf, moveToOrder } from '@/components/ui/OrderMenu';
 import { DiscordPanel, DC_DEFAULT, dcUnmapped, dcReady, type DcOptions } from '@/components/rp/DiscordPanel';
 import { parseDiscordLog, dcToMessages } from '@/lib/discordLog';
+import { parseMastodonLog } from '@/lib/mastodonLog';
+/** 본문 글 → 대화 발화 (마스토돈 타래 백업 JSON·HTML이면 그쪽, 아니면 디스코드 복사본) — 둘 다 같은 변환 패널을 쓴다 */
+const parseChatLog = (raw: string) => parseMastodonLog(raw) ?? (isHtmlBody(raw) ? null : parseDiscordLog(raw));
 import { rpLogLastDate, rpLogSrcFits, type RpLogSrc } from '@/lib/rpLog';
 import { renderLogSrc, logViewChars } from '@/lib/rpLogSrc';
 
@@ -114,7 +117,7 @@ function TrpgPageInner() {
   const [nFile, setNFile] = useState<File | null>(null);
   /* 디스코드 복사본 자동 판별 (커플홈 사용자 요청 — 따로 「가져오기」 버튼 없이 붙여넣기·직접 작성·파일 첨부에서 알아서):
      본문 글이 HTML이 아니고 parseDiscordLog가 발화를 찾으면 변환 패널을 띄운다. 판별이 틀렸으면 패널에서 「글 그대로」 */
-  const dcParsed = useMemo(() => (nBody.trim() && !isHtmlBody(nBody) ? parseDiscordLog(nBody) : null), [nBody]);
+  const dcParsed = useMemo(() => (nBody.trim() ? parseChatLog(nBody) : null), [nBody]);
   const isDc = !!dcParsed && dcParsed.messages.length > 0;
   const [dc, setDc] = useState<DcOptions>(DC_DEFAULT);
   // 매칭 목록 — 위에서 고른 자관(·AU)의 캐릭터가 먼저 (AU면 그 모습·이름)
@@ -280,7 +283,8 @@ function TrpgPageInner() {
     let src: RpLogSrc | undefined;
     let dcTitle = '', dcWith = '', dcDate = '', dcColors: string[] = [];
     if (dcMode) {
-      const parsed = parseDiscordLog(rawText);
+      const parsed = parseChatLog(rawText);
+      if (!parsed) { toast('대화 형식을 읽지 못했습니다'); return; }
       const unmapped = dcUnmapped(parsed, dc.map);
       if (unmapped.length) { toast(`아직 정하지 않은 발화자가 있습니다: ${unmapped.map(s => s.name).join(', ')}`); return; }
       const msgs = dcToMessages(parsed, dc.map);
@@ -619,14 +623,14 @@ function TrpgPageInner() {
           </div>
           {nMode === 'file' ? (
             <>
-              <input ref={fileRef} type="file" accept=".txt,.html,.htm,text/*" style={{ display: 'none' }}
+              <input ref={fileRef} type="file" accept=".txt,.html,.htm,.json,text/*,application/json" style={{ display: 'none' }}
                 onChange={e => { readFile(e.target.files?.[0]); e.target.value = ''; }} />
               <div className="upzone" style={{ marginBottom: 0 }} onClick={() => fileRef.current?.click()}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); readFile(e.dataTransfer.files?.[0]); }}>
                 {nFileName
                   ? <b>{nFileName} — 읽기 완료 ({nBody.length.toLocaleString()}자)</b>
-                  : <><b style={{ display: 'block', marginBottom: 3 }}>.txt / .html 파일을 끌어다 놓거나 클릭</b>크리스탈리아 등 로그 툴 내보내기 파일·디스코드 복사본 txt 그대로 — 내용 자동 판별</>}
+                  : <><b style={{ display: 'block', marginBottom: 3 }}>.txt / .html 파일을 끌어다 놓거나 클릭</b>크리스탈리아 등 로그 툴 내보내기 파일·디스코드 복사본 txt·마스토돈 타래 백업(json/html) 그대로 — 내용 자동 판별</>}
               </div>
             </>
           ) : (
