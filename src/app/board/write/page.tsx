@@ -5,7 +5,7 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { nowIso } from '@/lib/order';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useLocalList, BOARD_SEED, Post, newId, FoldType } from '@/lib/postStore';
+import { useLocalList, BOARD_SEED, Post, newId, FoldType, talkPeople, type TalkPerson } from '@/lib/postStore';
 import { useBoards, boardHref, MAIN_BOARD_ID } from '@/lib/boardStore';
 import { useMenuSettings, canWriteAt } from '@/lib/menuStore';
 import { renderBody } from '@/lib/sanitize';
@@ -13,7 +13,8 @@ import { KInput, KTextarea, KSelect, KCheck, KRadio, KDate } from '@/components/
 import { ColorField } from '@/components/ui/ColorField';
 import { lockText, unlockText, unlockedOf, rememberUnlocked } from '@/lib/pwLock';
 import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
-import { ConfirmModal } from '@/components/ui/Modal';
+import { ConfirmModal, Modal } from '@/components/ui/Modal';
+import { parseKakao, kakaoToBody, swapTalkNumbers, type KakaoParsed, type KakaoSlot } from '@/lib/kakao';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -61,8 +62,28 @@ function WriteInner() {
   const editPw = useRef('');                          // 잠긴 글을 풀 때 쓴 비밀번호 — 바꾸지 않으면 그대로 다시 잠근다
   const [saving, setSaving] = useState(false);
   // 썰 백업 — 대화 참여자 · 러닝 — 카드 요약
-  const [n1, setN1] = useState(''); const [n2, setN2] = useState('');
-  const [c1, setC1] = useState(''); const [c2, setC2] = useState('');
+  const [people, setPeople] = useState<TalkPerson[]>(() => talkPeople());
+  const setPerson = (i: number, p: Partial<TalkPerson>) => setPeople(ps => ps.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  // 카톡 대화 불러오기 (썰 백업) — 파일을 읽고 사람마다 번호를 정한 뒤 본문으로
+  const kakaoInput = useRef<HTMLInputElement>(null);
+  const [kakao, setKakao] = useState<KakaoParsed | null>(null);
+  const [kSlot, setKSlot] = useState<Record<string, KakaoSlot>>({});
+  const [kDates, setKDates] = useState(true);
+  const [kAppend, setKAppend] = useState(false);
+  // 번호 바꾸기 — 본문의 N: 줄과 참여자 이름·색을 함께 맞바꾼다 (왼쪽/오른쪽 자리는 번호에 남는다)
+  const [swA, setSwA] = useState('1');
+  const [swB, setSwB] = useState('2');
+  const swapNumbers = () => {
+    const a = Number(swA), b = Number(swB);
+    if (a === b) { toast('서로 다른 번호를 골라 주세요'); return; }
+    setBody(bd => swapTalkNumbers(bd, a, b));
+    setPeople(ps => ps.map((x, i) => {
+      if (i === a - 1) return { ...ps[b - 1], side: x.side };
+      if (i === b - 1) return { ...ps[a - 1], side: x.side };
+      return x;
+    }));
+    toast(`${a}번과 ${b}번을 바꿨습니다`);
+  };
   const [summary, setSummary] = useState('');
   const [notice, setNotice] = useState(false);
   // 태그 (v2.0 사용자 요청) — 쉼표로 구분해 입력, 저장할 때 배열로
@@ -105,7 +126,7 @@ function WriteInner() {
       const d = new Date(p.pubAt); const z = (n: number) => String(n).padStart(2, '0');
       setPubDate(`${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`); setPubTime(`${z(d.getHours())}:${z(d.getMinutes())}`);
     }
-    setN1(p.talk?.n1 ?? ''); setN2(p.talk?.n2 ?? ''); setC1(p.talk?.c1 ?? ''); setC2(p.talk?.c2 ?? '');
+    setPeople(talkPeople(p.talk));
     setSummary(p.summary ?? '');
     // 에디터로 쓴 글은 에디터로 다시 연다 — 예전에는 무조건 HTML 소스가 떠서
     // 에디터로 쓴 글을 수정하면 갑자기 태그가 보였다 (authored 없는 옛 글은 지금까지대로 HTML)
@@ -183,7 +204,7 @@ function WriteInner() {
     return {
       body: savedBody, pwLock: lock,
       pubAt, draft: pubMode === 'draft' ? true : undefined, visibility: pubMode === 'draft' ? 'private' : undefined,
-      talk: board.skin === 'talk' ? { n1: n1.trim(), n2: n2.trim(), c1: c1 || undefined, c2: c2 || undefined } : editing?.talk,
+      talk: board.skin === 'talk' ? { people: people.map(x => ({ name: x.name.trim(), color: x.color || undefined, side: x.side })) } : editing?.talk,
       summary: board.skin === 'running' ? (summary.trim() || undefined) : editing?.summary,
     };
   };
@@ -271,17 +292,45 @@ function WriteInner() {
           {/* 썰 백업 게시판 — 대화 참여자 (B 디자인) */}
           {board.skin === 'talk' && (
             <div className="talk-guide">
-              <div className="form-row" style={{ flexWrap: 'wrap' }}>
-                <label className="k-label" style={{ width: 60 }}>참여자 1</label>
-                <KInput value={n1} onChange={e => setN1(e.target.value)} placeholder="왼쪽 (1:)" style={{ width: 140 }} />
-                <ColorField value={c1 || '#ffffff'} onChange={setC1} />
-                <label className="k-label" style={{ width: 60, marginLeft: 10 }}>참여자 2</label>
-                <KInput value={n2} onChange={e => setN2(e.target.value)} placeholder="오른쪽 (2:)" style={{ width: 140 }} />
-                <ColorField value={c2 || '#ffffff'} onChange={setC2} />
+              {people.map((p, i) => (
+                <div key={i} className="form-row" style={{ gap: 8 }}>
+                  <label className="k-label" style={{ width: 60 }}>참여자 {i + 1}</label>
+                  <KInput value={p.name} onChange={e => setPerson(i, { name: e.target.value })} placeholder={`이름 (${i + 1}:)`} style={{ width: 150 }} />
+                  <div className="mini-seg">
+                    <button className={p.side === 'l' ? 'on' : ''} onClick={() => setPerson(i, { side: 'l' })}>왼쪽</button>
+                    <button className={p.side === 'r' ? 'on' : ''} onClick={() => setPerson(i, { side: 'r' })}>오른쪽</button>
+                  </div>
+                  <span className="k-label" style={{ marginLeft: 6 }}>말풍선</span>
+                  <ColorField value={p.color || '#ffffff'} onChange={v => setPerson(i, { color: v })} />
+                  {p.color && <button className="btn btn-ghost" style={{ height: 26, padding: '0 10px', fontSize: 10.5 }} onClick={() => setPerson(i, { color: '' })}>기본색</button>}
+                </div>
+              ))}
+              <div className="form-row" style={{ gap: 8 }}>
+                <label className="k-label" style={{ width: 60 }}>번호 바꾸기</label>
+                <KSelect value={swA} onChange={setSwA} minWidth={90} options={[1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}번${people[n - 1]?.name ? ` · ${people[n - 1].name}` : ''}` }))} />
+                <span style={{ color: 'var(--faint)' }}>↔</span>
+                <KSelect value={swB} onChange={setSwB} minWidth={90} options={[1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}번${people[n - 1]?.name ? ` · ${people[n - 1].name}` : ''}` }))} />
+                <button className="btn btn-ghost" style={{ height: 30, fontSize: 11 }} onClick={swapNumbers}>바꾸기</button>
+                <span className="hint" style={{ margin: 0 }}>본문의 대사 번호와 이름·색이 함께 바뀌어요</span>
               </div>
-              <p className="hint" style={{ margin: '-4px 0 12px' }}>
-                줄마다 <b>1: 대사</b>(왼쪽) · <b>2: 대사</b>(오른쪽)로 적어 주세요. <b># 소제목</b>은 대화 묶음 구분, 그 밖의 줄은 가운데 지문이 됩니다.
-                이미지를 넣으면 바로 위 줄을 말한 사람의 말풍선에 들어갑니다. 색은 말풍선 배경색이에요.
+              <div className="form-row" style={{ gap: 8 }}>
+                <label className="k-label" style={{ width: 60 }}>카톡</label>
+                <button className="btn btn-ghost" style={{ height: 30, fontSize: 11 }} onClick={() => kakaoInput.current?.click()}>카톡 대화 불러오기 (.txt)</button>
+                <span className="hint" style={{ margin: 0 }}>카카오톡 「대화 내보내기」 파일 — 사람마다 번호를 정해 본문으로 넣고, 넣은 뒤에도 자유롭게 고칠 수 있어요</span>
+                <input ref={kakaoInput} type="file" accept=".txt,text/plain" hidden onChange={async e => {
+                  const f = e.target.files?.[0]; e.target.value = '';
+                  if (!f) return;
+                  const parsed = parseKakao(await f.text());
+                  if (!parsed.speakers.length) { toast('카카오톡 대화 형식을 찾지 못했습니다'); return; }
+                  // 많이 말한 순서로 1~4번 자동 배정, 나머지는 빼기
+                  const auto: Record<string, KakaoSlot> = {};
+                  parsed.speakers.forEach((s, i) => { auto[s.name] = i < 4 ? ((i + 1) as KakaoSlot) : 'skip'; });
+                  setKSlot(auto); setKakao(parsed); setKAppend(!!body.trim());
+                }} />
+              </div>
+              <p className="hint" style={{ margin: '-2px 0 12px' }}>
+                줄마다 <b>1: 대사</b> ~ <b>4: 대사</b>로 적어 주세요 (쓰지 않는 번호는 비워 두면 돼요). <b># 소제목</b>은 대화 묶음 구분, 그 밖의 줄은 가운데 지문이 됩니다.
+                이미지를 넣으면 바로 위 줄을 말한 사람의 말풍선에 들어갑니다. 말풍선 색을 안 고르면 테마 색으로 나와요.
               </p>
             </div>
           )}
@@ -399,6 +448,46 @@ function WriteInner() {
           </div>
         </div>
       </div>
+
+      {/* 카톡 대화 불러오기 — 사람마다 번호(1~4)·지문·빼기 */}
+      <Modal open={kakao !== null} onClose={() => setKakao(null)} title="카톡 대화 불러오기"
+        desc={kakao ? `${kakao.title ? `「${kakao.title}」 · ` : ''}메시지 ${kakao.items.filter(i => i.kind === 'msg').length}개 · 사람마다 말풍선 번호를 정해 주세요` : ''}
+        actions={<>
+          <button className="btn btn-ghost" onClick={() => setKakao(null)}>CANCEL</button>
+          <button className="btn btn-dark" onClick={() => {
+            if (!kakao) return;
+            const html = kakaoToBody(kakao, kSlot, { dates: kDates });
+            setWriteMode('editor');
+            setBody(kAppend && body.trim() ? body + html : html);
+            // 번호를 정한 사람의 이름을 참여자 칸에
+            setPeople(ps => ps.map((x, i) => {
+              const who = Object.entries(kSlot).find(([, s]) => s === i + 1)?.[0];
+              return who ? { ...x, name: who } : x;
+            }));
+            if (!title.trim() && kakao.title) setTitle(kakao.title);
+            setKakao(null);
+            toast('본문에 넣었습니다 — 에디터에서 자유롭게 고칠 수 있어요');
+          }}>본문에 넣기</button>
+        </>}>
+        {kakao && (
+          <div style={{ display: 'grid', gap: 8 }}>
+            {kakao.speakers.map(s => (
+              <div key={s.name} className="form-row" style={{ gap: 10, marginBottom: 0 }}>
+                <b style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{s.name} <small style={{ color: 'var(--faint)', fontWeight: 400 }}>{s.count}개</small></b>
+                <KSelect value={String(kSlot[s.name] ?? 'skip')} minWidth={140}
+                  onChange={v => setKSlot(m => ({ ...m, [s.name]: (/^[1-4]$/.test(v) ? Number(v) : v) as KakaoSlot }))}
+                  options={[
+                    ...[1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}번 (${people[n - 1]?.side === 'l' ? '왼쪽' : '오른쪽'})` })),
+                    { value: 'note', label: '가운데 지문' }, { value: 'skip', label: '빼기' },
+                  ]} />
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid var(--line)', margin: '4px 0' }} />
+            <KCheck label="날짜 바뀌는 곳을 소제목(# 날짜)으로" checked={kDates} onChange={setKDates} />
+            {body.trim() && <KCheck label="지금 본문 뒤에 이어 붙이기 (끄면 본문을 바꿔 씀)" checked={kAppend} onChange={setKAppend} />}
+          </div>
+        )}
+      </Modal>
 
       {/* HTML → 에디터/편집 미리보기 전환 경고 (v2.0) — 다루지 못하는 태그는 편집 순간 정리된다 */}
       <ConfirmModal open={askRich !== null} title="여기서 편집하면 일부 태그가 정리됩니다"
