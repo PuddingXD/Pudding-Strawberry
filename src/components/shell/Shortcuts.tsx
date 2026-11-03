@@ -1,5 +1,6 @@
 'use client';
-// 단축키 (PC 전용) — 글을 쓰고 있지 않을 때 W(글쓰기·추가) / E(수정) / D(삭제)를 누르면
+// 단축키 (PC 전용) — 글을 쓰고 있지 않을 때 W(글쓰기·추가) / E(수정) / X(삭제)를 누르면
+// (삭제는 원래 D였는데 A·D를 이전글/다음글에 쓰게 되어 X로 옮겼다 — 사용자 요청)
 // 지금 화면에 있는 해당 버튼을 대신 눌러 준다.
 //  · 화면에 해당 버튼이 「딱 하나」일 때만 동작 (여러 개면 잘못 누르지 않도록 무시)
 //  · 입력칸·에디터에 글을 쓰는 중, Ctrl/Alt/Cmd 조합, 한글 입력 중에는 동작하지 않음
@@ -9,7 +10,7 @@ import { useEffect } from 'react';
 const RULES: Record<string, RegExp> = {
   KeyW: /^(?:[＋+✎]\s*)?(?:ADD|WRITE|NEW)\b|^(?:[＋+✎]\s*)?글쓰기$/i,
   KeyE: /^(?:✎\s*)?(?:EDIT|수정|정보수정)$/i,
-  KeyD: /^(?:DELETE|삭제)$/i,
+  KeyX: /^(?:DELETE|삭제)$/i,
 };
 
 function visible(el: HTMLElement) {
