@@ -17,7 +17,6 @@ import { SearchBar, Pager } from '@/components/ui/Kit';
 import { CropImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { talkCount } from '@/components/board/TalkView';
-import { BoardCatsModal } from '@/components/board/BoardCatsModal';
 
 
 /** 본문에서 첫 이미지 추출 — 티켓 스킨 썸네일용 (HTML img / MD 이미지) */
@@ -34,8 +33,7 @@ function BoardInner() {
   const params = useSearchParams();
   const bid = params.get('b') ?? MAIN_BOARD_ID;
   const runCat = params.get('c');   // 러닝 스킨 — 고른 말머리 (없으면 말머리 고르는 첫 화면)
-  const { boards, loaded: boardsLoaded, patchBoard } = useBoards();
-  const [catsOpen, setCatsOpen] = useState(false);   // 말머리 관리 (관리자, 사용자 요청)
+  const { boards, loaded: boardsLoaded } = useBoards();
   const board = boards.find(b => b.id === bid) ?? boards[0];
   const [menuSet] = useMenuSettings();
   const [posts] = useLocalList<Post>('ohome.board.v1', BOARD_SEED);
@@ -100,7 +98,6 @@ function BoardInner() {
 
   return (
     <section className="page">
-      {catsOpen && <BoardCatsModal board={board} onChange={cats => patchBoard(board.id, { cats })} onClose={() => setCatsOpen(false)} />}
       <div className="page-head">
         <PageTitle href={boardHref(board.id)}>{board.id === MAIN_BOARD_ID ? 'BOARD' : board.name}</PageTitle>
         <EditableDesc k={board.id === MAIN_BOARD_ID ? 'board-desc' : `board-desc-${board.id}`} def={board.desc} />
@@ -127,8 +124,6 @@ function BoardInner() {
         )}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar onSearch={v => { setQ(v); setPage(1); }} />
-          {/* 이 게시판 말머리 바로 고치기 (사용자 요청) — 환경설정 › 게시판 관리 › 말머리와 같은 자료 */}
-          {isAdmin && <button className="btn btn-ghost" onClick={() => setCatsOpen(true)}>말머리 관리</button>}
           {/* 글쓰기 권한 — 게시판 설정의 permWrite + 「글쓰기 멤버」로 좁히기 (v2.1) */}
           {canWriteAt(menuSet, boardHref(board.id), { loggedIn: !!user, isAdmin, id: user?.id }, 'member', board.permWrite) && (
             <button className="btn btn-dark" onClick={() => router.push(`/board/write?b=${board.id}`)}>✎ WRITE</button>
