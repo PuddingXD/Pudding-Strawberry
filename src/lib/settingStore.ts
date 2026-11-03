@@ -44,6 +44,7 @@ export const SETTING_KEYS = [
   'ohome.relqsets.v1', 'ohome.main.v1', 'ohome.sched.v1',
   'ohome.membertags.v1', 'ohome.invite.v1', 'ohome.roadnext.v1', 'ohome.repo.v1',
   'ohome.sections.v1', 'ohome.intro.v1', 'ohome.links.v1', 'ohome.diaryset.v1',
+  'ohome.skin.v1',   // 효과·입장 화면·메뉴선 색 (B 디자인)
 ];
 
 /** 앱 시작 시 1회 — 서버에 저장된 설정을 전부 받아 캐시 */

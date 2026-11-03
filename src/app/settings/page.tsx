@@ -17,7 +17,7 @@ import { DiaryPost, DIARY_SEED } from '@/lib/diaryStore';
 import { newId } from '@/lib/postStore';
 import {
   useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf, feedCatsOf, roadCatsOf, feedHideAuthorOf,
-  useBoards, Board, BoardSkin, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
+  useBoards, Board, BoardSkin, BOARD_SKIN_LABEL, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
 } from '@/lib/boardStore';
 import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle, threadCats, threadCatsPatch } from '@/lib/threadStore';
 import { useTrpgSettings, dotoriStatusKeys, dotoriBadgeOn, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
@@ -29,6 +29,8 @@ import {
 } from '@/lib/menuStore';
 import { FEATURES } from '@/lib/menu';
 import { SectionsBlock } from '@/components/settings/SectionList';
+import { SkinPane } from '@/components/settings/SkinPane';
+import { TrashPane } from '@/components/settings/TrashPane';
 import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection, SECTION_META, SectionKind } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
 import { useSiteDraft } from '@/lib/siteStore';
@@ -43,7 +45,7 @@ import { Character, CHAR_SEED, Relation, REL_SEED } from '@/lib/charStore';
 import { useLocalList } from '@/lib/postStore';
 import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat, diaryCatMode, ownerSides, parseDiaryLink } from '@/lib/diaryStore';
 import {
-  TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor,
+  TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor, BannersEditor,
 } from '@/components/main/widgetEditors';
 import { useBgm, BgmTrack, parseVideoId } from '@/lib/bgmStore';
 import { useFonts, fontCssUrl, FontDef, FontRole, ROLE_LABEL, FOLLOW_MENU, FOLLOW_TITLE } from '@/lib/fontStore';
@@ -62,7 +64,7 @@ import { SCHEMA_SQL } from '@/lib/schemaSql';
 
 const CATEGORIES = [
   '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', 'TRPG', '감상타래', '메모장',
-  '폰트', '마우스 커서', 'BGM', '다이어리', '회원/보안', '데이터 백업',
+  '폰트', '마우스 커서', '효과·입장 화면', 'BGM', '다이어리', '회원/보안', '데이터 백업', '휴지통',
 ] as const;
 
 /** 색 항목 한 쌍 렌더 헬퍼 */
@@ -612,7 +614,7 @@ function WidgetsPane() {
   const { state } = useMainStore();
   // 설정값이 있는 위젯만 — 실데이터 연동 위젯(DIARY·LATEST·UPCOMING)과 메뉴리스트·회원정보창은 설정값 없음
   const editable = state.widgets.filter(w =>
-    (['banner', 'memo', 'dday', 'todo', 'freetext', 'deco'] as const).some(t => t === w.type));
+    (['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'banners'] as const).some(t => t === w.type));
 
   const editorOf = (w: WidgetConf) => {
     switch (w.type) {
@@ -622,6 +624,7 @@ function WidgetsPane() {
       case 'todo': return <TodoEditor conf={w} />;
       case 'deco': return <DecoEditor conf={w} />;
       case 'banner': return <BannerEditor conf={w} />;
+      case 'banners': return <BannersEditor conf={w} />;
       default: return null;
     }
   };
@@ -721,9 +724,9 @@ function BoardPane() {
             </div>
             <div className="cp-group" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <div className="mini-seg">
-                {(['list', 'ticket'] as BoardSkin[]).map(s => (
+                {(['list', 'ticket', 'talk', 'running'] as BoardSkin[]).map(s => (
                   <button key={s} className={b.skin === s ? 'on' : ''}
-                    onClick={() => patchBoard(b.id, { skin: s })}>{s === 'list' ? '기본형' : '티켓형'}</button>
+                    onClick={() => patchBoard(b.id, { skin: s })}>{BOARD_SKIN_LABEL[s]}</button>
                 ))}
               </div>
               {/* 목록 글씨색 (v1.9) — 미지정이면 테마 기본색 */}
@@ -3545,6 +3548,10 @@ function SettingsInner() {
             <FontPane />
           ) : tab === '마우스 커서' ? (
             <CursorPane />
+          ) : tab === '효과·입장 화면' ? (
+            <SkinPane />
+          ) : tab === '휴지통' ? (
+            <TrashPane />
           ) : tab === '회원/보안' ? (
             <MemberPane />
           ) : tab === '데이터 백업' ? (

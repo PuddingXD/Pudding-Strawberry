@@ -246,13 +246,7 @@ function CharDetailInner() {
 
         {/* 중앙 — 한마디(위, 가운데 정렬) + 대표 아트. 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
         <div className="profile-mid">
-        {eff.quote?.trim() && (
-          <div className="profile-quote" style={{
-            color: eff.quoteColor,
-            fontSize: eff.quoteSize ? `calc(${eff.quoteSize}px * var(--fs, 1))` : undefined,
-            ['--q-mark' as string]: eff.quoteMarkColor,
-          } as React.CSSProperties}>{eff.quote}</div>
-        )}
+        {/* 한마디는 오른쪽 정보 칸의 이름·캐치프레이즈 아래로 옮겼다 (사용자 요청) */}
         {(() => {
           const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
           if (arts.length === 0 && !eff.artUrl) {
@@ -302,6 +296,14 @@ function CharDetailInner() {
             letterSpacing: '.2em', lineHeight: 1.1,
           }}>{eff.name}</div>
           <div className="sub" style={{ marginBottom: 14 }}>{eff.sub}</div>
+          {/* 한마디 — 이름 · 캐치프레이즈 · 한마디 · 탭 정보 순서 (사용자 요청) */}
+          {eff.quote?.trim() && (
+            <div className="profile-quote in-info" style={{
+              color: eff.quoteColor,
+              fontSize: eff.quoteSize ? `calc(${eff.quoteSize}px * var(--fs, 1))` : undefined,
+              ['--q-mark' as string]: eff.quoteMarkColor,
+            } as React.CSSProperties}>{eff.quote}</div>
+          )}
 
           {tab === 'basic' ? (
             <>

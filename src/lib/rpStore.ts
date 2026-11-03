@@ -40,6 +40,8 @@ export interface RpRoom {
   lastRead: Record<string, string>; // 회원별 마지막 확인 시각 — N 뱃지
   /** 표시 방식 (커플홈 사용자 요청) — 'imsg'면 아이폰 문자(iMessage) 모양. 없으면 기본(대본형) */
   style?: 'script' | 'imsg';
+  /** 이 방에서만 쓰는 프로필 사진 (사용자 요청 — 연결된 캐릭터 사진 말고 다른 그림) — 캐릭터 id → 파일 주소 */
+  faces?: Record<string, string>;
   messages: RpMessage[];
 }
 

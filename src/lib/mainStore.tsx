@@ -10,7 +10,8 @@ import { getRawSetting, setSetting } from './settingStore';
 export type WidgetType =
   | 'banner' | 'member'                 // 고정 요소 (삭제 불가)
   | 'menu' | 'memo' | 'diary' | 'latest'
-  | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard';   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
+  | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
+  | 'banners';   // 배너 교환 (B 디자인에서 가져온 위젯)   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
 
 export interface WidgetConf {
   id: string;
@@ -24,6 +25,9 @@ export interface WidgetConf {
   freeMove?: boolean;   // 그리드 무시 요소 (v1.9 — 우클릭 토글, 텍스트·이미지 자유 배치용)
   mOff?: boolean;       // 모바일에서 제외 (v1.9 사용자 확정 — 토글은 모바일 표시만 제어, PC 제거는 우클릭 삭제)
   rot?: number;         // 기울기(도) — 이미지·자유 텍스트, 편집모드 왼쪽 위 핸들 드래그 (v1.9 사용자 요청)
+  /** 'screen' = 메뉴 포함 가운데 정렬 (B 디자인 — 왼쪽 메뉴까지 친 화면 한가운데).
+   *  ax는 본문 가운데 값으로 두고, 화면에서 메뉴 폭의 절반만큼 왼쪽으로 민다 (skin.css) — 창 크기가 달라도 늘 화면 가운데 */
+  cMode?: 'screen';
   // PC 절대배치 좌표 (v1.9 사용자 확정 — PC 캔버스에는 문서 흐름이 없음: 겹칠 수 있고 서로 밀지 않음.
   // 흐름 스택은 모바일 뷰 전용). 기존 흐름+오프셋 배치는 최초 1회 이 좌표로 스냅샷 마이그레이션.
   ax?: number; ay?: number;
@@ -52,6 +56,7 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   freetext: { title: '자유 텍스트', desc: '패널 없이 문구만' },
   deco: { title: '이미지', desc: '패널 없이 이미지만' },
   memoboard: { title: 'STICKY', desc: '스티커 메모 미니보드 — 클릭 시 메모장 (4.6)' },
+  banners: { title: 'BANNER', desc: '배너 교환 — 친구 홈 배너 + 내 배너 코드 복사' },
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */

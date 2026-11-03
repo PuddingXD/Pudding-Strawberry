@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './skin.css';   // B 디자인 스킨 (왼쪽 레일 메뉴·카드·알약 버튼) — 빼면 예전 모습
 import { ThemeProvider } from '@/lib/ThemeProvider';
 import { AuthProvider } from '@/lib/auth';
 import { MainStoreProvider } from '@/lib/mainStore';
@@ -26,6 +27,7 @@ import { Shortcuts } from '@/components/shell/Shortcuts';
 import { MenuGuard } from '@/components/shell/MenuGuard';
 import { ServerBoot } from '@/components/shell/ServerBoot';
 import { siteMeta } from '@/lib/siteMeta';
+import { SkinEffects } from '@/components/shell/SkinEffects';
 
 /**
  * 링크를 미리 읽어 가는 쪽(카톡·디스코드·검색)은 서버가 돌려준 HTML만 본다.
@@ -91,6 +93,8 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                 <BgmStoreProvider>
                   {/* 설치 초기 화면 — 첫 실행이면 관리자·게스트 설정/백업 복원만 표시 (v1.9) */}
                   <SetupGate>
+                  {/* B 디자인 효과 — 입장 화면·떨어지는 효과·마우스 효과·클릭음·메뉴선 색 (떨어지는 효과가 글 뒤에 깔리도록 맨 앞) */}
+                  <SkinEffects />
                   <TopBar />
                   {/* 앱 셸: 스크롤은 이 영역 안에서만 (7장) */}
                   {/* PageFrame: 같은 메뉴를 다시 누르면 이 안쪽만 remount (BGM·상단바는 유지, v1.9) */}

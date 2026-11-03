@@ -99,6 +99,11 @@ export function TopBar() {
     return () => window.removeEventListener(MSG_SOUND_EVT, f);
   }, []);
 
+  // 왼쪽 레일 메뉴 (B 디자인) — 지금 보고 있는 메뉴 표시. 쿼리로 갈리는 메뉴(갤러리 여러 개 등)까지 구분하려고
+  // 주소 전체를 기억한다. 메뉴로 이동하면 nav가, 그 밖의 이동은 경로가 바뀔 때 다시 읽는다
+  const [loc, setLoc] = useState('');
+  useEffect(() => { setLoc(window.location.pathname + window.location.search); }, [pathname]);
+
   // 편집모드 중에는 이동 전에 종료 확인 (v1.8)
   // 지금 보고 있는 메뉴를 다시 누르면 그 페이지를 새로 불러옴 — 다시 접속하는 느낌 (v1.9 사용자 요청)
   const nav = (href: string) => {
@@ -111,8 +116,22 @@ export function TopBar() {
     // 전부 같은 경로에 쿼리로 갈리므로, 기본 항목으로 돌아갈 수가 없었다.
     const cur = pathname + window.location.search;
     if (href === cur) { refreshPage(); return; }
+    setLoc(href);
     router.push(href);
   };
+
+  const allHrefs = menu.flatMap(m => (m.children ? m.children.map(c => c.href) : [m.href ?? '']));
+  const isHere = (href: string) => {
+    if (!href || /^https?:\/\//.test(href)) return false;
+    if (loc === href) return true;
+    if (href.includes('?')) return false;
+    // 쿼리가 붙은 주소라도 그 주소가 메뉴에 따로 없으면 기본 항목으로 본다
+    return pathname === href && !allHrefs.includes(loc);
+  };
+  const inGroup = (children: { href: string }[]) => children.some(c => {
+    const p = c.href.split('?')[0];
+    return !!p && !/^https?:\/\//.test(c.href) && (pathname === p || (p !== '/' && pathname.startsWith(p + '/')));
+  });
 
   // 상위 메뉴 개수 무제한 (v1.9) — 바 폭을 넘치는 항목은 「⋯」 드롭다운으로 자동 이동 (priority+)
   const gnbRef = useRef<HTMLElement>(null);
@@ -126,6 +145,11 @@ export function TopBar() {
     const compute = () => {
       const avail = gnbEl.clientWidth;
       const kids = Array.from(mEl.children) as HTMLElement[];
+      // 왼쪽 레일(세로 메뉴, B 디자인)에서는 폭이 아니라 세로로 쌓이므로 ⋯ 접기를 쓰지 않는다
+      if (getComputedStyle(gnbEl).flexDirection === 'column') {
+        setVisCount(kids.length - 1);
+        return;
+      }
       if (avail <= 0) {                            // gnb 숨김(모바일)·미표시 상태 — 측정 불가 시 전체 표시
         setVisCount(kids.length - 1);
         return;
@@ -165,14 +189,14 @@ export function TopBar() {
       <nav className="gnb" ref={gnbRef}>
         {visMenu.map(item =>
           item.children ? (
-            <div className="grp" key={item.label}>
+            <div className={`grp ${inGroup(item.children) ? 'cur' : ''}`} key={item.label}>
               {/* 상위 클릭 → 첫 하위 페이지 (v1.8) · 안 읽은 알림이 있는 메뉴에 점 (4.13) */}
               <button onClick={() => nav(item.children![0].href)}>
                 {item.label}{item.children.some(c => dotHrefs.has(c.href)) && <small className="nd">●</small>}
               </button>
               <div className="sub">
                 {item.children.map(c => (
-                  <button key={c.href} onClick={() => nav(c.href)}>
+                  <button key={c.href} className={isHere(c.href) ? 'on' : ''} onClick={() => nav(c.href)}>
                     {c.label}{dotHrefs.has(c.href) && <small className="nd">●</small>}
                   </button>
                 ))}
@@ -181,7 +205,7 @@ export function TopBar() {
           ) : (
             <button
               key={item.label}
-              className={pathname === item.href ? 'on' : ''}
+              className={isHere(item.href!) ? 'on' : ''}
               onClick={() => nav(item.href!)}
             >
               {item.label}{dotHrefs.has(item.href!) && <small className="nd">●</small>}

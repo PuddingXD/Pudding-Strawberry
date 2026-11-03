@@ -21,7 +21,11 @@ import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 import { RpLogModal } from '@/components/rp/RpLogModal';
-import { rpLogHtml, openLogWindow } from '@/lib/rpLog';
+import { rpLogHtml, openLogWindow, rpMdHtml } from '@/lib/rpLog';
+import { MastodonImport, type ImportedMsg } from '@/components/rp/MastodonImport';
+import { RoomFaces } from '@/components/rp/RoomFaces';
+/** 발화 글 — **굵게** *기울임* ~~취소선~~ 서식을 살려서 (글은 이스케이프한 뒤 태그만 만든다) */
+const Md = ({ t }: { t: string }) => <span dangerouslySetInnerHTML={{ __html: rpMdHtml(t) }} />;
 import { isMsgSoundOn, setMsgSoundOn, MSG_SOUND_EVT } from '@/lib/msgSound';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { putBlob, BlobImg } from '@/lib/blobStore';
@@ -38,7 +42,9 @@ function BellIcon({ off }: { off: boolean }) {
   );
 }
 
-function Face({ ch, className, crop }: { ch?: Character; className: string; crop?: CropValue }) {
+function Face({ ch, className, crop, img }: { ch?: Character; className: string; crop?: CropValue; img?: string }) {
+  // 이 방에서만 쓰는 사진을 정했으면 그것 (PROFILE) — 정사각 칸을 꽉 채운다
+  if (img) return <div className={className} style={{ position: 'relative', overflow: 'hidden' }}><BlobImg fileRef={img} ph="" label="" /></div>;
   // 사진이 없으면 캐릭터 테마색 자리표시자 (커플홈 사용자 요청)
   // crop: 자관에서 잡은 1:1 얼굴 위치 (v2.1 사용자 제보 — 없으면 캐릭터의 3:4 썸네일 크롭)
   return (
@@ -429,6 +435,29 @@ export default function RpPage() {
 
   // 로그 (커플홈) — txt/html 저장 · RP LOG에 올리기. 예전의 HTML 내보내기(EXPORT)를 대신한다
   const [logOpen, setLogOpen] = useState(false);
+  // 마스토돈 타래 불러오기 (사용자 요청) — 방장·관리자
+  const [importOpen, setImportOpen] = useState(false);
+  // 이 방의 프로필 사진 바꾸기 (사용자 요청) — 방장·관리자
+  const [facesOpen, setFacesOpen] = useState(false);
+  // 고를 수 있는 캐릭터: 기반 자관이 있으면 그 자관의 양쪽 캐릭터 전부(상대 대사도 넣어야 하므로), 없으면 전체
+  const importChars = useMemo(() => {
+    if (!rel) return rpChars;
+    const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
+    return ids.map(id => rpChars.find(c => c.id === id)).filter(Boolean) as Character[];
+  }, [rel, rpChars]);
+  const importMsgs = (list: ImportedMsg[], keepTime: boolean) => {
+    if (!sel || !user) return;
+    // 이어 붙이기면 지금 마지막 대화 뒤로 1초씩 — 시각 대신 순서만 지킨다 (방은 시각을 보여 주지 않는다)
+    const base = Math.max(Date.now(), ...msgsOf(sel).map(m => msgKey(m))) + 1000;
+    const rows: RpMessageRow[] = list.map((m, i) => ({
+      id: newId(), roomId: sel.id, kind: m.kind, charId: m.charId,
+      charOwn: m.kind === 'char' ? rpChars.find(c => c.id === m.charId)?.own : undefined,
+      authorId: user.id, text: m.text,
+      date: keepTime ? m.date : new Date(base + i * 1000).toISOString(),
+    }));
+    setMsgRows([...msgRows, ...rows]);
+    toast(`대사 ${rows.length}개를 불러왔습니다`);
+  };
   // 알림음 켬/끔 (커플홈) — 브라우저마다. 처음 그릴 때는 서버와 같은 값(켬)으로 두고 마운트 뒤 읽는다
   const [soundOn, setSoundOn] = useState(true);
   useEffect(() => {
@@ -437,7 +466,7 @@ export default function RpPage() {
     window.addEventListener(MSG_SOUND_EVT, f);
     return () => window.removeEventListener(MSG_SOUND_EVT, f);
   }, []);
-  useEffect(() => { setLogOpen(false); }, [sel?.id]);
+  useEffect(() => { setLogOpen(false); setFacesOpen(false); }, [sel?.id]);
 
   if (!loaded) return <section className="page" />;
 
@@ -564,6 +593,15 @@ export default function RpPage() {
                       </button>
                     </>
                   )}
+                  {/* 마스토돈 타래 불러오기 (사용자 요청) — 방장·관리자 */}
+                  {canManage && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      onClick={() => setImportOpen(true)}>IMPORT</button>
+                  )}
+                  {canManage && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      onClick={() => setFacesOpen(true)}>PROFILE</button>
+                  )}
                   {/* 로그 — 참여자 누구나, 진행 중에도 (중간 백업용). 게시판 올리기는 모달 안에서 관리자만 */}
                   {msgsOf(sel).length > 0 && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
@@ -608,11 +646,11 @@ export default function RpPage() {
                       const dm = m.text.trim().match(/^(\d{4}\s?[.\-/]\s?\d{1,2}\s?[.\-/]\s?\d{1,2}\.?)([\s\S]*)$/);
                       return (
                         <div key={m.id} className={`im-sys${dm ? ' im-date' : ''}`} onContextMenu={e => openMsgCtx(e, m)}>
-                          {dm ? <><b>{dm[1]}</b>{dm[2]}</> : m.text}{acts}
+                          {dm ? <><b>{dm[1]}</b>{dm[2]}</> : <Md t={m.text} />}{acts}
                         </div>
                       );
                     }
-                    return <div key={m.id} className="msg-desc" onContextMenu={e => openMsgCtx(e, m)}>{m.text}{acts}</div>;
+                    return <div key={m.id} className="msg-desc" onContextMenu={e => openMsgCtx(e, m)}><Md t={m.text} />{acts}</div>;
                   }
                   const ch = rpChars.find(c => c.id === m.charId);
                   const name = ch?.name ?? '';
@@ -646,7 +684,7 @@ export default function RpPage() {
                         {/* 시각 줄은 두지 않는다 (사용자 확정 — 만들어진 역극이라 실제 시간은 의미가 없다). 묶음만 가른다 */}
                         <div className={`im-msg ${rightSide ? 'me' : 'them'}${first ? ' first' : ''}${last ? ' last' : ''}`}
                           style={{ ['--cc' as string]: hexRgb(ch?.color) }} onContextMenu={e => openMsgCtx(e, m)}>
-                          {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" crop={ch && relFaceCrop(rel, sel?.auId, ch)} />}</span>}
+                          {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" crop={ch && relFaceCrop(rel, sel?.auId, ch)} img={ch && sel?.faces?.[ch.id]} />}</span>}
                           <div className="im-col">
                             {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
                             {/* 사진은 아이폰 문자처럼 말풍선 없이 둥근 사진만 (사용자 확정) — 글이 같이 있으면 그 아래 글 말풍선 */}
@@ -655,7 +693,7 @@ export default function RpPage() {
                             )}
                             {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
                             {(m.text || !m.imgId) && (
-                              <div className={`im-bub${m.text.trim().length <= 3 ? ' short' : ''}`}>{m.text}</div>
+                              <div className={`im-bub${m.text.trim().length <= 3 ? ' short' : ''}`}><Md t={m.text} /></div>
                             )}
                           </div>
                           {acts}
@@ -670,14 +708,14 @@ export default function RpPage() {
                           메신저 방의 일반 RP: 내 글은 얼굴 없이(내 말풍선처럼 오른쪽 끝 맞춤), 상대 글은 묶음 끝에만 얼굴 —
                           이어지는 글은 빈자리만 두어 말풍선 출발선이 문자 말풍선과 같게 (사용자 확정) */}
                       {!imsg
-                        ? (nameNeeded ? <Face ch={ch} className="face" crop={ch && relFaceCrop(rel, sel?.auId, ch)} /> : <span className="face spacer" />)
-                        : !rightSide && (runEnd ? <Face ch={ch} className="face" crop={ch && relFaceCrop(rel, sel?.auId, ch)} /> : <span className="face spacer" />)}
+                        ? (nameNeeded ? <Face ch={ch} className="face" crop={ch && relFaceCrop(rel, sel?.auId, ch)} img={ch && sel?.faces?.[ch.id]} /> : <span className="face spacer" />)
+                        : !rightSide && (runEnd ? <Face ch={ch} className="face" crop={ch && relFaceCrop(rel, sel?.auId, ch)} img={ch && sel?.faces?.[ch.id]} /> : <span className="face spacer" />)}
                       <div>
                         {/* 이름은 말하는 캐릭터가 바뀔 때만 — 기본 방도, 메신저 방의 일반 RP 글도 */}
                         {nameNeeded && <div className="who">{name}</div>}
                         <div className="bub">
                           {m.imgId && <div className="rp-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>}
-                          {m.text}
+                          <Md t={m.text} />
                         </div>
                         {/* 시각은 어디에도 안 적는다 (v2.1 사용자 요청 — 대본 방에 남아 있던 HH:MM 줄도 뺐다). 순서는 date가 정한다 */}
                       </div>
@@ -703,13 +741,13 @@ export default function RpPage() {
                   <div className="char-pick" onClick={() => setPickOpen(o => !o)}>
                     {speaker === 'desc'
                       ? <div className="f" style={{ display: 'grid', placeItems: 'center', fontSize: 13, color: 'var(--sub)' }}>❝</div>
-                      : <Face ch={speakerChar} className="f" crop={speakerChar && relFaceCrop(rel, sel?.auId, speakerChar)} />}
+                      : <Face ch={speakerChar} className="f" crop={speakerChar && relFaceCrop(rel, sel?.auId, speakerChar)} img={speakerChar && sel?.faces?.[speakerChar.id]} />}
                     <small>{speakerLabel} ▾</small>
                     {pickOpen && (
                       <div className="rp-pick-pop" onClick={e => e.stopPropagation()}>
                         {speakChars.map(c => (
                           <button key={c.id} onClick={() => { setSpeaker(c.id); setPickOpen(false); }}>
-                            <Face ch={c} className="f" crop={relFaceCrop(rel, sel?.auId, c)} />{c.name}
+                            <Face ch={c} className="f" crop={relFaceCrop(rel, sel?.auId, c)} img={sel?.faces?.[c.id]} />{c.name}
                           </button>
                         ))}
                         <button onClick={() => { setSpeaker('desc'); setPickOpen(false); }}>
@@ -929,12 +967,21 @@ export default function RpPage() {
         </div>,
         document.body,
       )}
+      {/* 마스토돈 타래 불러오기 */}
+      {importOpen && sel && (
+        <MastodonImport open onClose={() => setImportOpen(false)} chars={importChars}
+          hasMsgs={msgsOf(sel).length > 0} onImport={importMsgs} />
+      )}
+      {facesOpen && sel && (
+        <RoomFaces chars={importChars} faces={sel.faces ?? {}} cropOf={c => faceOf(c)}
+          onChange={f => patchRoom({ faces: f })} onClose={() => setFacesOpen(false)} />
+      )}
       {/* 역극 로그 — 열 때만 그린다 (게시판 목록도 그때 불러온다) */}
       {logOpen && sel && (
         <RpLogModal room={sel} msgs={msgsOf(sel)} chars={rpChars} sub={roomLabel(sel)}
           isAdmin={isAdmin} onClose={() => setLogOpen(false)}
           rightIds={rightIds}
-          faceInfo={Object.fromEntries(rpChars.map(c => [c.id, { ref: c.thumbId, crop: faceOf(c) }]))} />
+          faceInfo={Object.fromEntries(rpChars.map(c => [c.id, sel.faces?.[c.id] ? { ref: sel.faces[c.id], crop: undefined } : { ref: c.thumbId, crop: faceOf(c) }]))} />
       )}
 
       {/* 완결 확인 (삭제 아님 — END/CANCEL) */}

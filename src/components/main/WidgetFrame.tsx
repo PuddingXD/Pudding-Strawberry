@@ -52,7 +52,10 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
     const sx = e.clientX, sy = e.clientY;
     if (abs) {
       // 절대 좌표 이동 — 그리드 원점 = 캔버스 좌상단이라 스냅 계산도 단순
-      const bx = conf.ax!, by = conf.ay!;
+      // 메뉴 포함 가운데 정렬로 놓인 위젯은 화면에서 메뉴 폭 절반만큼 왼쪽에 보인다 — 끌기 시작하면 보이는 자리 그대로 일반 좌표로 바꾼다
+      const railHalf = conf.cMode === 'screen'
+        ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--rail')) || 0) / 2 : 0;
+      const bx = conf.ax! - railHalf, by = conf.ay!;
       // Shift+드래그 = 캔버스 가로 한가운데 정렬 (v1.9 사용자 요청)
       const canvasW = (ref.current?.closest('.main-grid') as HTMLElement | null)?.clientWidth ?? 0;
       const myW = () => conf.w ?? Math.round(ref.current?.getBoundingClientRect().width ?? 0);
@@ -66,12 +69,13 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
           updateWidget(conf.id, {
             ax: snap ? Math.round(cx / 10) * 10 : Math.round(cx),
             ay: snap ? Math.round(ny / 10) * 10 : ny,
+            cMode: undefined,
           });
           return;
         }
         centered = false;
-        if (snap) updateWidget(conf.id, { ax: Math.round(nx / 10) * 10, ay: Math.round(ny / 10) * 10 });
-        else updateWidget(conf.id, { ax: nx, ay: ny });
+        if (snap) updateWidget(conf.id, { ax: Math.round(nx / 10) * 10, ay: Math.round(ny / 10) * 10, cMode: undefined });
+        else updateWidget(conf.id, { ax: nx, ay: ny, cMode: undefined });
       };
       const up = () => {
         document.body.classList.remove('drag-move');
@@ -161,7 +165,7 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
     <div
       ref={ref}
       data-wid={conf.id}
-      className={`wgt ${useSize && conf.w != null ? 'sized' : ''} ${conf.mOff ? 'wgt-hide-m' : ''} ${className ?? ''}`}
+      className={`wgt ${useSize && conf.w != null ? 'sized' : ''} ${conf.mOff ? 'wgt-hide-m' : ''} ${abs && conf.cMode === 'screen' ? 'wgt-screen-c' : ''} ${className ?? ''}`}
       style={{
         ...style,
         order: mobileOrder,

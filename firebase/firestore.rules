@@ -37,7 +37,8 @@ service cloud.firestore {
         'posts', 'guestbook', 'characters', 'relations', 'gallery', 'feed', 'roadview',
         'trpg_logs', 'trpg_log_bodies', 'trpg_chars', 'dotori', 'playlog', 'rp_rooms', 'threads',
         'diary', 'memos', 'moods', 'comments', 'qa_answers', 'rp_messages',
-        'notifications', 'rp_typing', 'push_subs', 'sched_events', 'trpg_reviews'
+        'notifications', 'rp_typing', 'push_subs', 'sched_events', 'trpg_reviews',
+        'trash'   // 휴지통 (B 디자인) — 지운 항목 사본, 비공개로 저장
       ];
     }
 

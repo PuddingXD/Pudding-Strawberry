@@ -111,6 +111,20 @@ const esc = (s: string) => s
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+/** 발화 글 안의 마크다운 서식 → 태그 (마스토돈·디스코드 가져오기 — 사용자 요청: 「이탤릭·볼드가 살아 있게」).
+ *  ***굵은 기울임*** · **굵게** · *기울임* · ~~취소선~~ — 한 줄 안에서만, 이미 이스케이프한 글에 쓴다(태그를 새로 만들 뿐 글은 안전) */
+export function inlineMd(escaped: string): string {
+  return escaped
+    .replace(/\*\*\*([^\s*](?:[^*\n]*?[^\s*])?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*([^\s*](?:[^*\n]*?[^\s*])?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^\s*](?:[^*\n]*?[^\s*])?)\*/g, '<em>$1</em>')
+    .replace(/~~([^\s~](?:[^~\n]*?[^\s~])?)~~/g, '<del>$1</del>');
+}
+/** 발화 글 — 이스케이프 + 서식 */
+const md = (s: string) => inlineMd(esc(s));
+/** 역극 방 화면용 — 발화 글을 서식 있는 안전한 HTML로 (마스토돈에서 가져온 굵게·기울임 등) */
+export const rpMdHtml = md;
+
 /** 스타일 속성에 넣어도 되는 색만 — 저장된 값이 이상하면 기본색 */
 const safeHex = (c?: string) => (c && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(c) ? c : '#5d636d');
 
@@ -131,7 +145,7 @@ function imsgRows(msgs: RpMessage[], chars: Character[], opts: RpLogOpts): strin
     const txt = m.text || (m.imgId ? '[사진]' : '');
     if (m.kind !== 'char') {
       const dm = m.text.trim().match(DATE_RE);
-      rows.push(`<div class="sys${dm ? ' date' : ''}" data-i="${i}">${dm ? `<b>${esc(dm[1])}</b>${esc(dm[2])}` : esc(txt)}</div>`);
+      rows.push(`<div class="sys${dm ? ' date' : ''}" data-i="${i}">${dm ? `<b>${esc(dm[1])}</b>${md(dm[2])}` : md(txt)}</div>`);
       return;
     }
     const me = right.has(m.charId ?? '');
@@ -142,7 +156,7 @@ function imsgRows(msgs: RpMessage[], chars: Character[], opts: RpLogOpts): strin
       const pv = msgs[i - 1];
       const cont = !!pv && pv.kind === 'char' && !!m.charId && pv.charId === m.charId;
       const who = cont ? '' : `<div class="who"><span>${esc(nameOf(chars, m.charId))}</span></div>`;
-      rows.push(`<div class="m${cont ? ' cont' : ''}${!opts.neutralSides && me ? ' me' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}" style="--c:${hex};--rgb:${hexRgb(hex)}">${who}<div class="txt">${esc(txt)}</div></div>`);   // 메신저 로그 안의 「일반 RP」 카드에는 사진을 넣지 않는다 (사용자 확정 — 말풍선에만)
+      rows.push(`<div class="m${cont ? ' cont' : ''}${!opts.neutralSides && me ? ' me' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}" style="--c:${hex};--rgb:${hexRgb(hex)}">${who}<div class="txt">${md(txt)}</div></div>`);   // 메신저 로그 안의 「일반 RP」 카드에는 사진을 넣지 않는다 (사용자 확정 — 말풍선에만)
       return;
     }
     const prev = msgs[i - 1], next = msgs[i + 1];
@@ -157,7 +171,7 @@ function imsgRows(msgs: RpMessage[], chars: Character[], opts: RpLogOpts): strin
     const f = opts.faces?.[m.charId ?? ''];
     const face = opts.faces ? `<span class="f">${f ? `<img src="${esc(f.url)}" style="${esc(f.style)}" alt="">` : ''}</span>` : '';
     const nm = nameNeeded && (opts.neutralSides || !me) ? `<div class="n">${esc(nameOf(chars, m.charId))}</div>` : '';
-    rows.push(`<div class="b${side}${first ? ' first' : ''}${last ? ' last' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}">${face}<div class="col">${nm}<div class="bub${short ? ' short' : ''}">${esc(txt)}</div></div></div>`);
+    rows.push(`<div class="b${side}${first ? ' first' : ''}${last ? ' last' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}">${face}<div class="col">${nm}<div class="bub${short ? ' short' : ''}">${md(txt)}</div></div></div>`);
   });
   return rows;
 }
@@ -256,10 +270,10 @@ ${imsgRows(msgs, chars, opts).join('\n')}
       const who = cont
         ? (t ? `<div class="who">${t}</div>` : '')
         : `<div class="who">${faceTag(opts, m.charId)}<span>${esc(nameOf(chars, m.charId))}</span>${t}</div>`;
-      rows.push(`<div class="m${cont ? ' cont' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}" style="--c:${hex};--rgb:${hexRgb(hex)}">${who}<div class="txt">${esc(m.text || (m.imgId ? '[사진]' : ''))}</div></div>`);
+      rows.push(`<div class="m${cont ? ' cont' : ''}" data-c="${esc(m.charId ?? '')}" data-i="${i}" style="--c:${hex};--rgb:${hexRgb(hex)}">${who}<div class="txt">${md(m.text || (m.imgId ? '[사진]' : ''))}</div></div>`);
       prevChar = m.charId ?? null;
     } else {
-      rows.push(`<div class="d" data-i="${i}">${t}${esc(m.text || (m.imgId ? '[사진]' : ''))}</div>`);
+      rows.push(`<div class="d" data-i="${i}">${t}${md(m.text || (m.imgId ? '[사진]' : ''))}</div>`);
       prevChar = null;
     }
   });
