@@ -417,3 +417,17 @@
 .rp-face-row .f{width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative;flex-shrink:0}
 .rp-face-row b{flex:1;min-width:0;font-size:calc(13px*var(--fs,1))}
 .rp-face-row small{color:var(--faint);font-size:calc(10.5px*var(--fs,1));margin-left:6px}
+
+/* 자캐 상세 — 오른쪽 정보 칸을 반투명하게 (사용자 요청 — 흰 네모가 붕 떠 보인다).
+   자관의 전신 칸처럼 뒤 배경이 비치고, 그림자 없이 얇은 선만 */
+.profile-info{
+  background:color-mix(in srgb,var(--panel-solid,#fff) 28%,transparent);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  box-shadow:none;
+}
+/* 한마디 — 정보 칸 안, 캐치프레이즈 아래 (왼쪽 정렬, 아래 탭 정보와 선으로 나눔) */
+.profile-quote.in-info{
+  text-align:left;padding:0 0 18px;margin:-2px 0 18px;
+  font-size:calc(15px*var(--fs,1));color:var(--sub);
+  border-bottom:1px solid var(--b-line-soft,var(--line));
+}
