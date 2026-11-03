@@ -484,3 +484,70 @@ export function BannerEditor({ conf, onSaved, onClose }: {
     </div>
   );
 }
+
+/* ---------- 배너 교환 (B 디자인에서 가져온 위젯) — 친구 홈 배너 목록 + 내 배너 ---------- */
+export interface XBanner { id: string; img: string; link: string; title: string }
+
+function BannerImgPick({ value, onPick }: { value: string; onPick: (ref: string) => void }) {
+  const toast = useToast();
+  const url = useBlobUrl(value || undefined);
+  const [busy, setBusy] = useState(false);
+  return (
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'var(--cur-pointer,pointer)', flexShrink: 0 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {url ? <img src={url} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain', borderRadius: 4, border: '1px solid var(--line)' }} />
+        : <span className="btn btn-ghost" style={{ height: 30, padding: '0 12px', fontSize: 10.5 }}>{busy ? '올리는 중…' : '이미지'}</span>}
+      <input type="file" accept="image/*" hidden onChange={async e => {
+        const f = e.target.files?.[0]; e.target.value = '';
+        if (!f) return;
+        setBusy(true);
+        try { onPick(await putBlob(f)); } catch (err) { toast(`올리지 못했습니다 — ${err instanceof Error ? err.message : String(err)}`); }
+        setBusy(false);
+      }} />
+    </label>
+  );
+}
+
+export function BannersEditor({ conf }: { conf: WidgetConf }) {
+  const { updateWidget } = useMainStore();
+  const items = (conf.settings.items as XBanner[]) ?? [];
+  const own = (conf.settings.own as string) ?? '';
+  const h = (conf.settings.h as number) ?? 40;
+  const setMeta = (patch: Record<string, unknown>) =>
+    updateWidget(conf.id, { settings: { ...conf.settings, ...patch } }, { persist: true });
+  const set = (next: XBanner[]) => setMeta({ items: next });
+  return (
+    <div>
+      <div className="form-row" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <label className="k-label" style={{ width: 70 }}>내 배너</label>
+        <BannerImgPick value={own} onPick={v => setMeta({ own: v })} />
+        {own && <button className="btn btn-ghost" style={{ height: 28, padding: '0 10px', fontSize: 10.5 }} onClick={() => setMeta({ own: '' })}>지우기</button>}
+        <span className="hint" style={{ margin: 0 }}>방문자가 누르면 내 홈 링크가 걸린 배너 코드가 복사됩니다</span>
+      </div>
+      <div className="form-row">
+        <label className="k-label" style={{ width: 70 }}>배너 높이</label>
+        <KStep value={h} onChange={v => setMeta({ h: v })} min={20} max={160} step={2} suffix="px" />
+      </div>
+      <div style={{ borderTop: '1px solid var(--line)', margin: '8px 0 10px' }} />
+      <DragList
+        items={items}
+        keyOf={it => it.id}
+        onReorder={set}
+        render={(it, i) => (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px dashed var(--line)', width: '100%' }}>
+            <span className="drag-h">⠿</span>
+            <BannerImgPick value={it.img} onPick={v => set(items.map((x, j) => (j === i ? { ...x, img: v } : x)))} />
+            <KInput value={it.title} placeholder="이름" style={{ width: 110 }}
+              onChange={e => set(items.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} />
+            <KInput value={it.link} placeholder="https://친구 홈 주소" style={{ flex: 1 }}
+              onChange={e => set(items.map((x, j) => (j === i ? { ...x, link: e.target.value } : x)))} />
+            <button className="btn btn-ghost" style={{ height: 24, padding: '0 11px', fontSize: 10.5 }}
+              onClick={() => set(items.filter((_, j) => j !== i))}>삭제</button>
+          </div>
+        )}
+      />
+      <button className="btn btn-dark" style={{ marginTop: 10 }}
+        onClick={() => set([...items, { id: `xb${Date.now().toString(36)}`, img: '', link: '', title: '' }])}>＋ 배너 추가</button>
+    </div>
+  );
+}

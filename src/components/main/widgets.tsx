@@ -12,7 +12,8 @@ import { Modal } from '@/components/ui/Modal';
 import { KTextarea, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { useFonts } from '@/lib/fontStore';
-import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem } from '@/components/main/widgetEditors';
+import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem, BannersEditor, type XBanner } from '@/components/main/widgetEditors';
+import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg, CropValue } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { RoadItem, ROAD_SEED, BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
@@ -592,6 +593,55 @@ export function MemoBoardWidget() {
 }
 
 
+/* ---------- 배너 교환 (B 디자인) — 친구 홈 배너 줄 + 내 배너(누르면 코드 복사) ---------- */
+function XBannerImg({ b, h }: { b: XBanner; h: number }) {
+  const url = useBlobUrl(b.img || undefined);
+  // eslint-disable-next-line @next/next/no-img-element
+  return url ? <img src={url} alt={b.title} style={{ height: h }} draggable={false} /> : null;
+}
+export function BannersWidget({ conf }: { conf: WidgetConf }) {
+  const { isAdmin } = useAuth();
+  const { editOn } = useMainStore();
+  const toast = useToast();
+  const [open, setOpen] = useState(false);
+  useEditEvent(conf.id, () => setOpen(true));
+  const items = ((conf.settings.items as XBanner[]) ?? []).filter(b => b.img);
+  const own = (conf.settings.own as string) ?? '';
+  const h = (conf.settings.h as number) ?? 40;
+  const ownUrl = useBlobUrl(own || undefined);
+  const copyOwn = async () => {
+    if (!ownUrl) return;
+    const code = `<a href="${location.origin}" target="_blank"><img src="${ownUrl}" alt="${document.title.replace(/"/g, '')}"></a>`;
+    try { await navigator.clipboard.writeText(code); toast('내 배너 코드를 복사했습니다'); }
+    catch { toast('복사하지 못했습니다 — 브라우저가 막았어요'); }
+  };
+  return (
+    <div className="panel widget">
+      <h4>BANNER {isAdmin && <span className="more" onClick={() => { if (!editOn) setOpen(true); }}>관리 ›</span>}</h4>
+      <div className="xbanners">
+        {ownUrl && (
+          <button type="button" className="xb own" data-tip="눌러서 내 배너 코드 복사" onClick={() => void copyOwn()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ownUrl} alt="내 배너" style={{ height: h }} draggable={false} />
+          </button>
+        )}
+        {items.map(b => {
+          const link = /^https?:\/\//.test(b.link) ? b.link : '';
+          return link
+            ? <a key={b.id} className="xb" href={link} target="_blank" rel="noopener noreferrer" data-tip={b.title || undefined}><XBannerImg b={b} h={h} /></a>
+            : <span key={b.id} className="xb" data-tip={b.title || undefined}><XBannerImg b={b} h={h} /></span>;
+        })}
+        {!ownUrl && items.length === 0 && <p className="hint">등록된 배너가 없습니다</p>}
+      </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="배너 교환"
+        desc="친구 홈 배너(이미지 + 주소) · ⠿ 드래그로 순서 — 환경설정 「위젯」에서도 관리 가능"
+        actions={<button className="btn btn-dark" onClick={() => setOpen(false)}>CLOSE</button>}>
+        {open && <BannersEditor conf={conf} />}
+      </Modal>
+    </div>
+  );
+}
+
 /* ---------- 타입 → 렌더러 ---------- */
 export function renderWidget(conf: WidgetConf) {
   // 없어진 종류(커미션 신청자 등)가 옛 배치에 남아 있으면 그리지 않는다 (v2.1 — 커미션 기능 삭제)
@@ -608,6 +658,7 @@ export function renderWidget(conf: WidgetConf) {
     case 'freetext': return <FreeTextWidget conf={conf} />;
     case 'deco': return <DecoWidget conf={conf} />;
     case 'memoboard': return <MemoBoardWidget />;
+    case 'banners': return <BannersWidget conf={conf} />;
     default: return <div className="panel widget"><h4>{WIDGET_META[conf.type]?.title ?? conf.type}</h4></div>;
   }
 }

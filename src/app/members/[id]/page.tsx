@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth, mockMemberInfo, User } from '@/lib/auth';
 import {
-  useLocalList, BOARD_SEED, GUEST_SEED, Post, GuestEntry, fmtDate,
+  useLocalList, BOARD_SEED, GUEST_SEED, Post, GuestEntry, fmtDate, isPublished,
   CommentRow, COMMENT_KEY, COMMENT_SEED,
 } from '@/lib/postStore';
 import { Character, CHAR_SEED, charGrant } from '@/lib/charStore';
@@ -26,7 +26,7 @@ const PER = 15;
 export default function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [posts] = useLocalList<Post>('ohome.board.v1', BOARD_SEED);
   const [roads] = useLocalList<RoadItem>('ohome.road.v1', ROAD_SEED);
   const [guestEntries] = useLocalList<GuestEntry>('ohome.guest.v1', GUEST_SEED);
@@ -73,7 +73,8 @@ export default function MemberDetailPage() {
     .map(c => ({ c, level: charGrant(c, member.id) }))
     .filter((x): x is { c: Character; level: 'play' | 'edit' } => x.level !== null);
 
-  const items = collectMyItems(member.id, posts, roads, guestEntries, boards, cmtRows);
+  // 예약 공개·임시 저장 글은 본인·관리자만 (B 디자인)
+  const items = collectMyItems(member.id, posts.filter(p => isPublished(p) || isAdmin || p.authorId === user?.id), roads, guestEntries, boards, cmtRows);
   const pageItems = items.slice((page - 1) * PER, page * PER);
 
   return (

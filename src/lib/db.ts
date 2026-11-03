@@ -6,6 +6,7 @@
 // 저장 시점에 이전/새 배열을 비교해 바뀐 것만 보낸다(어댑터의 syncList).
 import { backend, COLLECTION_OF } from './backend';
 import type { ListItem } from './backend';
+import { isTrashable, makeTrashEntries, TRASH_COLL } from './trash';
 
 export { COLLECTION_OF as TABLE_OF };
 
@@ -24,7 +25,18 @@ export async function syncList<T extends ListItem>(
   coll: string, prev: T[], next: T[], uid: string | null,
 ): Promise<void> {
   const be = backend();
-  if (be) await be.syncList(coll, prev, next, uid);
+  if (!be) return;
+  await be.syncList(coll, prev, next, uid);
+  // 휴지통 (B 디자인) — 저장이 끝난 뒤, 이번에 빠진 항목을 사본으로 남긴다.
+  // 휴지통 저장이 실패해도(규칙 미갱신 등) 원래 삭제에는 영향이 없게 조용히 넘어간다
+  if (isTrashable(coll)) {
+    const keep = new Set(next.map(it => it.id));
+    const removed = prev.filter(it => !keep.has(it.id));
+    if (removed.length) {
+      void be.syncList(TRASH_COLL, [], makeTrashEntries(coll, removed, uid), uid)
+        .catch(err => console.warn('[ohome] 휴지통 보관 실패', err));
+    }
+  }
 }
 
 export function subscribeTable(coll: string, onChange: () => void): () => void {

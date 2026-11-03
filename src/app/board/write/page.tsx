@@ -9,7 +9,9 @@ import { useLocalList, BOARD_SEED, Post, newId, FoldType } from '@/lib/postStore
 import { useBoards, boardHref, MAIN_BOARD_ID } from '@/lib/boardStore';
 import { useMenuSettings, canWriteAt } from '@/lib/menuStore';
 import { renderBody } from '@/lib/sanitize';
-import { KInput, KTextarea, KSelect, KCheck } from '@/components/ui/Kit';
+import { KInput, KTextarea, KSelect, KCheck, KRadio, KDate } from '@/components/ui/Kit';
+import { ColorField } from '@/components/ui/ColorField';
+import { lockText, unlockText, unlockedOf, rememberUnlocked } from '@/lib/pwLock';
 import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { RichEditor } from '@/components/ui/RichEditor';
@@ -44,6 +46,24 @@ function WriteInner() {
   React.useEffect(() => { if (!category && board.cats[0]) setCategory(board.cats[0].label); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board.cats.length]);
   const [secret, setSecret] = useState(false);
+  /* ---- B 디자인에서 가져온 옵션 ---- */
+  // 공개 시점: 바로 / 예약 / 임시 저장
+  const [pubMode, setPubMode] = useState<'now' | 'at' | 'draft'>('now');
+  const [pubDate, setPubDate] = useState('');
+  const [pubTime, setPubTime] = useState('21:00');
+  // 비밀번호 잠금 — 본문을 비밀번호로 암호화 (lib/pwLock)
+  const [pwOn, setPwOn] = useState(false);
+  const [pw1, setPw1] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [needPw, setNeedPw] = useState(false);       // 잠긴 글 수정 — 먼저 풀어야 본문을 채울 수 있다
+  const [unlockPw, setUnlockPw] = useState('');
+  const [unlockErr, setUnlockErr] = useState('');
+  const editPw = useRef('');                          // 잠긴 글을 풀 때 쓴 비밀번호 — 바꾸지 않으면 그대로 다시 잠근다
+  const [saving, setSaving] = useState(false);
+  // 썰 백업 — 대화 참여자 · 러닝 — 카드 요약
+  const [n1, setN1] = useState(''); const [n2, setN2] = useState('');
+  const [c1, setC1] = useState(''); const [c2, setC2] = useState('');
+  const [summary, setSummary] = useState('');
   const [notice, setNotice] = useState(false);
   // 태그 (v2.0 사용자 요청) — 쉼표로 구분해 입력, 저장할 때 배열로
   const [tagsText, setTagsText] = useState('');
@@ -74,7 +94,19 @@ function WriteInner() {
     const p = posts.find(x => x.id === editPid);
     if (!p) return;
     hydrated.current = true;
-    setTitle(p.title); setBody(p.body);
+    setTitle(p.title);
+    if (p.pwLock) {
+      setPwOn(true);
+      const t = unlockedOf(p.id);
+      if (t === undefined) setNeedPw(true); else setBody(t);
+    } else setBody(p.body);
+    setPubMode(p.draft ? 'draft' : p.pubAt && new Date(p.pubAt).getTime() > Date.now() ? 'at' : 'now');
+    if (p.pubAt) {
+      const d = new Date(p.pubAt); const z = (n: number) => String(n).padStart(2, '0');
+      setPubDate(`${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`); setPubTime(`${z(d.getHours())}:${z(d.getMinutes())}`);
+    }
+    setN1(p.talk?.n1 ?? ''); setN2(p.talk?.n2 ?? ''); setC1(p.talk?.c1 ?? ''); setC2(p.talk?.c2 ?? '');
+    setSummary(p.summary ?? '');
     // 에디터로 쓴 글은 에디터로 다시 연다 — 예전에는 무조건 HTML 소스가 떠서
     // 에디터로 쓴 글을 수정하면 갑자기 태그가 보였다 (authored 없는 옛 글은 지금까지대로 HTML)
     setWriteMode(p.mode === 'md' ? 'md' : (p.authored === 'editor' ? 'editor' : 'html'));
@@ -106,8 +138,63 @@ function WriteInner() {
     );
   }
 
-  const post = () => {
+  // 잠긴 글 수정 — 비밀번호로 먼저 풀기
+  if (editing && needPw) {
+    return (
+      <section className="page">
+        <div className="page-head"><PageTitle href={boardHref(board.id)}>EDIT</PageTitle><p>비밀번호가 걸린 글 — 본문을 고치려면 먼저 풀어 주세요</p></div>
+        <div className="panel" style={{ maxWidth: 420, margin: '20px auto', padding: 24 }}>
+          <form className="pw-box" style={{ border: 'none', padding: 0 }} onSubmit={async e => {
+            e.preventDefault();
+            const t = await unlockText(editing.pwLock!, unlockPw);
+            if (t === null) { setUnlockErr('비밀번호가 맞지 않습니다'); return; }
+            rememberUnlocked(editing.id, t); editPw.current = unlockPw;
+            setBody(t); setNeedPw(false);
+          }}>
+            <div className="row">
+              <KInput type="password" autoComplete="off" placeholder="비밀번호" value={unlockPw} onChange={e => setUnlockPw(e.target.value)} />
+              <button className="btn btn-dark" type="submit">열기</button>
+            </div>
+            {unlockErr && <small className="err">{unlockErr}</small>}
+          </form>
+        </div>
+      </section>
+    );
+  }
+
+  /** 공개 시점·잠금·스킨별 칸을 글 데이터로 */
+  const extras = async (): Promise<Partial<Post> | null> => {
+    let pubAt: string | undefined;
+    if (pubMode === 'at') {
+      if (!pubDate) { toast('예약 공개 날짜를 골라 주세요'); return null; }
+      const d = new Date(`${pubDate}T${pubTime || '00:00'}`);
+      if (Number.isNaN(d.getTime())) { toast('예약 공개 시각을 확인해 주세요'); return null; }
+      pubAt = d.toISOString();
+    }
+    let lock: Post['pwLock'];
+    let savedBody = body;
+    if (pwOn) {
+      const p = pw1 || editPw.current;
+      if (!p) { toast('비밀번호를 입력해 주세요'); return null; }
+      if (pw1 && pw1 !== pw2) { toast('비밀번호 확인이 맞지 않습니다'); return null; }
+      lock = await lockText(body, p);
+      savedBody = '';
+    }
+    return {
+      body: savedBody, pwLock: lock,
+      pubAt, draft: pubMode === 'draft' ? true : undefined, visibility: pubMode === 'draft' ? 'private' : undefined,
+      talk: board.skin === 'talk' ? { n1: n1.trim(), n2: n2.trim(), c1: c1 || undefined, c2: c2 || undefined } : editing?.talk,
+      summary: board.skin === 'running' ? (summary.trim() || undefined) : editing?.summary,
+    };
+  };
+
+  const post = async () => {
     if (!title.trim() || !body.trim()) { toast('제목과 내용을 입력해 주세요'); return; }
+    if (saving) return;
+    setSaving(true);
+    const ex = await extras();
+    setSaving(false);
+    if (!ex) return;
     if (editing) {
       // 수정 — 작성자 본인만 (관리자도 타인 글은 삭제만, v1.9). 작성자/날짜/댓글/소속 게시판은 유지
       if (editing.authorId !== user.id) { toast('수정은 작성자 본인만 할 수 있습니다'); return; }
@@ -121,7 +208,9 @@ function WriteInner() {
         tags: parseTags(tagsText),
         fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },
         thumbSrc, thumbCrop,
+        ...ex,
       } : p)));
+      if (ex.pwLock) rememberUnlocked(editing.id, body);
       toast('수정되었습니다');
       router.push(`/board/${editing.id}`);
       return;
@@ -136,7 +225,9 @@ function WriteInner() {
       comments: [],
       boardId: board.id,   // 소속 게시판 (5.2 다중 게시판)
       thumbSrc, thumbCrop,
+      ...ex,
     };
+    if (ex.pwLock) rememberUnlocked(p.id, body);
     setPosts([p, ...posts]);
     toast('등록되었습니다');
     router.push(`/board/${p.id}`);
@@ -177,6 +268,30 @@ function WriteInner() {
               </div>
             )}
           </div>
+          {/* 썰 백업 게시판 — 대화 참여자 (B 디자인) */}
+          {board.skin === 'talk' && (
+            <div className="talk-guide">
+              <div className="form-row" style={{ flexWrap: 'wrap' }}>
+                <label className="k-label" style={{ width: 60 }}>참여자 1</label>
+                <KInput value={n1} onChange={e => setN1(e.target.value)} placeholder="왼쪽 (1:)" style={{ width: 140 }} />
+                <ColorField value={c1 || '#ffffff'} onChange={setC1} />
+                <label className="k-label" style={{ width: 60, marginLeft: 10 }}>참여자 2</label>
+                <KInput value={n2} onChange={e => setN2(e.target.value)} placeholder="오른쪽 (2:)" style={{ width: 140 }} />
+                <ColorField value={c2 || '#ffffff'} onChange={setC2} />
+              </div>
+              <p className="hint" style={{ margin: '-4px 0 12px' }}>
+                줄마다 <b>1: 대사</b>(왼쪽) · <b>2: 대사</b>(오른쪽)로 적어 주세요. <b># 소제목</b>은 대화 묶음 구분, 그 밖의 줄은 가운데 지문이 됩니다.
+                이미지를 넣으면 바로 위 줄을 말한 사람의 말풍선에 들어갑니다. 색은 말풍선 배경색이에요.
+              </p>
+            </div>
+          )}
+          {/* 러닝 게시판 — 카드 요약 (B 디자인) */}
+          {board.skin === 'running' && (
+            <div className="form-row">
+              <label className="k-label" style={{ width: 60 }}>요약</label>
+              <KInput value={summary} onChange={e => setSummary(e.target.value)} placeholder="목록 카드에 보일 한 줄 (선택)" style={{ flex: 1 }} />
+            </div>
+          )}
           {writeMode === 'editor' || (writeMode === 'html' && htmlView === 'preview') ? (
             <RichEditor value={body} onChange={setBody} placeholder='내용을 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)' />
           ) : (
@@ -193,7 +308,7 @@ function WriteInner() {
             </>
           )}
           {/* 티켓 스킨 대표 이미지 — 본문에 삽입한 이미지 리스트에서 선택, 클릭 시 16:9 썸네일 위치 지정 (v1.9) */}
-          {board.skin === 'ticket' && bodyImages.length > 0 && (
+          {(board.skin === 'ticket' || board.skin === 'running') && bodyImages.length > 0 && (
             <div style={{ marginTop: 14 }}>
               <label className="k-label" style={{ marginBottom: 7 }}>대표 이미지 (티켓 썸네일)</label>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -239,6 +354,30 @@ function WriteInner() {
               {isAdmin && <KCheck label="공지로 고정" checked={notice} onChange={setNotice} />}
             </div>
           </div>
+          {/* 공개 시점 · 비밀번호 (B 디자인) */}
+          <div className="panel widget" style={{ marginBottom: 14 }}>
+            <h4>공개</h4>
+            <div style={{ display: 'grid', gap: 9 }}>
+              <KRadio name="pub" value="now" current={pubMode} onChange={v => setPubMode(v as 'now')} label="바로 공개" />
+              <KRadio name="pub" value="at" current={pubMode} onChange={v => setPubMode(v as 'at')} label="예약 공개 — 정한 시각부터 보임" />
+              {pubMode === 'at' && (
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', paddingLeft: 22 }}>
+                  <KDate value={pubDate} onChange={setPubDate} />
+                  <KInput type="time" value={pubTime} onChange={e => setPubTime(e.target.value)} style={{ width: 110 }} />
+                </div>
+              )}
+              <KRadio name="pub" value="draft" current={pubMode} onChange={v => setPubMode(v as 'draft')} label="임시 저장 — 나와 관리자만" />
+              <div style={{ borderTop: '1px solid var(--line)', margin: '4px 0' }} />
+              <KCheck label="비밀번호 잠금 — 비밀번호를 아는 사람만" checked={pwOn} onChange={setPwOn} />
+              {pwOn && (
+                <div style={{ display: 'grid', gap: 6, paddingLeft: 22 }}>
+                  <KInput type="password" autoComplete="new-password" placeholder={editPw.current ? '새 비밀번호 (비우면 그대로)' : '비밀번호'} value={pw1} onChange={e => setPw1(e.target.value)} />
+                  <KInput type="password" autoComplete="new-password" placeholder="비밀번호 확인" value={pw2} onChange={e => setPw2(e.target.value)} />
+                  <p className="hint" style={{ margin: 0 }}>본문이 이 비밀번호로 암호화돼 저장됩니다. 잊으면 관리자도 열 수 없어요.</p>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="panel widget" style={{ marginBottom: 14 }}>
             <h4>접기 (6.2)</h4>
             <div style={{ display: 'grid', gap: 9 }}>
@@ -256,7 +395,7 @@ function WriteInner() {
           <div className="form-actions">
             <button className="btn btn-onbk"
               onClick={() => router.push(editing ? `/board/${editing.id}` : boardHref(board.id))}>CANCEL</button>
-            <button className="btn btn-accent" onClick={post}>{editing ? 'SAVE' : 'POST'}</button>
+            <button className="btn btn-accent" disabled={saving} onClick={() => void post()}>{saving ? '…' : editing ? 'SAVE' : pubMode === 'draft' ? '임시 저장' : 'POST'}</button>
           </div>
         </div>
       </div>

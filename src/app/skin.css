@@ -224,3 +224,109 @@
    --------------------------------------------------------- */
 .post-body hr{border-top:none;height:1px;background:var(--b-rule)}
 .post-body blockquote{border-left-color:var(--accent)}
+
+/* ---------------------------------------------------------
+   10) 꾸미기 효과 (환경설정 > 효과·입장 화면 — components/shell/SkinEffects)
+   --------------------------------------------------------- */
+/* 떨어지는 효과 — 배경 위, 글·카드 뒤 */
+.fx-particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+/* 마우스 효과 — 맨 위 (클릭은 통과) */
+.fx-trail{position:fixed;inset:0;z-index:9000;pointer-events:none}
+/* 입장 화면 — 메인 첫 화면을 덮고, 누르면 흐려지며 사라진다 */
+.landing-ov{position:fixed;inset:0;z-index:6000;display:grid;place-items:center;cursor:var(--cur-pointer,pointer);
+  background:linear-gradient(var(--bg-angle,180deg),var(--bg-g1),var(--bg-g2));color:var(--page-title);
+  animation:fade .4s;transition:opacity .45s,filter .45s}
+.landing-ov.out{opacity:0;filter:blur(6px);pointer-events:none}
+.landing-ov .land-in{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px;text-align:center;max-width:100vw}
+.landing-ov img{max-width:86vw;height:auto;transition:transform .35s}
+.landing-ov:hover img{transform:scale(1.02)}
+.landing-ov .land-title{font-family:var(--font-pagetitle,var(--serif));font-size:clamp(28px,6vw,64px);letter-spacing:.2em}
+.landing-ov .land-cap{font-size:calc(11px*var(--fs,1));letter-spacing:.32em;opacity:.75;text-transform:uppercase;animation:landBlink 2.4s ease-in-out infinite}
+@keyframes landBlink{50%{opacity:.35}}
+
+/* 휴지통 (환경설정) */
+.trash-list{display:grid;gap:6px}
+.trash-row{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:var(--radius-s)}
+.trash-row .tt{min-width:0}
+.trash-row .tt b{display:block;font-size:calc(12.5px*var(--fs,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trash-row .tt small{font-size:calc(10.5px*var(--fs,1));color:var(--faint)}
+
+/* ---------------------------------------------------------
+   11) 게시판 — B 디자인에서 가져온 스킨·옵션
+   --------------------------------------------------------- */
+/* 공개 전 표시 (예약·임시 저장) */
+.pub-tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;font-size:calc(9.5px*var(--fs,1));font-weight:600;letter-spacing:.04em;vertical-align:middle;
+  color:var(--accent);border:1px dashed var(--accent);background:transparent;white-space:nowrap}
+/* 비밀번호 비밀글 */
+.pw-box{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:30px 16px;border:1px dashed var(--b-line);border-radius:var(--radius)}
+.pw-box > svg{width:26px !important;height:26px !important;margin:0 0 4px !important;opacity:.7 !important}
+.pw-box b{font-size:calc(14px*var(--fs,1))}
+.pw-box > span{font-size:calc(11.5px*var(--fs,1));color:var(--faint)}
+.pw-box .row{display:flex;gap:6px;margin-top:10px;width:min(300px,100%)}
+.pw-box .row .k-input{flex:1}
+.pw-box .err{color:var(--accent);font-size:calc(11px*var(--fs,1))}
+
+/* 썰 백업 — 목록 */
+.talk-list{display:grid;gap:8px}
+.talk-li{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:var(--cur-pointer,pointer)}
+.talk-li:hover{border-color:var(--accent)}
+.talk-li .talk-n{flex-shrink:0;font-size:calc(9.5px*var(--fs,1));font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:999px;
+  background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--btn-dark-hv,var(--accent))}
+.talk-li b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:calc(13.5px*var(--fs,1))}
+.talk-li b .cmt{color:var(--accent);font-size:calc(11px*var(--fs,1));margin-left:6px}
+.talk-li small{flex-shrink:0;color:var(--faint);font-size:calc(11px*var(--fs,1))}
+.talk-li .ar{font-style:normal;color:var(--faint);font-size:16px}
+@media (max-width:620px){.talk-li small{display:none}}
+/* 썰 백업 — 대화 말풍선 */
+.talk{--talk-c1:color-mix(in srgb,var(--accent) 18%,#fff);--talk-c2:color-mix(in srgb,var(--btn-dark,var(--accent)) 42%,#fff);
+  display:flex;flex-direction:column;gap:4px;padding:6px 0}
+.talk-row{display:flex;flex-direction:column;max-width:78%}
+.talk-row.l{align-self:flex-start;align-items:flex-start}
+.talk-row.r{align-self:flex-end;align-items:flex-end}
+.talk-row.first{margin-top:10px}
+.talk-name{font-size:calc(11px*var(--fs,1));color:var(--sub);margin:0 6px 4px;letter-spacing:.04em}
+.talk-bub{padding:9px 14px;border-radius:16px;font-size:calc(13.5px*var(--fs,1));line-height:1.65;white-space:pre-wrap;word-break:break-word;
+  color:color-mix(in srgb,var(--ink) 62%,#2a2226)}   /* 말풍선 위 글씨 — 테마 글씨색을 조금 진하게 (연한 말풍선에서도 읽히게) */
+.talk-row.l .talk-bub{background:var(--talk-c1);border-top-left-radius:5px}
+.talk-row.r .talk-bub{background:var(--talk-c2);border-top-right-radius:5px}
+.talk-row:not(.first).l .talk-bub{border-top-left-radius:16px}
+.talk-row:not(.first).r .talk-bub{border-top-right-radius:16px}
+.talk-bub img,.talk-note img{display:block;max-width:100%;border-radius:10px;margin-top:6px}
+.talk-bub span + img{margin-top:8px}
+.talk-note{align-self:center;text-align:center;max-width:86%;margin:10px 0;font-size:calc(12px*var(--fs,1));color:var(--faint);line-height:1.7}
+.talk-head{display:flex;align-items:center;gap:12px;margin:22px 0 8px;font-size:calc(11.5px*var(--fs,1));letter-spacing:.14em;color:var(--sub)}
+.talk-head::before,.talk-head::after{content:"";flex:1;height:1px;background:var(--b-line-soft)}
+.talk-guide .form-row{gap:8px}
+
+/* 러닝 — 첫 화면 세로 카드 */
+.run-pick{display:flex;justify-content:center;flex-wrap:wrap;gap:18px;padding:10px 0 30px}
+.run-card{position:relative;width:min(220px,42vw);aspect-ratio:3/4.4;border-radius:var(--radius);overflow:hidden;cursor:var(--cur-pointer,pointer);
+  border:1px solid var(--b-line-soft);background:var(--panel-solid);transition:border-color .2s,box-shadow .2s}
+.run-card:hover{border-color:var(--accent);box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 22%,transparent)}
+.run-card > *:first-child{position:absolute;inset:0}
+.run-card .nm{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:40px 16px 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:8px;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));color:#fff}
+.run-card .nm b{font-size:calc(17px*var(--fs,1));letter-spacing:.12em;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+.run-card .nm small{font-size:calc(11px*var(--fs,1));opacity:.85}
+.run-ph{width:100%;height:100%;display:grid;place-items:center;color:var(--faint);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--accent) 22%,#fff),color-mix(in srgb,var(--accent) 6%,#fff))}
+/* 러닝 — 글 카드 */
+.run-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.run-item{padding:0;overflow:hidden;cursor:var(--cur-pointer,pointer);border:1px solid var(--b-line-soft);transition:border-color .2s}
+.run-item:hover{border-color:var(--accent)}
+.run-item .thumb{aspect-ratio:16/9;position:relative;overflow:hidden}
+.run-item .thumb > *{position:absolute;inset:0}
+.run-item .info{padding:12px 15px 14px;display:grid;gap:4px}
+.run-item .info .cat{font-size:calc(10px*var(--fs,1));color:var(--accent);letter-spacing:.06em}
+.run-item .info b{font-size:calc(14px*var(--fs,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-item .info b .cmt{color:var(--accent);font-size:calc(11px*var(--fs,1));margin-left:6px}
+.run-item .info p{font-size:calc(12px*var(--fs,1));color:var(--sub);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.run-item .info .dt{font-size:calc(10.5px*var(--fs,1));color:var(--faint)}
+
+/* 배너 교환 위젯 */
+.xbanners{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.xbanners .xb{display:inline-flex;line-height:0;border-radius:4px;overflow:hidden;transition:transform .15s,opacity .15s}
+.xbanners .xb:hover{transform:translateY(-2px)}
+.xbanners .xb img{display:block;width:auto;max-width:100%}
+.xbanners button.xb{padding:0;border:none;background:none;cursor:var(--cur-pointer,pointer)}
+.xbanners .xb.own{outline:1px dashed var(--accent);outline-offset:2px}

@@ -8,7 +8,7 @@ import { extraBoardHref, useMenuSettings, canReadSecret } from '@/lib/menuStore'
 import { LockIcon } from '@/components/ui/LockIcon';
 import { useAuth } from '@/lib/auth';
 import {
-  useLocalList, BOARD_SEED, Post, Comment, newId, fmtDate,
+  useLocalList, BOARD_SEED, Post, Comment, newId, fmtDate, isPublished, pubLabel,
   CommentRow, COMMENT_KEY, COMMENT_SEED, commentsFor,
 } from '@/lib/postStore';
 import { useBoards, boardHref, MAIN_BOARD_ID, BoardPerm } from '@/lib/boardStore';
@@ -20,6 +20,8 @@ import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 import { pushNotif } from '@/lib/notifStore';
 import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
+import { unlockText, rememberUnlocked, unlockedOf } from '@/lib/pwLock';
+import { TalkView } from '@/components/board/TalkView';
 
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
 
@@ -39,6 +41,11 @@ export default function BoardDetailPage() {
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [delAsk, setDelAsk] = useState(false);
   const [gName, setGName] = useState('');                       // 게스트 닉네임 (방문자 댓글 허용 시)
+  // 비밀번호 비밀글 (B 디자인) — 푼 본문은 이 창 안에서만 기억한다
+  const [unlocked, setUnlocked] = useState<string | undefined>(() => unlockedOf(id));
+  const [pw, setPw] = useState('');
+  const [pwErr, setPwErr] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
 
   const post = posts.find(p => p.id === id);
   /* 이 글이 속한 곳이 비공개면 주소로 들어와도 열리지 않게 (v2.0 사용자 요청).
@@ -47,10 +54,11 @@ export default function BoardDetailPage() {
   const bid = post?.boardId ?? MAIN_BOARD_ID;
   const blocked = useHrefBlock(post && (bid === MAIN_BOARD_ID ? '/board' : extraBoardHref(bid)));
   // loaded 이후에만 본문 렌더 (SSR/하이드레이션 불일치 방지)
-  const html = useMemo(() => (post && loaded ? renderBody(post.mode, post.body) : ''), [post, loaded]);
+  const bodyText = post?.pwLock ? (unlocked ?? '') : (post?.body ?? '');
+  const html = useMemo(() => (post && loaded ? renderBody(post.mode, bodyText) : ''), [post, loaded, bodyText]);
 
   // 이전글/다음글로 글이 바뀌면 — 접기·댓글 입력 상태를 비우고 맨 위로 (같은 화면이 다른 글로 바뀌는 것이라 상태가 남는다)
-  useEffect(() => { setOpen(false); setCmt(''); setReplyTo(null); setDelAsk(false); }, [id]);
+  useEffect(() => { setOpen(false); setCmt(''); setReplyTo(null); setDelAsk(false); setUnlocked(unlockedOf(id)); setPw(''); setPwErr(''); }, [id]);
   useScrollTopOnChange(id);
 
   // 막힌 곳이면 여기서 되돌아간다 — 훅을 모두 부른 뒤여야 렌더마다 개수가 같다
@@ -66,6 +74,14 @@ export default function BoardDetailPage() {
   /* 글쓴이인지 한 곳에서 정한다 (v2.0 발견) — 예전 글이나 손님이 쓴 글은 authorId가 없고
      비로그인 방문자도 user?.id가 없어, 서로 「같다」고 판정돼 **비밀글이 그대로 열렸다.** */
   const isAuthor = !!post.authorId && post.authorId === user?.id;
+  // 예약 공개·임시 저장 (B 디자인) — 공개 전에는 작성자·관리자만
+  if (!isPublished(post) && !isAdmin && !isAuthor) {
+    return (
+      <section className="page">
+        <div className="page-head"><PageTitle>BOARD</PageTitle><p>아직 공개되지 않은 글입니다</p></div>
+      </section>
+    );
+  }
   const boardKey = bid === MAIN_BOARD_ID ? '/board' : `/board?b=${bid}`;
   const readSecret = (x: Post) => canReadSecret(menuSet, boardKey, x, { isAdmin, id: user?.id });
   if (post.secret && !readSecret(post)) {
@@ -88,7 +104,8 @@ export default function BoardDetailPage() {
   // 이전글/다음글 — 같은 게시판에서, 내가 열 수 있는 글만 (비밀글은 작성자·관리자만)
   const nb = pickNeighbors(
     posts.filter(x => (x.boardId ?? MAIN_BOARD_ID) === (post.boardId ?? MAIN_BOARD_ID)
-      && (!x.secret || readSecret(x))),
+      && (!x.secret || readSecret(x))
+      && (isPublished(x) || isAdmin || (!!x.authorId && x.authorId === user?.id))),
     post.id,
   );
   const pnOf = (x: Post | null) => (x ? { href: `/board/${x.id}`, title: x.title } : null);
@@ -169,7 +186,7 @@ export default function BoardDetailPage() {
     <section className="page">
       <div className="page-head">
         <PageTitle href={boardHref(board.id)}>{boardTitle}</PageTitle>
-        <p>{`${post.category} · `}{post.author} · {fmtDate(post.date)}</p>
+        <p>{`${post.category} · `}{post.author} · {fmtDate(post.date)}{pubLabel(post) && ` · ${pubLabel(post)}`}</p>
         <div className="head-actions">
           {/* 수정은 작성자 본인만 — 관리자도 타인 글은 삭제만 (v1.9) */}
           {isAuthor && (
@@ -185,7 +202,7 @@ export default function BoardDetailPage() {
       <div style={{ maxWidth: 672, margin: '0 auto' }}>
       <div className="panel" style={{ padding: '26px 28px' }}>
         <h2 style={{ fontSize: 19, marginBottom: 4 }}>
-          {post.title}{(post.secret || post.fold) && <LockIcon />}
+          {post.title}{(post.secret || post.fold || post.pwLock) && <LockIcon />}
         </h2>
         <p style={{ fontSize: 11, color: 'var(--faint)', marginBottom: 18 }}>
           {post.author} · {fmtDate(post.date)} · {post.mode.toUpperCase()}
@@ -205,8 +222,34 @@ export default function BoardDetailPage() {
               </div>
             </div>
           )}
+          {post.pwLock && unlocked === undefined ? (
+            /* 비밀번호 비밀글 — 본문이 비밀번호로 잠겨 있다 (lib/pwLock) */
+            <form className="pw-box" onSubmit={async e => {
+              e.preventDefault();
+              if (!pw || pwBusy) return;
+              setPwBusy(true); setPwErr('');
+              const t = await unlockText(post.pwLock!, pw);
+              setPwBusy(false);
+              if (t === null) { setPwErr('비밀번호가 맞지 않습니다'); return; }
+              rememberUnlocked(post.id, t); setUnlocked(t);
+            }}>
+              <LockIcon />
+              <b>비밀번호가 걸린 글입니다</b>
+              <span>비밀번호를 입력하면 볼 수 있습니다</span>
+              <div className="row">
+                <KInput type="password" autoComplete="off" placeholder="비밀번호" value={pw} onChange={e => setPw(e.target.value)} />
+                <button className="btn btn-dark" type="submit" disabled={pwBusy}>{pwBusy ? '…' : '열기'}</button>
+              </div>
+              {pwErr && <small className="err">{pwErr}</small>}
+            </form>
+          ) : board.skin === 'talk' ? (
+            <div style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}>
+              <TalkView html={html} n1={post.talk?.n1} n2={post.talk?.n2} c1={post.talk?.c1} c2={post.talk?.c2} />
+            </div>
+          ) : (
           <div className="post-body" style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}
             dangerouslySetInnerHTML={{ __html: html }} />
+          )}
         </div>
       </div>
 
@@ -250,7 +293,7 @@ export default function BoardDetailPage() {
 
       </div>
 
-      <ConfirmModal open={delAsk} title="글을 삭제하시겠습니까?" body="삭제한 글은 복구할 수 없습니다."
+      <ConfirmModal open={delAsk} title="글을 삭제하시겠습니까?" body="삭제한 글은 환경설정 > 휴지통에서 30일 동안 되살릴 수 있습니다."
         onClose={() => setDelAsk(false)}
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: () => {

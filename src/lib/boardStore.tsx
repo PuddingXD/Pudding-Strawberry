@@ -241,7 +241,9 @@ export function badgeFor(st: BoardSettings, p: { category: string }, cats?: Boar
 /* ---------- 게시판 다중 생성 (5.2 v1.9) ---------- */
 // 같은 유형(리스트형) 게시판을 여러 개 — 게시판별 이름·말머리·권한·리스트 스킨(기본형/티켓형).
 // 글은 ohome.board.v1 한 곳에 boardId로 구분 저장(게시판 삭제 시에도 글 데이터는 보존 — 3장 원칙).
-export type BoardSkin = 'list' | 'ticket';
+// talk = 썰 백업(대화 말풍선) · running = 러닝(말머리 카드로 고른 뒤 글 카드) — B 디자인에서 가져온 스킨
+export type BoardSkin = 'list' | 'ticket' | 'talk' | 'running';
+export const BOARD_SKIN_LABEL: Record<BoardSkin, string> = { list: '기본형', ticket: '티켓형', talk: '썰 백업', running: '러닝' };
 export type BoardPerm = 'guest' | 'member' | 'admin';
 
 export interface Board {

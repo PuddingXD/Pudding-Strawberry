@@ -117,7 +117,8 @@ declare content_tables text[] := array[
   'notifications', -- 알림 (v2.0 — 기기 보관이던 것을 서버로: 받은 사람 계정으로 어느 기기에서나)
   'push_subs',     -- 웹푸시 기기 구독 (v2.1 — 회원끼리 읽힌다: 보내는 쪽이 받는 사람 구독을 읽어야. 서버 개인키 없이는 못 보낸다)
   'sched_events',  -- 스케줄러 일정 (v2.1 — 회원도 등록하게 설정이 아니라 자기 행으로)
-  'trpg_reviews'   -- TRPG 리뷰 (v2.1 — 시나리오마다 별점 + 한줄 평)
+  'trpg_reviews',  -- TRPG 리뷰 (v2.1 — 시나리오마다 별점 + 한줄 평)
+  'trash'          -- 휴지통 (B 디자인 — 지운 항목 사본, 비공개)
 ];
 begin
   foreach t in array content_tables loop

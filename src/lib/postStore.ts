@@ -3,6 +3,7 @@
 // v2.0: 서버(Supabase) 연결이 있으면 DB, 없으면 localStorage — 화면 코드는 동일하다.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PostMode } from './sanitize';
+import type { PwLock } from './pwLock';
 import { isServerMode } from './supabase';
 import { sortableId } from './order';
 import { TABLE_OF, fetchList, fetchOne, syncList, subscribeTable } from './db';
@@ -82,6 +83,32 @@ export interface Post {
   tags?: string[];
   thumbSrc?: string;     // 티켓 스킨 대표 이미지 — 본문에 삽입한 이미지 중 선택 (v1.9)
   thumbCrop?: { x: number; y: number; scale: number };  // 대표 썸네일 크롭 (16:9)
+  /* ---- B 디자인에서 가져온 기능 ---- */
+  /** 예약 공개 시각 (ISO) — 이 시각 전에는 작성자·관리자만 본다 */
+  pubAt?: string;
+  /** 임시 저장 — 작성자·관리자만. 서버에도 비공개(private)로 저장된다 */
+  draft?: boolean;
+  /** 임시 저장일 때만 'private' — 저장 계층(metaOf)이 이 값을 보고 서버 공개범위를 정한다 */
+  visibility?: 'private';
+  /** 비밀번호 비밀글 — 본문을 비밀번호로 암호화해 둔 것 (lib/pwLock). 있으면 body는 비어 있다 */
+  pwLock?: PwLock;
+  /** 썰 백업 게시판 — 대화 참여자 (1: 왼쪽 / 2: 오른쪽) */
+  talk?: { n1: string; n2: string; c1?: string; c2?: string };
+  /** 러닝 게시판 카드 요약 한 줄 */
+  summary?: string;
+}
+
+/** 지금 모두에게 공개된 글인가 (임시 저장·예약 시각 전이 아니면) */
+export const isPublished = (p: Pick<Post, 'draft' | 'pubAt'>, now = Date.now()) =>
+  !p.draft && (!p.pubAt || new Date(p.pubAt).getTime() <= now);
+/** 공개 전 표시 문구 — 관리자·작성자 목록용 */
+export function pubLabel(p: Pick<Post, 'draft' | 'pubAt'>): string {
+  if (p.draft) return '임시 저장';
+  if (p.pubAt && new Date(p.pubAt).getTime() > Date.now()) {
+    const d = new Date(p.pubAt); const z = (n: number) => String(n).padStart(2, '0');
+    return `예약 ${z(d.getMonth() + 1)}.${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}`;
+  }
+  return '';
 }
 
 export interface GuestEntry {

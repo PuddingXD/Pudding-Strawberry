@@ -10,7 +10,8 @@ import { getRawSetting, setSetting } from './settingStore';
 export type WidgetType =
   | 'banner' | 'member'                 // 고정 요소 (삭제 불가)
   | 'menu' | 'memo' | 'diary' | 'latest'
-  | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard';   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
+  | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
+  | 'banners';   // 배너 교환 (B 디자인에서 가져온 위젯)   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
 
 export interface WidgetConf {
   id: string;
@@ -52,6 +53,7 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   freetext: { title: '자유 텍스트', desc: '패널 없이 문구만' },
   deco: { title: '이미지', desc: '패널 없이 이미지만' },
   memoboard: { title: 'STICKY', desc: '스티커 메모 미니보드 — 클릭 시 메모장 (4.6)' },
+  banners: { title: 'BANNER', desc: '배너 교환 — 친구 홈 배너 + 내 배너 코드 복사' },
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */
