@@ -602,7 +602,8 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
       </div>
 
       {/* 본문만 폭 제한 — 헤더는 풀폭 위치 유지 */}
-      <div className="panel" style={{ padding: 24, maxWidth: 672, margin: '0 auto' }}>
+      {/* 카드는 가름선 길이만큼, 글 폭은 그대로 672 (사용자 요청 — .body-card.wide) */}
+      <div className="panel body-card wide" style={{ padding: 24, ['--bc-in' as string]: '624px' } as React.CSSProperties}>
         <h2 style={{
           fontFamily: l.serifTitle ? 'var(--serif)' : "'Noto Serif KR',serif",
           fontSize: 24, fontWeight: 700,

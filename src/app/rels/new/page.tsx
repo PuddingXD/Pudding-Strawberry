@@ -53,7 +53,7 @@ export default function RelNewPage() {
             illuBg: v.illuBg, illuOn: v.illuOn,
             nameColor: v.nameColor, cpColor: v.cpColor, cpTagBg: v.cpTagBg, cpTagFg: v.cpTagFg,
             nameShadowColor: v.nameShadowColor, nameShadow: v.nameShadow,
-            headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle,
+            headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone,
             pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle,
             members, thumbClass: '',
             // 회원이 등록한 자관은 등록한 회원이 수정할 수 있게 (관리자 등록이면 지정 회원만)

@@ -343,7 +343,7 @@ function ThreadsPageInner() {
       ) : (
         /* 타래 보기 — 좌 타래 + 우 작품 리스트 */
         <div className="thr-layout">
-          <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="panel body-card" style={{ padding: 0, overflow: 'hidden' }}>
             {sel && (
               <>
                 <div className="thr-head">

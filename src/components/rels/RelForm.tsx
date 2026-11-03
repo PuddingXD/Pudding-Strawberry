@@ -51,6 +51,7 @@ export interface RelFormValue {
   headerBgG1?: string;       // 헤더 이미지 없을 때 배경 그라데이션 (v2.0 사용자 요청)
   headerBgG2?: string;
   headerBgAngle?: number;
+  headerTone?: number;       // 헤더 배경 밝게 0~80 (사용자 요청 — 미지정 50)
   pageBgG1?: string;         // 페이지 전체 배경 그라데이션 (v2.0 사용자 요청)
   pageBgG2?: string;
   pageBgAngle?: number;
@@ -64,7 +65,7 @@ export interface RelFormValue {
   quotes?: Record<string, string>;                              // 히어로 좌/우 한마디 문구 (v2.0)
   nameSizes?: Record<string, number>;                           // 멤버 카드 이름 크기 px (v2.0)
   nameBolds?: Record<string, boolean>;                          // 멤버 카드 이름 볼드 (v2.0 — 기본 켜짐)
-  quoteColors?: Record<string, { fg?: string; mark?: string }>; // 히어로 대사 글씨/따옴표색 (페어, v1.9)
+  quoteColors?: Record<string, { fg?: string; mark?: string; size?: number; font?: string }>; // 히어로 대사 글씨/따옴표색 (페어, v1.9) · 크기 px·폰트 (사용자 요청 — font ''=본문 폰트)
   fullFront?: string;                          // 앞에 보일 캐릭터 id
   illustMode?: 'duo' | 'one';                  // 처음 보이는 이미지 — 전신(duo) / 일러스트(one) (v2.1 사용자 요청)
   auName?: string;           // AU별 자관명 (v2.0 사용자 요청 — AU 편집일 때만)
@@ -242,6 +243,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [headerBgG1, setHeaderBgG1] = useState(st?.headerBgG1 ?? '#3a4150');
   const [headerBgG2, setHeaderBgG2] = useState(st?.headerBgG2 ?? '#1a1d22');
   const [headerBgAngle, setHeaderBgAngle] = useState(st?.headerBgAngle ?? 180);
+  const [headerTone, setHeaderTone] = useState(st?.headerTone ?? 50);
   // 페이지 전체 배경 (v2.0 사용자 요청) — 디자인 탭의 사이트 배경과 같은 방식(색 2개 + 각도)
   const [pageBgCustom, setPageBgCustom] = useState(!!(st?.pageBgG1 || st?.pageBgG2));
   const [pageBgG1, setPageBgG1] = useState(st?.pageBgG1 ?? '#2b3038');
@@ -277,8 +279,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [nameBolds, setNameBolds] = useState<Record<string, boolean>>(
     () => Object.fromEntries(pairMembers.map(m => [m.charId, mOf(m).nameBold ?? true])));
   // 히어로 대사 글씨/따옴표색 (페어, v1.9)
-  const [quoteColors, setQuoteColors] = useState<Record<string, { fg?: string; mark?: string }>>(
-    () => Object.fromEntries(pairMembers.map(m => [m.charId, { fg: mOf(m).quoteColor, mark: mOf(m).quoteMarkColor }])));
+  // 크기는 화면에선 pt, 저장은 px (자캐 한마디와 같은 방식) · 폰트 ''=자관 본문 폰트(굵게)
+  const [quoteColors, setQuoteColors] = useState<Record<string, { fg?: string; mark?: string; size?: number; font?: string }>>(
+    () => Object.fromEntries(pairMembers.map(m => [m.charId, {
+      fg: mOf(m).quoteColor, mark: mOf(m).quoteMarkColor,
+      size: mOf(m).quoteSize != null ? Math.round(mOf(m).quoteSize! * 3 / 4) : 12, font: mOf(m).quoteFontId ?? '',
+    }])));
   // AU별 자관명 (v2.0 사용자 요청) — 비우면 자관 이름 그대로
   const [auName, setAuName] = useState(auObj?.name ?? '');
   // 문답 답변 가리기 (v2.0 사용자 요청) — 질문은 그대로 두고 답변 내용만
@@ -347,6 +353,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       headerBgG1: headerBgCustom ? headerBgG1 : undefined,
       headerBgG2: headerBgCustom ? headerBgG2 : undefined,
       headerBgAngle: headerBgCustom ? headerBgAngle : undefined,
+      headerTone,
       pageBgG1: pageBgCustom ? pageBgG1 : undefined,
       pageBgG2: pageBgCustom ? pageBgG2 : undefined,
       pageBgAngle: pageBgCustom ? pageBgAngle : undefined,
@@ -576,6 +583,18 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                   onChange={hex => setQuoteColors(s => ({ ...s, [m.charId]: { ...s[m.charId], mark: hex } }))} />
               </div>
             ))}
+            {/* 한마디 크기·폰트 (사용자 요청) — 기본은 자관 본문 폰트 굵게 12pt (자캐 한마디와 같음) */}
+            <label className="k-label" style={{ margin: '10px 0 0' }}>대사 크기·폰트 — 상단 좌/우 한마디</label>
+            {pairMembers.map((m, i) => (
+              <div key={m.charId} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <b style={{ fontSize: 12, width: 92 }}>{i === 0 ? '왼쪽' : '오른쪽'} · {memberNames?.[m.charId] ?? m.charId}</b>
+                <KStep value={quoteColors[m.charId]?.size ?? 12} min={6} max={40} step={1} suffix="pt"
+                  onChange={(v: number) => setQuoteColors(s => ({ ...s, [m.charId]: { ...s[m.charId], size: v } }))} />
+                <KSelect value={quoteColors[m.charId]?.font ?? ''}
+                  onChange={(v: string) => setQuoteColors(s => ({ ...s, [m.charId]: { ...s[m.charId], font: v } }))}
+                  options={[{ value: '', label: '본문 폰트 따라가기 (굵게)' }, ...fonts.map(f => ({ value: f.id, label: <span style={{ fontFamily: deVarFamily(f.family) }}>{f.name}</span> }))]} />
+              </div>
+            ))}
           </>
         )}
 
@@ -647,6 +666,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             )}
           </div>
         )}
+        {/* 헤더 밝기 (사용자 요청 — 어두운 헤더 위에서 멤버 카드 글자가 묻힌다). 0이면 예전처럼 어둡게 */}
+        <div className="cf-row" style={{ marginTop: 10 }}>
+          <span className="cp-lb">헤더 밝게</span>
+          <KStep value={headerTone} min={0} max={80} step={5} suffix="%" onChange={setHeaderTone} />
+          <span className="hint" style={{ margin: 0 }}>0 = 원래 어둡기 · 높을수록 페이지 바탕색이 덮여 환해집니다</span>
+        </div>
 
         {/* 문서 탭 — 긴 글(소설·설정). 상세 화면에 아이콘 탭이 생기고, 누르면 바로 전체 읽기 화면이 열린다 (원본 자관 편집에서만) */}
         {!auObj && (

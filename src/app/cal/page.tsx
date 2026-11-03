@@ -150,7 +150,7 @@ function CalInner() {
           })()}
         </div>
         {/* 좌: 월간 캘린더 */}
-        <div className="panel cal">
+        <div className="panel cal body-card">
           <div className="cal-head">
             <button className="btn btn-ghost" style={{ padding: '6px 12px' }}
               onClick={() => setView(v => ({ y: v.m === 0 ? v.y - 1 : v.y, m: (v.m + 11) % 12 }))}>‹</button>

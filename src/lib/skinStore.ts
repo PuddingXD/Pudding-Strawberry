@@ -35,6 +35,8 @@ export interface ClickSoundSettings { on: boolean; file: string; volume: number 
 export interface SkinSettings {
   // 왼쪽 메뉴선 색 (위·가운데·아래) — 비우면 포인트 컬러·연한 포인트·로고 글씨색에서 자동
   railC1: string; railC2: string; railC3: string;
+  /** 게시판 본문 카드 테두리 (사용자 요청 — 합작·갤러리·시트·썰·TRPG 기록·리뷰·로그·타래·달력) */
+  cardBorder: boolean;
   landing: LandingSettings;
   particles: ParticleSettings;
   trail: TrailSettings;
@@ -43,6 +45,7 @@ export interface SkinSettings {
 
 export const DEFAULT_SKIN: SkinSettings = {
   railC1: '', railC2: '', railC3: '',
+  cardBorder: true,
   landing: { on: false, bgColor: '', bgColor2: '', bgImg: '', logo: '', logoW: 320, caption: 'click to enter', ink: '', every: false },
   particles: { on: false, shape: 'star', color: '#ffffff', count: 40, speed: 4, size: 7 },
   trail: { on: false, shape: 'star', color: '#ffffff', color2: '', size: 10, amount: 4, life: 5 },

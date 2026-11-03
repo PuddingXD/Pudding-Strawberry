@@ -56,7 +56,7 @@ function RelEditInner() {
             // 페이지 테마 — AU 편집이면 그 AU에만 (base 테마는 유지, v1.9)
             ...(auObj ? {} : { themeMode: v.themeMode, themeColor: v.themeColor, themeTone: v.themeTone, illuBg: v.illuBg, illuOn: v.illuOn, nameColor: v.nameColor, cpColor: v.cpColor, cpTagBg: v.cpTagBg, cpTagFg: v.cpTagFg,
                 nameShadowColor: v.nameShadowColor, nameShadow: v.nameShadow,
-                headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle,
+                headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone,
                 pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle }),
             // CP/문답 숨김은 자관 전체 설정(AU 폼에는 없음) · 전신 앞뒤는 AU면 그 AU에만 (v2.0)
             ...(auObj || !isAdmin ? {} : { grants: v.grants }),
@@ -77,6 +77,8 @@ function RelEditInner() {
                 nameBold: v.nameBolds?.[m.charId] ?? m.nameBold,
                 quoteColor: v.quoteColors?.[m.charId]?.fg ?? m.quoteColor,
                 quoteMarkColor: v.quoteColors?.[m.charId]?.mark ?? m.quoteMarkColor,
+                quoteSize: pxOfPt(v.quoteColors?.[m.charId]?.size, m.quoteSize),
+                quoteFontId: v.quoteColors?.[m.charId] ? (v.quoteColors[m.charId].font || undefined) : m.quoteFontId,
               }))
               : r.members,
             // AU 편집 모드 — 아트·캐치프레이즈·전신은 그 AU에만 (원본 것은 유지)
@@ -95,7 +97,7 @@ function RelEditInner() {
                     nameColor: v.nameColor, cpColor: v.cpColor,
                     cpTagBg: v.cpTagBg, cpTagFg: v.cpTagFg,
                     nameShadowColor: v.nameShadowColor, nameShadow: v.nameShadow,
-                    headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle,
+                    headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone,
                     pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle,
                     illuBg: v.illuBg, illuOn: v.illuOn,
                   },
@@ -110,6 +112,8 @@ function RelEditInner() {
                     nameBold: v.nameBolds?.[m.charId],
                     quoteColor: v.quoteColors?.[m.charId]?.fg,
                     quoteMarkColor: v.quoteColors?.[m.charId]?.mark,
+                    quoteSize: pxOfPt(v.quoteColors?.[m.charId]?.size, undefined),
+                    quoteFontId: v.quoteColors?.[m.charId]?.font || undefined,
                   }])),
                   // AU별 헤더 (v1.9) — 제거하면 "없음 명시"(null): base 헤더로 되돌아가지 않음
                   headerImgId: v.headerRemoved ? undefined : v.headerImgId,
@@ -135,6 +139,8 @@ function RelEditInner() {
                       nameBold: v.nameBolds?.[m.charId] ?? m.nameBold,
                       quoteColor: v.quoteColors?.[m.charId]?.fg ?? m.quoteColor,
                       quoteMarkColor: v.quoteColors?.[m.charId]?.mark ?? m.quoteMarkColor,
+                quoteSize: pxOfPt(v.quoteColors?.[m.charId]?.size, m.quoteSize),
+                quoteFontId: v.quoteColors?.[m.charId] ? (v.quoteColors[m.charId].font || undefined) : m.quoteFontId,
                     })),
                   }
                   : {}),
@@ -147,6 +153,10 @@ function RelEditInner() {
     </section>
   );
 }
+
+/** 한마디 크기 — 편집 화면의 pt → 저장용 px. 12pt(기본)는 저장하지 않는다 (사용자 요청) */
+const pxOfPt = (pt: number | undefined, keep: number | undefined) =>
+  pt == null ? keep : pt === 12 ? undefined : Math.round(pt * 4 / 3 * 10) / 10;
 
 export default function RelEditPage() {
   // useSearchParams는 Suspense 경계 필요 (Next App Router)

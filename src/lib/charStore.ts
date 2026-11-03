@@ -205,6 +205,8 @@ export interface RelMember {
   nameSize?: number;
   quoteColor?: string;           // 히어로 대사 글씨색 (페어, v1.9 — 기본 #d7dae0)
   quoteMarkColor?: string;       // 히어로 대사 따옴표색 (기본 포인트 소프트)
+  quoteSize?: number;            // 히어로 대사 글자 크기 px (사용자 요청 — 미지정: 12pt = 16px)
+  quoteFontId?: string;          // 히어로 대사 폰트 (미지정: 자관 본문 폰트, 굵게)
 }
 
 export interface TlSay { charId: string; text: string }
@@ -297,6 +299,8 @@ export interface RelAuMember {
   nameBold?: boolean;
   quoteColor?: string;
   quoteMarkColor?: string;
+  quoteSize?: number;
+  quoteFontId?: string;
   /** 멤버 카드 얼굴칸 위치 — AU마다 따로 (v2.0 사용자 제보 — 원본에서 바꾸면 AU도 같이 바뀌었다).
    *  안 정한 AU는 자관 기본(faceCrop)을 그대로 따른다 */
   faceCrop?: import('@/components/ui/CropEditor').CropValue;
@@ -330,6 +334,8 @@ export interface RelAuStyle {
   nameShadowColor?: string;
   nameShadow?: number;
   headerBgG1?: string; headerBgG2?: string; headerBgAngle?: number;
+  /** 헤더 배경 밝게 0~80 (사용자 요청 — 어두운 헤더에 글자가 묻힌다). 미지정: 50 · 0이면 예전 그대로 */
+  headerTone?: number;
   pageBgG1?: string; pageBgG2?: string; pageBgAngle?: number;
   illuBg?: string; illuOn?: string;
 }
@@ -342,6 +348,7 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
     cpTagBg: rel.cpTagBg, cpTagFg: rel.cpTagFg,
     nameShadowColor: rel.nameShadowColor, nameShadow: rel.nameShadow,
     headerBgG1: rel.headerBgG1, headerBgG2: rel.headerBgG2, headerBgAngle: rel.headerBgAngle,
+    headerTone: rel.headerTone,
     pageBgG1: rel.pageBgG1, pageBgG2: rel.pageBgG2, pageBgAngle: rel.pageBgAngle,
     illuBg: rel.illuBg, illuOn: rel.illuOn,
   };
@@ -361,6 +368,7 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
   if (s.headerBgG1 !== undefined || s.headerBgG2 !== undefined) {
     out.headerBgG1 = s.headerBgG1; out.headerBgG2 = s.headerBgG2; out.headerBgAngle = s.headerBgAngle;
   }
+  if (s.headerTone !== undefined) out.headerTone = s.headerTone;
   if (s.pageBgG1 !== undefined || s.pageBgG2 !== undefined) {
     out.pageBgG1 = s.pageBgG1; out.pageBgG2 = s.pageBgG2; out.pageBgAngle = s.pageBgAngle;
   }
@@ -465,6 +473,8 @@ export interface Relation {
   headerBgG1?: string;
   headerBgG2?: string;
   headerBgAngle?: number;
+  /** 헤더 배경 밝게 0~80 (사용자 요청) — 미지정: 50 */
+  headerTone?: number;
   // 이 자관 페이지 전체의 배경 그라데이션 (v2.0 사용자 요청) — 색 2개 + 각도.
   // 위 headerBg*는 상단 헤더 자리에만 깔리는 것이고, 이건 페이지 바탕 전체다.
   pageBgG1?: string;

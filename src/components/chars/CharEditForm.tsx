@@ -35,11 +35,13 @@ function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   return <CropImg src={src} crop={crop} />;
 }
 
-export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }: {
+export function CharEditForm({ initial, onSave, onCancel, auMode, artMode, existingIds }: {
   initial: Character | null;               // null = 신규 등록
   onSave: (c: Character) => void;
   onCancel: () => void;
   auMode?: boolean;                        // AU 전용 편집 (v1.9) — 공개범위·회원권한은 base 소관이라 숨김
+  /** 아트 전용 프로필 편집 (사용자 요청) — 그림은 그 아트 하나로 정해져 있으니 아트 칸을 숨긴다 */
+  artMode?: boolean;
   existingIds?: string[];                  // 페이지 주소 중복 검사용 (v1.9 — 신규 등록)
 }) {
   const { fonts, familyOf } = useFonts();
@@ -198,6 +200,14 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
     <div className="write-grid">
       {/* 좌: 아트/스펙/컬러/본문/탭 */}
       <div className="panel" style={{ padding: 24, display: 'grid', gap: 12, alignContent: 'start' }}>
+        {/* 아트 전용 프로필 — 아트 칸 대신 안내 */}
+        {artMode && (
+          <p className="hint" style={{ margin: 0 }}>
+            이 아트가 보일 때만 쓰는 프로필입니다 — 이름·캐치프레이즈·한마디·기본 정보·탭을 이 아트에 맞게 바꿔 주세요.
+            아트는 원래 프로필의 것을 그대로 씁니다.
+          </p>
+        )}
+        {!artMode && <>
         {/* 아트 목록 */}
         <label className="k-label" style={{ margin: 0 }}>
           아트 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 첫 장이 대표 풀 아트 · 리스트 썸네일은 첫 장에서 3:4 크롭 · ⠿ 순서 변경</span>
@@ -237,6 +247,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
           {...fileDrop(fl => addArts(fl))}>
           ＋ ADD ART {arts.length === 0 && '(첫 장 등록 시 썸네일 크롭 지정)'}
         </button>
+        </>}
 
         {/* 한마디 — 대표 아트 위에 가운데 정렬로 표시 */}
         <label className="k-label" style={{ margin: 0 }}>한마디 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 이름·캐치프레이즈 아래 표시 (비우면 안 보임)</span></label>

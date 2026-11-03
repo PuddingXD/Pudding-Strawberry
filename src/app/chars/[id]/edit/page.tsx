@@ -34,9 +34,21 @@ function CharEditInner() {
     );
   }
 
+  // 아트 전용 프로필 (사용자 요청 — 아트마다 한마디·프로필을 다르게). 키 `art:<아트 ref>`
+  const artRef = auKey?.startsWith('art:') ? auKey.slice(4) : null;
+  // 그 아트가 어느 프로필(원본 / 자관 AU)의 그림인지 — 처음 만들 때 그 프로필 값으로 채운다
+  const artOwner = artRef
+    ? (Object.entries(ch.auProfiles ?? {}).find(([k, p]) => !k.startsWith('art:') && p.arts?.includes(artRef))?.[0] ?? null)
+    : null;
+  const artBase = artRef ? charWithAu(ch, artOwner) : ch;
+
   // AU 라벨 (타이틀 표시용)
   const auLabel = (() => {
     if (!auKey) return null;
+    if (artRef) {
+      const n = (artBase.arts ?? []).indexOf(artRef);
+      return `아트 ${n >= 0 ? n + 1 : ''} 전용 프로필`;
+    }
     const [relId, auId] = auKey.split(':');
     return rels.find(r => r.id === relId)?.aus.find(a => a.id === auId)?.label ?? auKey;
   })();
@@ -46,7 +58,10 @@ function CharEditInner() {
   // AU 프로필 초기값 (v1.9 사용자 확정) — 이미 등록된 AU면 그 값, 처음이면 "아예 새 등록"처럼 빈 폼
   // (이름·스펙·아트·탭 전부 비움 — 폰트·대표색 등 스타일 기본만 base에서)
   const auProf = auKey ? ch.auProfiles?.[auKey] : undefined;
-  const formInitial = auKey
+  const formInitial = artRef
+    // 아트 전용: 있으면 그 값, 처음이면 원래 프로필을 그대로 복사해 시작 (다른 부분만 고치면 되게)
+    ? (auProf ? charWithAu({ ...artBase, auProfiles: ch.auProfiles }, auKey) : artBase)
+    : auKey
     ? (auProf
       ? charWithAu(ch, auKey)
       : {
@@ -66,6 +81,7 @@ function CharEditInner() {
         initial={formInitial}
         existingIds={chars.filter(c => c.id !== ch.id).flatMap(c => [c.id, ...(c.slug ? [c.slug] : [])])}
         auMode={!!auKey}
+        artMode={!!artRef}
         onCancel={() => router.push(back)}
         onSave={c => {
           if (auKey) {
@@ -80,12 +96,13 @@ function CharEditInner() {
                   name: c.name, sub: c.sub, color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorTipMode: c.colorTipMode,
                   specs: c.specs, specGroups: c.specGroups, quote: c.quote ?? '', quoteColor: c.quoteColor, quoteMarkColor: c.quoteMarkColor, quoteSize: c.quoteSize, quoteFontId: c.quoteFontId, artCrops: c.artCrops, tabs: c.tabs, basicHtml: c.basicHtml,
-                  arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop,
+                  // 아트 전용 프로필은 그림을 따로 갖지 않는다 (원래 프로필의 아트를 그대로 쓴다)
+                  ...(artRef ? {} : { arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop }),
                   fontId: c.fontId, nameSize: c.nameSize, nameBold: c.nameBold, bodyFontId: c.bodyFontId,
                 },
               },
             } : x)));
-            toast('AU 프로필이 저장되었습니다');
+            toast(artRef ? '아트 전용 프로필이 저장되었습니다' : 'AU 프로필이 저장되었습니다');
           } else {
             // 폼이 다루지 않는 값(상세 아트 위치 등)이 저장할 때마다 사라지지 않게 덮어쓰지 않고 합친다 (v2.0)
             setChars(chars.map(x => (x.id === c.id ? { ...x, ...c } : x)));

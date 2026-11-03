@@ -125,7 +125,7 @@ function SheetPageInner() {
         </div>
       </div>
 
-      <div className="panel" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
+      <div className="panel body-card" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
         <table className="pl-table sh-table">
           <colgroup>
             {show('with') && <col className="c-shh" />}

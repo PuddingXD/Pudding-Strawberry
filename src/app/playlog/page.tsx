@@ -155,7 +155,7 @@ function PlaylogPageInner() {
         </div>
       </div>
 
-      <div className="panel" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
+      <div className="panel body-card" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
         <table className="pl-table">
           {/* 열 구성 — 환경설정 > 메뉴 관리에서 PC/모바일 각각 선택 (4.16 v1.8) */}
           <colgroup>

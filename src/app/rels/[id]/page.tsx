@@ -831,6 +831,14 @@ function RelDetailInner() {
   const asAu = (m: RelMember | null) => (m && !isBaseAu ? auMember(m, au) : m);
   // 색·배경도 AU마다 따로 (v2.0 사용자 요청) — AU에 정해 둔 게 없으면 자관 기본이 그대로 나온다
   const auSt = auStyle(rel, au);
+  // 상단 한마디 — 크기·폰트 (사용자 요청). 기본은 자관 본문 폰트 굵게 12pt (자캐 한마디와 같음)
+  const quoteFontOf = (m: RelMember) => ({
+    fontFamily: familyOf(m.quoteFontId) ?? familyOf(auBodyFont) ?? 'inherit',
+    fontWeight: 700,
+    fontSize: `calc(${m.quoteSize ?? 16}px * var(--fs, 1))`,
+  });
+  // 헤더 밝게 (사용자 요청) — 페이지 바탕색을 덮어 환하게. 30% 이상이면 글자를 테마색으로 (.tone-up)
+  const headerTone = auSt.headerTone ?? 50;
   const pairSlots: (RelMember | null)[] = isDuo
     ? (rel.pairRight
       ? [asAu(rel.members.find(m => m.charId !== rel.pairRight) ?? null),
@@ -871,7 +879,8 @@ function RelDetailInner() {
   };
 
   return (
-    <section className="page page-rel-detail" style={{ position: 'relative' }}>
+    <section className={`page page-rel-detail ${headerTone >= 30 ? 'tone-up' : ''}`}
+      style={{ position: 'relative', ['--rel-veil' as string]: `${headerTone}%` } as React.CSSProperties}>
       <TimelineExportModal open={pngOpen} onClose={() => setPngOpen(false)}
         filename={`${rel.name || 'timeline'}-timeline.png`}
         getList={() => document.querySelector<HTMLElement>('.panel.timeline .tl-list')}
@@ -999,6 +1008,7 @@ function RelDetailInner() {
         {isDuo && pairSlots[0] && (
           <div className="quote l" style={{
             color: pairSlots[0].quoteColor,
+            ...quoteFontOf(pairSlots[0]),
             ['--q-mark' as string]: pairSlots[0].quoteMarkColor,
           } as React.CSSProperties}>{pairSlots[0].quote}</div>
         )}
@@ -1023,6 +1033,7 @@ function RelDetailInner() {
         {isDuo && pairSlots[1] && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,
+            ...quoteFontOf(pairSlots[1]),
             ['--q-mark' as string]: pairSlots[1].quoteMarkColor,
           } as React.CSSProperties}>{pairSlots[1].quote}</div>
         )}

@@ -78,6 +78,12 @@ export function SkinPane() {
       </div>
 
       <div className="set-sec">
+        <h3>게시판 본문 카드</h3>
+        <div className="d">합작 · 갤러리 · 시트 · 썰 백업 · TRPG 기록 · 리뷰 · 로그 백업 · 타래 · 달력의 본문 카드 — 카드는 가름선 길이만큼 넓고, 글이 놓이는 폭은 그대로입니다</div>
+        <Row label="테두리" desc="끄면 카드 바깥 선 없이 배경만"><KToggle checked={st.cardBorder} onChange={v => patch({ cardBorder: v })} /></Row>
+      </div>
+
+      <div className="set-sec">
         <h3>입장 화면</h3>
         <div className="d">메인에 들어오면 화면 전체를 덮는 첫 화면 — 아무 곳이나 누르면 메인으로 들어갑니다 (BGM 자동 재생도 이 클릭으로 풀립니다)</div>
         <Row label="입장 화면 사용"><KToggle checked={L.on} onChange={v => pl({ on: v })} /></Row>

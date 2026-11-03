@@ -48,7 +48,10 @@ function CharDetailInner() {
       : [])
     : []), [rels, ch]);
   // AU 편집에서 ?au= 로 돌아오면 그 AU가 선택된 채 시작
-  const [auKey, setAuKey] = useState<string | null>(() => params.get('au'));
+  // 아트 전용 프로필 편집에서 ?au=art:<ref> 로 돌아오면 — AU가 아니라 원본에서 그 아트를 띄운다
+  const initAu = params.get('au');
+  const [auKey, setAuKey] = useState<string | null>(() => (initAu && !initAu.startsWith('art:') ? initAu : null));
+  const [artProfDel, setArtProfDel] = useState<string | null>(null);   // 아트 전용 프로필 지우기 확인
   // 대표 아트 우클릭 → 상세 화면에 보일 위치 조정 (v2.0)
   const [artCtx, setArtCtx] = useState<{ x: number; y: number; ref: string } | null>(null);
   // AU 네모(원본·AU) 썸네일 위치 편집 (v2.1 사용자 제보 — 네모가 1:1이라 3:4 썸네일 크롭으로는 가로·세로가 잘렸다) — 네모 우클릭
@@ -71,7 +74,19 @@ function CharDetailInner() {
   // AU는 "새로 등록"하는 프로필 (v1.9 사용자 확정) — 등록 전엔 base를 보여주지 않고 등록 안내
   const auRegistered = !auKey || !!ch?.auProfiles?.[auKey];
   // 표시용 캐릭터 — AU에서 지정한 필드만 base를 대체 (이름·키·성별부터 전부 바뀔 수 있음)
-  const eff = ch ? charWithAu(ch, auKey) : undefined;
+  const auEff = ch ? charWithAu(ch, auKey) : undefined;
+  // 아트 전용 프로필 (사용자 요청 — 아트가 바뀌면 한마디·프로필도 그 아트의 것으로).
+  // 지금 보이는 아트에 `art:<ref>` 프로필이 있으면 글·탭을 그것으로 바꾸고, 그림은 그대로 둔다
+  const artList = auEff ? (auEff.arts && auEff.arts.length > 0 ? auEff.arts : (auEff.artId ? [auEff.artId] : [])) : [];
+  const curArtRef = artList.length ? artList[Math.min(artIdx, artList.length - 1)] : undefined;
+  const artKey = curArtRef && ch?.auProfiles?.[`art:${curArtRef}`] ? `art:${curArtRef}` : null;
+  const eff = auEff && artKey
+    ? {
+      ...charWithAu(auEff, artKey),
+      arts: auEff.arts, artId: auEff.artId, artUrl: auEff.artUrl,
+      thumbId: auEff.thumbId, thumbCrop: auEff.thumbCrop, artCrop: auEff.artCrop, artCrops: auEff.artCrops,
+    }
+    : auEff;
 
   /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에 */
   const saveArtCrop = (c: CropValue | undefined, ref?: string) => {
@@ -101,6 +116,18 @@ function CharDetailInner() {
 
   // AU 전환 시 탭 구성·아트가 달라지므로 리셋
   useEffect(() => { setTab('basic'); setArtIdx(0); }, [auKey]);
+  // 아트 전용 프로필 편집에서 돌아왔으면 그 아트부터 (한 번만)
+  const artJump = useRef(initAu?.startsWith('art:') ? initAu.slice(4) : null);
+  useEffect(() => {
+    if (!loaded || !artJump.current) return;
+    const i = artList.indexOf(artJump.current);
+    artJump.current = null;
+    if (i > 0) setArtIdx(i);
+  }, [loaded, artList]);   // eslint-disable-line react-hooks/exhaustive-deps
+  // 아트가 바뀌어 프로필이 바뀌었는데 보던 탭이 그 프로필에 없으면 기본 정보로
+  useEffect(() => {
+    if (tab !== 'basic' && eff && !eff.tabs.some(t => t.id === tab)) setTab('basic');
+  }, [artKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // 캐릭터 테마색 → 페이지 임시 테마 (4.18 방식, v1.9) — 「캐릭터 테마색」 선택 시에만, 벗어나면 원복
   const { setPageTheme } = useTheme();
@@ -387,9 +414,37 @@ function CharDetailInner() {
           {(eff?.artCrops?.[artCtx.ref] || (eff?.artCrop && artCtx.ref === eff.arts?.[0])) && (
             <button onClick={() => { saveArtCrop(undefined, artCtx.ref); setArtCtx(null); }}>위치 지정 해제</button>
           )}
+          {/* 아트 전용 프로필 (사용자 요청) — 대표(첫 장)는 원래 프로필이라 두 번째 아트부터 */}
+          {artCtx.ref !== artList[0] && (
+            <>
+              <div className="ctx-ttl">이 아트 전용 프로필</div>
+              <button onClick={() => { setArtCtx(null); router.push(`/chars/${ch.id}/edit?au=${encodeURIComponent(`art:${artCtx.ref}`)}`); }}>
+                {ch.auProfiles?.[`art:${artCtx.ref}`] ? '전용 프로필 편집' : '전용 프로필 만들기 (한마디·정보를 다르게)'}
+              </button>
+              {ch.auProfiles?.[`art:${artCtx.ref}`] && (
+                <button className="danger" onClick={() => { setArtProfDel(artCtx.ref); setArtCtx(null); }}>전용 프로필 지우기</button>
+              )}
+            </>
+          )}
         </div>,
         document.body,
       )}
+      <ConfirmModal open={!!artProfDel} title="아트 전용 프로필을 지우시겠습니까?"
+        body="이 아트가 보일 때도 원래 프로필(한마디·정보)이 나오게 됩니다. 아트 자체는 지워지지 않습니다."
+        onClose={() => setArtProfDel(null)}
+        buttons={[
+          { label: 'DELETE', kind: 'accent', onClick: () => {
+            const k = `art:${artProfDel}`;
+            setChars(chars.map(x => {
+              if (x.id !== ch.id || !x.auProfiles?.[k]) return x;
+              const rest = { ...x.auProfiles };
+              delete rest[k];
+              return { ...x, auProfiles: rest };
+            }));
+            setArtProfDel(null);
+          } },
+          { label: 'CANCEL', kind: 'ghost', onClick: () => setArtProfDel(null) },
+        ]} />
       {/* AU 네모(원본·AU) 썸네일 위치 (v2.1) — 네모 우클릭 */}
       {chipEdit && (
         <ArtCropModal fileRef={chipEdit.ref} ratio={1} label="AU 네모 (1:1)" crop={chipEdit.crop}
