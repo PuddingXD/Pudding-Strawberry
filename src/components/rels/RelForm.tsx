@@ -802,13 +802,20 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             <div>
               <KCheck label="멤버 카드 글씨색 직접 지정 (캐치프레이즈·정보 항목)" checked={mcCustom} onChange={setMcCustom} />
               {mcCustom && (
-                <div className="cf-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
-                  <span className="cp-lb">캐치프레이즈</span>
-                  <ColorField value={mcCpColor} onChange={setMcCpColor} />
-                  <span className="cp-lb">항목명</span>
-                  <ColorField value={mcKeyColor} onChange={setMcKeyColor} />
-                  <span className="cp-lb">항목값</span>
-                  <ColorField value={mcValColor} onChange={setMcValColor} />
+                /* 한 줄에 하나씩 (사용자 요청 — 한 줄에 셋을 두니 글자가 겹쳤다) */
+                <div className="cf-stack" style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+                  <div className="cf-row">
+                    <span className="cp-lb" style={{ width: 76, flexShrink: 0 }}>캐치프레이즈</span>
+                    <ColorField value={mcCpColor} onChange={setMcCpColor} />
+                  </div>
+                  <div className="cf-row">
+                    <span className="cp-lb" style={{ width: 76, flexShrink: 0 }}>항목명</span>
+                    <ColorField value={mcKeyColor} onChange={setMcKeyColor} />
+                  </div>
+                  <div className="cf-row">
+                    <span className="cp-lb" style={{ width: 76, flexShrink: 0 }}>항목값</span>
+                    <ColorField value={mcValColor} onChange={setMcValColor} />
+                  </div>
                 </div>
               )}
             </div>
