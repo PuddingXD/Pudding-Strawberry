@@ -342,8 +342,9 @@ function ThreadsPageInner() {
         </div>
       ) : (
         /* 타래 보기 — 좌 타래 + 우 작품 리스트 */
-        <div className="thr-layout">
-          <div className="panel body-card" style={{ padding: 0, overflow: 'hidden' }}>
+        /* 타래 + 오른쪽 작품 리스트를 한 본문 카드로 (사용자 요청) — 안쪽 두 칸은 카드 없이 */
+        <div className="thr-layout panel body-card in-wrap">
+          <div className="panel in-card" style={{ padding: 0, overflow: 'hidden' }}>
             {sel && (
               <>
                 <div className="thr-head">
@@ -497,7 +498,7 @@ function ThreadsPageInner() {
             )}
           </div>
           {/* 우측 작품 리스트 */}
-          <div className="panel" style={{ padding: 10 }}>
+          <div className="panel in-card side" style={{ padding: 10 }}>
             {visible.map(w => (
               <div key={w.id} className={`thr-item ${sel?.id === w.id ? 'on' : ''}`} onClick={() => setSelId(w.id)}
                 /* 우클릭 → 메뉴 → 삭제 확인 모달 (v2.0 사용자 요청) — 타래 보기의 오른쪽 카드에서도 */

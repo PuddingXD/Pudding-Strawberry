@@ -1006,7 +1006,7 @@ function RelDetailInner() {
 
       <div className="rel-hero">
         {isDuo && pairSlots[0] && (
-          <div className="quote l" style={{
+          <div className={`quote l ${auSt.quoteLine ?? true ? 'q-line' : ''}`} style={{
             color: pairSlots[0].quoteColor,
             ...quoteFontOf(pairSlots[0]),
             ['--q-mark' as string]: pairSlots[0].quoteMarkColor,
@@ -1031,7 +1031,7 @@ function RelDetailInner() {
           {au?.catchphrase || rel.catchphrase}
         </div>
         {isDuo && pairSlots[1] && (
-          <div className="quote r" style={{
+          <div className={`quote r ${auSt.quoteLine ?? true ? 'q-line' : ''}`} style={{
             color: pairSlots[1].quoteColor,
             ...quoteFontOf(pairSlots[1]),
             ['--q-mark' as string]: pairSlots[1].quoteMarkColor,

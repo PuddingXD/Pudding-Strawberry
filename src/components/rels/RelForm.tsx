@@ -52,6 +52,7 @@ export interface RelFormValue {
   headerBgG2?: string;
   headerBgAngle?: number;
   headerTone?: number;       // 헤더 배경 밝게 0~80 (사용자 요청 — 미지정 50)
+  quoteLine?: boolean;       // 상단 한마디 1px 테두리 (사용자 요청 — 미지정 켬)
   pageBgG1?: string;         // 페이지 전체 배경 그라데이션 (v2.0 사용자 요청)
   pageBgG2?: string;
   pageBgAngle?: number;
@@ -244,6 +245,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [headerBgG2, setHeaderBgG2] = useState(st?.headerBgG2 ?? '#1a1d22');
   const [headerBgAngle, setHeaderBgAngle] = useState(st?.headerBgAngle ?? 180);
   const [headerTone, setHeaderTone] = useState(st?.headerTone ?? 50);
+  const [quoteLine, setQuoteLine] = useState(st?.quoteLine ?? true);
   // 페이지 전체 배경 (v2.0 사용자 요청) — 디자인 탭의 사이트 배경과 같은 방식(색 2개 + 각도)
   const [pageBgCustom, setPageBgCustom] = useState(!!(st?.pageBgG1 || st?.pageBgG2));
   const [pageBgG1, setPageBgG1] = useState(st?.pageBgG1 ?? '#2b3038');
@@ -353,7 +355,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       headerBgG1: headerBgCustom ? headerBgG1 : undefined,
       headerBgG2: headerBgCustom ? headerBgG2 : undefined,
       headerBgAngle: headerBgCustom ? headerBgAngle : undefined,
-      headerTone,
+      headerTone, quoteLine,
       pageBgG1: pageBgCustom ? pageBgG1 : undefined,
       pageBgG2: pageBgCustom ? pageBgG2 : undefined,
       pageBgAngle: pageBgCustom ? pageBgAngle : undefined,
@@ -585,6 +587,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             ))}
             {/* 한마디 크기·폰트 (사용자 요청) — 기본은 자관 본문 폰트 굵게 12pt (자캐 한마디와 같음) */}
             <label className="k-label" style={{ margin: '10px 0 0' }}>대사 크기·폰트 — 상단 좌/우 한마디</label>
+            <KCheck label="한마디 테두리 1px (글씨색보다 조금 어둡게 자동)" checked={quoteLine} onChange={setQuoteLine} />
             {pairMembers.map((m, i) => (
               <div key={m.charId} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <b style={{ fontSize: 12, width: 92 }}>{i === 0 ? '왼쪽' : '오른쪽'} · {memberNames?.[m.charId] ?? m.charId}</b>

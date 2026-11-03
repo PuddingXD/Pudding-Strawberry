@@ -77,11 +77,6 @@ export function SkinPane() {
         <Row label="아래"><OptColor value={st.railC3} onChange={v => patch({ railC3: v })} /></Row>
       </div>
 
-      <div className="set-sec">
-        <h3>게시판 본문 카드</h3>
-        <div className="d">합작 · 갤러리 · 시트 · 썰 백업 · TRPG 기록 · 리뷰 · 로그 백업 · 타래 · 달력의 본문 카드 — 카드는 가름선 길이만큼 넓고, 글이 놓이는 폭은 그대로입니다</div>
-        <Row label="테두리" desc="끄면 카드 바깥 선 없이 배경만"><KToggle checked={st.cardBorder} onChange={v => patch({ cardBorder: v })} /></Row>
-      </div>
 
       <div className="set-sec">
         <h3>입장 화면</h3>

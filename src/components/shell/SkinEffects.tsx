@@ -240,10 +240,12 @@ export function SkinEffects() {
     const set = (k: string, v: string) => (/^#[0-9a-fA-F]{3,8}$/.test(v) ? root.setProperty(k, v) : root.removeProperty(k));
     set('--rail-c1', st.railC1); set('--rail-c2', st.railC2); set('--rail-c3', st.railC3);
   }, [st.railC1, st.railC2, st.railC3]);
-  // 게시판 본문 카드 테두리 끄기 (사용자 요청) — <html>에 표시만 하고 모양은 skin.css(.body-card)
+  // 게시판 본문 카드 모양 (사용자 요청) — <html>에 표시만 하고 모양은 skin.css(.body-card)
   useEffect(() => {
-    document.documentElement.classList.toggle('no-card-bd', !st.cardBorder);
-  }, [st.cardBorder]);
+    const h = document.documentElement.classList;
+    h.toggle('no-card-bd', st.cardStyle === 'noline');
+    h.toggle('no-card', st.cardStyle === 'none');
+  }, [st.cardStyle]);
   const P = st.particles, T = st.trail, C = st.click;
   return (
     <>

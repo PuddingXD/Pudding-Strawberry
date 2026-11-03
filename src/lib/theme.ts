@@ -18,6 +18,8 @@ export interface ThemeVars {
   bgBlur?: number;           // 배경 이미지 블러 px (0 = 없음)
   // 카드(패널·게시판 리스트·필터 등) 배경/글씨 (v1.9) — 보조 글씨색은 글씨색에서 자동 파생
   cardBg?: string; cardFg?: string;
+  // 모바일 ≡ 메뉴 창 배경 (사용자 요청 — 카드를 반투명하게 하면 메뉴까지 비쳐 보였다). 미지정: 흰색~살짝 미색
+  mmenuBg?: string;
   // 상단메뉴: 배경 · 글씨 · 호버 글씨(v1.9 분리) · 로고 글씨
   topBg: string; topFg: string; topHv: string; topBrand: string;
   // 하위메뉴 드롭다운: 배경 · 글씨 · 호버(오버레이 색)
@@ -229,6 +231,7 @@ export function themeToCssVars(t: ThemeVars): Record<string, string> {
     '--bg-angle': `${t.bgAngle ?? 180}deg`,
     '--bg-blur': `${Math.max(0, t.bgBlur ?? 0)}px`,
     '--panel-solid': t.cardBg ?? '#fbfbfc',
+    '--mmenu-bg': t.mmenuBg ?? '#fffdf8',
     '--panel': withAlpha(t.cardBg ?? '#fcfcfd', 0.94),
     '--ink': cardFg, '--sub': cardSub, '--faint': cardFaint,
     '--sh-sm': sh(8, 26, 0.22),   // 작은 카드

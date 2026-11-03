@@ -200,11 +200,13 @@ export default function BoardDetailPage() {
       </div>
 
       {/* 본문·이전/다음글·댓글을 합작(큰 그림) 상세와 같은 672px 폭으로 — 헤더는 풀폭 유지 */}
-      {/* 본문 카드는 가름선 길이만큼 넓게, 글 폭은 그대로 672 (사용자 요청 — .body-card.wide) */}
-      <div>
+      {/* 본문 카드는 가름선 길이만큼 넓게, 글 폭은 그대로 672 (사용자 요청 — .body-card.wide).
+          이전글/다음글도 카드 안 · 썰 백업은 댓글까지 한 카드 (사용자 요청) */}
+      <div className={board.skin === 'talk' ? 'panel body-card wide talk-card' : undefined}
+        style={board.skin === 'talk' ? { padding: '26px 28px', ['--bc-in' as string]: '616px' } as React.CSSProperties : undefined}>
       {/* 썰 백업은 흰 상자 없이 페이지 위에 바로 말풍선이 오가게 (사용자 요청) */}
       <div className={board.skin === 'talk' ? 'talk-page' : 'panel body-card wide'}
-        style={board.skin === 'talk' ? { maxWidth: 672, margin: '0 auto' } : { padding: '26px 28px', ['--bc-in' as string]: '616px' } as React.CSSProperties}>
+        style={board.skin === 'talk' ? undefined : { padding: '26px 28px', ['--bc-in' as string]: '616px' } as React.CSSProperties}>
         <h2 style={{ fontSize: 19, marginBottom: 4 }}>
           {post.title}{(post.secret || post.fold || post.pwLock) && <LockIcon />}
         </h2>
@@ -255,12 +257,13 @@ export default function BoardDetailPage() {
             dangerouslySetInnerHTML={{ __html: html }} />
           )}
         </div>
+        {board.skin !== 'talk' && <PrevNext prev={pnOf(nb.prev)} next={pnOf(nb.next)} />}
       </div>
+      {board.skin === 'talk' && <PrevNext prev={pnOf(nb.prev)} next={pnOf(nb.next)} />}
 
-      <div style={{ maxWidth: 672, margin: '0 auto' }}><PrevNext prev={pnOf(nb.prev)} next={pnOf(nb.next)} /></div>
-
-      {/* 댓글 + 대댓글 */}
-      <div className="panel" style={{ padding: 0, maxWidth: 672, margin: '16px auto 0' }}>
+      {/* 댓글 + 대댓글 — 썰 백업은 카드 안 (구분선만), 다른 게시판은 따로 672 카드 */}
+      <div className={board.skin === 'talk' ? 'card-cmts' : 'panel'}
+        style={board.skin === 'talk' ? undefined : { padding: 0, maxWidth: 672, margin: '16px auto 0' }}>
         <div style={{ padding: '16px 18px' }}>
           <h4 style={{ fontSize: 11.5, letterSpacing: '.12em', color: 'var(--faint)', marginBottom: 13 }}>
             COMMENTS {comments.length > 0 && <span style={{ color: 'var(--accent)' }}>{comments.length}</span>}

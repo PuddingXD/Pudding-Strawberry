@@ -124,9 +124,10 @@ function CalInner() {
         <EditableDesc k="cal-desc" def="월간 캘린더 + 투두 + D-day" />
       </div>
 
-      <div className="cal-layout">
+      {/* 달력 + 오른쪽 위젯을 한 본문 카드로 (사용자 요청) — 안쪽 칸은 카드 없이 */}
+      <div className="cal-layout panel body-card in-wrap">
         {/* 모바일 전용 — 달력 대신 다가오는 일정 단순 나열, 최대 10개 (v1.9 사용자 확정) */}
-        <div className="panel cal-mlist" style={{ padding: '6px 18px' }}>
+        <div className="panel cal-mlist in-card" style={{ padding: '6px 18px' }}>
           {(() => {
             const today = fmt(now.getFullYear(), now.getMonth(), now.getDate());
             const list = st.events
@@ -150,7 +151,7 @@ function CalInner() {
           })()}
         </div>
         {/* 좌: 월간 캘린더 */}
-        <div className="panel cal body-card">
+        <div className="panel cal in-card">
           <div className="cal-head">
             <button className="btn btn-ghost" style={{ padding: '6px 12px' }}
               onClick={() => setView(v => ({ y: v.m === 0 ? v.y - 1 : v.y, m: (v.m + 11) % 12 }))}>‹</button>
@@ -190,7 +191,7 @@ function CalInner() {
         {/* 우: 고른 날짜의 일정 / D-day / 투두(메인 위젯 데이터 공유) / 카테고리 */}
         <div className="cal-side" style={{ display: 'grid', alignContent: 'start' }}>
           {/* 고른 날짜의 일정 (v2.0 사용자 확정) — 여기서 추가·순서 변경, 달력에는 위 3개만 */}
-          <div className="panel widget">
+          <div className="panel widget in-card side">
             <h4>
               {picked.slice(5).replace('-', '월 ')}일 일정
               {canWrite && <span className="more" onClick={() => openNew(picked)}>＋ 추가</span>}
@@ -222,7 +223,7 @@ function CalInner() {
           </div>
           {ddayConf && <DdayWidget conf={ddayConf} />}
           {todoConf && <TodoWidget conf={todoConf} />}
-          <div className="panel widget">
+          <div className="panel widget in-card side">
             <h4>카테고리 {isAdmin && <span className="more" onClick={() => setCatMng(true)}>관리 ›</span>}</h4>
             {st.cats.map(c => (
               <div key={c.id} className="dday-row">

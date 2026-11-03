@@ -30,6 +30,7 @@ import {
 import { FEATURES } from '@/lib/menu';
 import { SectionsBlock } from '@/components/settings/SectionList';
 import { SkinPane } from '@/components/settings/SkinPane';
+import { useSkinSettings } from '@/lib/skinStore';
 import { TrashPane } from '@/components/settings/TrashPane';
 import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection, SECTION_META, SectionKind } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
@@ -68,6 +69,22 @@ const CATEGORIES = [
 ] as const;
 
 /** 색 항목 한 쌍 렌더 헬퍼 */
+/** 게시판 본문 카드 모양 (사용자 요청) — 합작·갤러리·시트·썰 백업·TRPG 기록·리뷰·로그 백업·타래·달력 */
+function BodyCardRow() {
+  const [skin, patchSkin] = useSkinSettings();
+  const opts = [['line', '테두리 있음'], ['noline', '테두리 없음'], ['none', '카드 없음']] as const;
+  return (
+    <div className="set-row" style={{ flexWrap: 'wrap' }}>
+      <div className="l"><b>게시판 본문 카드</b><small>합작·갤러리·시트·썰 백업·TRPG 기록·리뷰·로그 백업·타래·달력 — 카드는 가름선 길이만큼, 글 폭은 그대로 · 「카드 없음」은 배경 위에 바로</small></div>
+      <div className="mini-seg">
+        {opts.map(([v, lb]) => (
+          <button key={v} className={skin.cardStyle === v ? 'on' : ''} onClick={() => patchSkin({ cardStyle: v })}>{lb}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CP({ label, k, def }: { label?: string; k: keyof ThemeVars; def?: string }) {
   const { state, setVar } = useTheme();
   // def: 값이 없을 때 실제로 적용되는 기본색 (예: 입력 포커스 = 포인트색)
@@ -306,6 +323,17 @@ function DesignPane() {
         <div className="cp-group">
           <CP label="배경" k="cardBg" />
           <CP label="글씨" k="cardFg" />
+        </div>
+      </div>
+
+      {/* 게시판 본문 카드 (사용자 요청) — 테두리 있음 / 없음 / 카드 없이 */}
+      <BodyCardRow />
+
+      {/* 모바일 ≡ 메뉴 창 배경 (사용자 요청) — 카드를 반투명하게 해도 메뉴는 따로 */}
+      <div className="set-row">
+        <div className="l"><b>모바일 메뉴 창</b><small>≡ 버튼을 누르면 뜨는 메뉴 창의 배경 — 카드 색과 따로 (기본: 흰색~살짝 미색)</small></div>
+        <div className="cp-group">
+          <CP label="배경" k="mmenuBg" def="#fffdf8" />
         </div>
       </div>
 

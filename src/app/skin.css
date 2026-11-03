@@ -114,7 +114,11 @@
    2) 모바일 상단 바 — 기존 ≡ 버튼 구조 그대로, 밑줄만 B 그라데이션
    --------------------------------------------------------- */
 @media (max-width:620px){
-  .topbar{border-bottom:none;position:sticky}
+  /* 상단 바는 색 없이 페이지 배경 그대로 (사용자 요청) — 투명이라 위에 붙어 있으면 글이 겹쳐 보이므로
+     고정하지 않고 같이 올라간다 */
+  .topbar{border-bottom:none;position:relative;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+  /* ≡ 메뉴 창은 카드 색과 따로 (디자인 > 모바일 메뉴 창) — 카드를 반투명하게 해도 메뉴는 또렷하게 */
+  .mmenu-pop{background:var(--mmenu-bg,#fffdf8)}
   .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--b-rule)}
   .mmenu-pop{border-color:var(--b-line);border-radius:var(--radius)}
   .mmenu-pop button.top{letter-spacing:.14em;text-transform:uppercase;font-size:calc(12.5px*var(--fs,1))}
@@ -473,17 +477,11 @@
 /* ─── 자관 상세: 양옆 캐릭터 카드는 네모 없이 글자만 (사용자 요청) ───
    어두운 헤더 위에서도 묻히지 않게
    ① 헤더를 페이지 바탕색으로 덮어 밝게 (자관 수정의 「헤더 밝게」 0~80%, 기본 50%)
-   ② 글자 둘레에 바탕색으로 은은한 빛(halo)을 둘러 배경과 떼어 놓는다 */
+   (글자 둘레 흰 빛은 촌스럽다고 하셔서 뺐다 — 사용자 요청) */
 .page-rel-detail .rel-backdrop .img{filter:blur(16px) brightness(.95) saturate(.9)}
 .page-rel-detail .rel-backdrop::after{content:"";position:absolute;inset:0;
   background:color-mix(in srgb,var(--panel-solid,#fff) var(--rel-veil,50%),transparent)}
 .page-rel-detail .mini-prof{background:transparent;box-shadow:none;border:0;border-radius:0;overflow:visible}
-.page-rel-detail .mini-prof .hd,
-.page-rel-detail .mini-prof .specs,
-.page-rel-detail .mini-prof .kw-row,
-.page-rel-detail .mini-prof .rel-desc{
-  text-shadow:0 0 4px var(--panel-solid,#fff),0 0 10px var(--panel-solid,#fff),0 0 18px color-mix(in srgb,var(--panel-solid,#fff) 70%,transparent);
-}
 .page-rel-detail .mini-prof .hd{padding-left:2px;padding-right:2px}
 .page-rel-detail .mini-prof .specs,
 .page-rel-detail .mini-prof .palette-row,
@@ -496,6 +494,11 @@
    자관 수정에서 직접 정한 색은 그대로 (인라인 지정이 이긴다) */
 .page-rel-detail.tone-up .rel-hero .quote{color:var(--sub)}
 .page-rel-detail.tone-up .rel-hero .catch{color:var(--faint)}
+/* 상단 한마디 테두리 1px (사용자 요청) — 글씨색보다 조금 어둡게 자동. 자관 수정에서 끌 수 있다 */
+.page-rel-detail .rel-hero .quote.q-line{
+  --ql:color-mix(in srgb,currentColor 72%,#000);
+  text-shadow:.8px 0 0 var(--ql),-.8px 0 0 var(--ql),0 .8px 0 var(--ql),0 -.8px 0 var(--ql);
+}
 
 /* ─── 게시판 본문 카드 (사용자 요청) ───
    .body-card.wide — 카드는 가름선 길이(페이지 폭)만큼 넓히고, 글이 놓이는 폭(--bc-in)은 예전 그대로.
@@ -510,3 +513,28 @@
 }
 /* 테두리 끄기 — 환경설정 > 꾸미기 > 게시판 본문 카드 */
 .no-card-bd .panel.body-card{border-color:transparent !important}
+/* 카드 없음 — 배경·선·그림자 없이 페이지 위에 바로 (글 폭·배치는 그대로) */
+.no-card .panel.body-card{background:transparent !important;border-color:transparent !important;box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+/* 이전글/다음글 — 본문 카드 안, 위에 얇은 선 */
+.panel.body-card .pn{margin-top:26px;padding-top:16px;border-top:1px solid var(--b-line-soft,var(--line))}
+/* 썰 백업 — 말풍선·이전/다음글·댓글을 한 카드에 */
+.talk-card .talk-page{padding:0 0 4px}
+.talk-card .card-cmts{margin-top:22px;border-top:1px solid var(--b-line-soft,var(--line))}
+.talk-card .card-cmts > div:first-child{padding:16px 0 !important}
+.talk-card .card-cmts .cmt-input{padding:12px 0 0}
+/* 타래·달력 — 왼쪽 본문과 오른쪽 목록/위젯을 한 카드에. 안쪽 칸은 카드 모양 없이, 사이에 세로선 */
+.panel.body-card.in-wrap{padding:18px}
+.panel.body-card .panel.in-card{background:transparent !important;box-shadow:none !important;border:0 !important;border-radius:0;
+  -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+.thr-layout.body-card > .panel.in-card.side,
+.cal-layout.body-card > .cal-side{border-left:1px solid var(--b-line-soft,var(--line));padding-left:18px !important}
+.cal-layout.body-card .cal-side .panel.in-card{padding-left:0;padding-right:0}
+.cal-layout.body-card .cal-side .panel.in-card + .panel.in-card{border-top:1px solid var(--b-line-soft,var(--line)) !important;border-radius:0}
+@media (max-width:960px){
+  .cal-layout.body-card > .cal-side{border-left:0;padding-left:0 !important;border-top:1px solid var(--b-line-soft,var(--line));padding-top:10px}
+}
+@media (max-width:620px){
+  .thr-layout.body-card > .panel.in-card.side{border-left:0;padding-left:10px !important;border-top:1px solid var(--b-line-soft,var(--line))}
+  .panel.body-card.in-wrap{padding:12px}
+}

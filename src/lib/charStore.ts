@@ -336,6 +336,8 @@ export interface RelAuStyle {
   headerBgG1?: string; headerBgG2?: string; headerBgAngle?: number;
   /** 헤더 배경 밝게 0~80 (사용자 요청 — 어두운 헤더에 글자가 묻힌다). 미지정: 50 · 0이면 예전 그대로 */
   headerTone?: number;
+  /** 상단 한마디 1px 테두리 (사용자 요청 — 글씨색보다 조금 어둡게 자동). 미지정: 켬 */
+  quoteLine?: boolean;
   pageBgG1?: string; pageBgG2?: string; pageBgAngle?: number;
   illuBg?: string; illuOn?: string;
 }
@@ -348,7 +350,7 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
     cpTagBg: rel.cpTagBg, cpTagFg: rel.cpTagFg,
     nameShadowColor: rel.nameShadowColor, nameShadow: rel.nameShadow,
     headerBgG1: rel.headerBgG1, headerBgG2: rel.headerBgG2, headerBgAngle: rel.headerBgAngle,
-    headerTone: rel.headerTone,
+    headerTone: rel.headerTone, quoteLine: rel.quoteLine,
     pageBgG1: rel.pageBgG1, pageBgG2: rel.pageBgG2, pageBgAngle: rel.pageBgAngle,
     illuBg: rel.illuBg, illuOn: rel.illuOn,
   };
@@ -369,6 +371,7 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
     out.headerBgG1 = s.headerBgG1; out.headerBgG2 = s.headerBgG2; out.headerBgAngle = s.headerBgAngle;
   }
   if (s.headerTone !== undefined) out.headerTone = s.headerTone;
+  if (s.quoteLine !== undefined) out.quoteLine = s.quoteLine;
   if (s.pageBgG1 !== undefined || s.pageBgG2 !== undefined) {
     out.pageBgG1 = s.pageBgG1; out.pageBgG2 = s.pageBgG2; out.pageBgAngle = s.pageBgAngle;
   }
@@ -475,6 +478,8 @@ export interface Relation {
   headerBgAngle?: number;
   /** 헤더 배경 밝게 0~80 (사용자 요청) — 미지정: 50 */
   headerTone?: number;
+  /** 상단 한마디 1px 테두리 (사용자 요청) — 미지정: 켬 */
+  quoteLine?: boolean;
   // 이 자관 페이지 전체의 배경 그라데이션 (v2.0 사용자 요청) — 색 2개 + 각도.
   // 위 headerBg*는 상단 헤더 자리에만 깔리는 것이고, 이건 페이지 바탕 전체다.
   pageBgG1?: string;

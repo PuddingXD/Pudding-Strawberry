@@ -56,7 +56,7 @@ function RelEditInner() {
             // 페이지 테마 — AU 편집이면 그 AU에만 (base 테마는 유지, v1.9)
             ...(auObj ? {} : { themeMode: v.themeMode, themeColor: v.themeColor, themeTone: v.themeTone, illuBg: v.illuBg, illuOn: v.illuOn, nameColor: v.nameColor, cpColor: v.cpColor, cpTagBg: v.cpTagBg, cpTagFg: v.cpTagFg,
                 nameShadowColor: v.nameShadowColor, nameShadow: v.nameShadow,
-                headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone,
+                headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone, quoteLine: v.quoteLine,
                 pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle }),
             // CP/문답 숨김은 자관 전체 설정(AU 폼에는 없음) · 전신 앞뒤는 AU면 그 AU에만 (v2.0)
             ...(auObj || !isAdmin ? {} : { grants: v.grants }),
@@ -97,7 +97,7 @@ function RelEditInner() {
                     nameColor: v.nameColor, cpColor: v.cpColor,
                     cpTagBg: v.cpTagBg, cpTagFg: v.cpTagFg,
                     nameShadowColor: v.nameShadowColor, nameShadow: v.nameShadow,
-                    headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone,
+                    headerBgG1: v.headerBgG1, headerBgG2: v.headerBgG2, headerBgAngle: v.headerBgAngle, headerTone: v.headerTone, quoteLine: v.quoteLine,
                     pageBgG1: v.pageBgG1, pageBgG2: v.pageBgG2, pageBgAngle: v.pageBgAngle,
                     illuBg: v.illuBg, illuOn: v.illuOn,
                   },

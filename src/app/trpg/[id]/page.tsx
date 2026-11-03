@@ -684,6 +684,8 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
               )
           )}
         </p>
+        {/* 이전글/다음글 — 본문 카드 안 (사용자 요청) */}
+        <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
       </div>
 
       {/* 로그 정보 수정 모달 — 메타 + 본문 교체(파일/직접 수정) + 썸네일 교체(이미지/색) */}
@@ -896,9 +898,6 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
           { label: 'CANCEL', kind: 'ghost', onClick: () => setMsgDel(null) },
         ]} />
 
-      <div style={{ maxWidth: 672, margin: '0 auto' }}>
-        <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
-      </div>
 
       <ConfirmModal open={delAsk} title="로그를 삭제하시겠습니까?" body="삭제한 로그는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}

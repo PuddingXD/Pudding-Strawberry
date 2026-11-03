@@ -173,10 +173,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
             )}
           </>
         )}
-      </div>
-
-      {/* 이전글/다음글 — 같은 갤러리(섹션) 안에서, 내가 볼 수 있는 글만 */}
-      <div style={{ maxWidth: 672, margin: '0 auto' }}>
+        {/* 이전글/다음글 — 같은 갤러리(섹션) 안에서, 내가 볼 수 있는 글만 · 본문 카드 안 (사용자 요청) */}
         <PrevNext
           prev={navOf(nb.prev)}
           next={navOf(nb.next)} />

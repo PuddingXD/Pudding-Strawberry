@@ -112,9 +112,9 @@ function ReviewDetailInner() {
             </div>
           )}
         </div>
+        {/* 이전글/다음글 — 본문 카드 안 (사용자 요청) · 그림·글 두 칸을 가로질러 */}
+        <div style={{ gridColumn: '1 / -1' }}><PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} /></div>
       </div>
-
-      <PrevNext prev={pnOf(pnb.prev)} next={pnOf(pnb.next)} />
 
       <ConfirmModal open={delAsk} title="이 리뷰를 삭제하시겠습니까?" body="삭제한 리뷰는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}
