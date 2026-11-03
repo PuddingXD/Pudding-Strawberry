@@ -278,8 +278,10 @@
 .talk-li .ar{font-style:normal;color:var(--faint);font-size:16px}
 @media (max-width:620px){.talk-li small{display:none}}
 /* 썰 백업 — 대화 말풍선 */
-.talk{--talk-c1:color-mix(in srgb,var(--accent) 18%,#fff);--talk-c2:color-mix(in srgb,var(--btn-dark,var(--accent)) 42%,#fff);
-  display:flex;flex-direction:column;gap:4px;padding:6px 0}
+.talk{display:flex;flex-direction:column;gap:4px;padding:6px 0}
+/* 썰 백업 상세 — 흰 상자 없이 페이지 배경 위에 바로 */
+.talk-page{padding:8px 4px 10px}
+.talk-page .talk-bub{box-shadow:0 3px 12px color-mix(in srgb,var(--accent) 16%,transparent)}
 .talk-row{display:flex;flex-direction:column;max-width:78%}
 .talk-row.l{align-self:flex-start;align-items:flex-start}
 .talk-row.r{align-self:flex-end;align-items:flex-end}
@@ -287,8 +289,13 @@
 .talk-name{font-size:calc(11px*var(--fs,1));color:var(--sub);margin:0 6px 4px;letter-spacing:.04em}
 .talk-bub{padding:9px 14px;border-radius:16px;font-size:calc(13.5px*var(--fs,1));line-height:1.65;white-space:pre-wrap;word-break:break-word;
   color:color-mix(in srgb,var(--ink) 62%,#2a2226)}   /* 말풍선 위 글씨 — 테마 글씨색을 조금 진하게 (연한 말풍선에서도 읽히게) */
-.talk-row.l .talk-bub{background:var(--talk-c1);border-top-left-radius:5px}
-.talk-row.r .talk-bub{background:var(--talk-c2);border-top-right-radius:5px}
+/* 말풍선 기본색 — 참여자마다 (글쓰기에서 색을 고르면 그 색) */
+.talk-row.p1 .talk-bub{background:color-mix(in srgb,var(--accent) 18%,#fff)}
+.talk-row.p2 .talk-bub{background:color-mix(in srgb,var(--btn-dark,var(--accent)) 42%,#fff)}
+.talk-row.p3 .talk-bub{background:color-mix(in srgb,var(--top-hv,var(--accent)) 42%,#fff)}
+.talk-row.p4 .talk-bub{background:color-mix(in srgb,var(--accent-soft,var(--accent)) 30%,#fff)}
+.talk-row.l .talk-bub{border-top-left-radius:5px}
+.talk-row.r .talk-bub{border-top-right-radius:5px}
 .talk-row:not(.first).l .talk-bub{border-top-left-radius:16px}
 .talk-row:not(.first).r .talk-bub{border-top-right-radius:16px}
 .talk-bub img,.talk-note img{display:block;max-width:100%;border-radius:10px;margin-top:6px}

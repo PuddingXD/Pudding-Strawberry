@@ -2,13 +2,14 @@
 // 썰 백업 게시판 (B 디자인에서 가져온 기능) — 본문을 대화 말풍선으로 보여 준다.
 //
 // 본문은 평소처럼 에디터로 쓰고, 줄마다 이렇게 적는다:
-//   1: 왼쪽 사람이 하는 말        2: 오른쪽 사람이 하는 말
+//   1: 대사  2: 대사  3: 대사  4: 대사   (참여자는 최대 4명 — 이름·말풍선 색·왼쪽/오른쪽은 글쓰기에서)
 //   # 소제목  (대화 묶음 사이 구분)  그 밖의 줄 = 가운데 지문
 //   이미지를 넣으면 바로 위 줄을 말한 사람의 말풍선으로 들어간다
 import React, { useMemo } from 'react';
+import type { TalkPerson } from '@/lib/postStore';
 
 type Line =
-  | { k: 'say'; who: 1 | 2; text: string; imgs: string[] }
+  | { k: 'say'; who: number; text: string; imgs: string[] }   // who = 0~3
   | { k: 'head'; text: string }
   | { k: 'note'; text: string; imgs: string[] };
 
@@ -37,8 +38,8 @@ export function parseTalk(safeHtml: string): Line[] {
       else { last = { k: 'note', text: '', imgs: [src] }; out.push(last); }
       continue;
     }
-    const m = /^([12])\s*[:：]\s*(.*)$/.exec(line);
-    if (m) { last = { k: 'say', who: m[1] === '1' ? 1 : 2, text: m[2], imgs: [] }; out.push(last); continue; }
+    const m = /^([1-4])\s*[:：]\s*(.*)$/.exec(line);
+    if (m) { last = { k: 'say', who: Number(m[1]) - 1, text: m[2], imgs: [] }; out.push(last); continue; }
     const h = /^#+\s*(.+)$/.exec(line);
     if (h) { last = { k: 'head', text: h[1] }; out.push(last); continue; }
     last = { k: 'note', text: line, imgs: [] };
@@ -47,14 +48,10 @@ export function parseTalk(safeHtml: string): Line[] {
   return out;
 }
 
-export function TalkView({ html, n1, n2, c1, c2 }: { html: string; n1?: string; n2?: string; c1?: string; c2?: string }) {
+export function TalkView({ html, people }: { html: string; people: TalkPerson[] }) {
   const lines = useMemo(() => parseTalk(html), [html]);
-  const style = {
-    ...(c1 ? { '--talk-c1': c1 } : {}),
-    ...(c2 ? { '--talk-c2': c2 } : {}),
-  } as React.CSSProperties;
   return (
-    <div className="talk" style={style}>
+    <div className="talk">
       {lines.map((l, i) => {
         if (l.k === 'head') return <div key={i} className="talk-head"><span>{l.text}</span></div>;
         if (l.k === 'note') {
@@ -66,13 +63,13 @@ export function TalkView({ html, n1, n2, c1, c2 }: { html: string; n1?: string; 
             </div>
           );
         }
+        const who = people[l.who] ?? { name: '', side: l.who === 0 ? 'l' : 'r' };
         const prev = lines[i - 1];
         const first = !(prev && prev.k === 'say' && prev.who === l.who);   // 같은 사람이 이어 말하면 이름은 처음에만
-        const name = l.who === 1 ? n1 : n2;
         return (
-          <div key={i} className={`talk-row ${l.who === 1 ? 'l' : 'r'} ${first ? 'first' : ''}`}>
-            {first && name && <b className="talk-name">{name}</b>}
-            <div className="talk-bub">
+          <div key={i} className={`talk-row ${who.side} p${l.who + 1} ${first ? 'first' : ''}`}>
+            {first && who.name && <b className="talk-name">{who.name}</b>}
+            <div className="talk-bub" style={who.color ? { background: who.color } : undefined}>
               {l.text && <span>{l.text}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {l.imgs.map(src => <img key={src} src={src} alt="" />)}

@@ -92,10 +92,22 @@ export interface Post {
   visibility?: 'private';
   /** 비밀번호 비밀글 — 본문을 비밀번호로 암호화해 둔 것 (lib/pwLock). 있으면 body는 비어 있다 */
   pwLock?: PwLock;
-  /** 썰 백업 게시판 — 대화 참여자 (1: 왼쪽 / 2: 오른쪽) */
-  talk?: { n1: string; n2: string; c1?: string; c2?: string };
+  /** 썰 백업 게시판 — 대화 참여자 최대 4명 (본문의 1: ~ 4: 줄). n1·n2·c1·c2는 처음 2명 버전 호환용 */
+  talk?: { people?: TalkPerson[]; n1?: string; n2?: string; c1?: string; c2?: string };
   /** 러닝 게시판 카드 요약 한 줄 */
   summary?: string;
+}
+
+/** 썰 백업 참여자 — 이름 · 말풍선 색 · 자리(왼쪽/오른쪽) */
+export interface TalkPerson { name: string; color?: string; side: 'l' | 'r' }
+export const TALK_MAX = 4;
+/** 참여자 4칸 (예전 2명 버전 글도 읽어서) — 기본 자리: 1 왼쪽, 2·3·4 오른쪽 */
+export function talkPeople(t?: Post['talk']): TalkPerson[] {
+  const base = t?.people ?? [
+    { name: t?.n1 ?? '', color: t?.c1, side: 'l' as const },
+    { name: t?.n2 ?? '', color: t?.c2, side: 'r' as const },
+  ];
+  return Array.from({ length: TALK_MAX }, (_, i) => base[i] ?? { name: '', side: i === 0 ? 'l' as const : 'r' as const });
 }
 
 /** 지금 모두에게 공개된 글인가 (임시 저장·예약 시각 전이 아니면) */

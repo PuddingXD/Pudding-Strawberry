@@ -8,7 +8,7 @@ import { extraBoardHref, useMenuSettings, canReadSecret } from '@/lib/menuStore'
 import { LockIcon } from '@/components/ui/LockIcon';
 import { useAuth } from '@/lib/auth';
 import {
-  useLocalList, BOARD_SEED, Post, Comment, newId, fmtDate, isPublished, pubLabel,
+  useLocalList, BOARD_SEED, Post, Comment, newId, fmtDate, isPublished, pubLabel, talkPeople,
   CommentRow, COMMENT_KEY, COMMENT_SEED, commentsFor,
 } from '@/lib/postStore';
 import { useBoards, boardHref, MAIN_BOARD_ID, BoardPerm } from '@/lib/boardStore';
@@ -186,7 +186,8 @@ export default function BoardDetailPage() {
     <section className="page">
       <div className="page-head">
         <PageTitle href={boardHref(board.id)}>{boardTitle}</PageTitle>
-        <p>{`${post.category} · `}{post.author} · {fmtDate(post.date)}{pubLabel(post) && ` · ${pubLabel(post)}`}</p>
+        {/* 썰 백업은 작성자 없이 (사용자 요청) */}
+        <p>{`${post.category} · `}{board.skin === 'talk' ? '' : `${post.author} · `}{fmtDate(post.date)}{pubLabel(post) && ` · ${pubLabel(post)}`}</p>
         <div className="head-actions">
           {/* 수정은 작성자 본인만 — 관리자도 타인 글은 삭제만 (v1.9) */}
           {isAuthor && (
@@ -200,12 +201,13 @@ export default function BoardDetailPage() {
 
       {/* 본문·이전/다음글·댓글을 합작(큰 그림) 상세와 같은 672px 폭으로 — 헤더는 풀폭 유지 */}
       <div style={{ maxWidth: 672, margin: '0 auto' }}>
-      <div className="panel" style={{ padding: '26px 28px' }}>
+      {/* 썰 백업은 흰 상자 없이 페이지 위에 바로 말풍선이 오가게 (사용자 요청) */}
+      <div className={board.skin === 'talk' ? 'talk-page' : 'panel'} style={board.skin === 'talk' ? undefined : { padding: '26px 28px' }}>
         <h2 style={{ fontSize: 19, marginBottom: 4 }}>
           {post.title}{(post.secret || post.fold || post.pwLock) && <LockIcon />}
         </h2>
         <p style={{ fontSize: 11, color: 'var(--faint)', marginBottom: 18 }}>
-          {post.author} · {fmtDate(post.date)} · {post.mode.toUpperCase()}
+          {board.skin === 'talk' ? fmtDate(post.date) : <>{post.author} · {fmtDate(post.date)} · {post.mode.toUpperCase()}</>}
           {/* 태그 (v2.0 사용자 요청) — 목록과 같은 표기 */}
           {(post.tags ?? []).map(t => (
             <span key={t} style={{ marginLeft: 7, color: 'color-mix(in srgb,var(--accent) 65%,var(--faint))' }}>#{t}</span>
@@ -244,7 +246,7 @@ export default function BoardDetailPage() {
             </form>
           ) : board.skin === 'talk' ? (
             <div style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}>
-              <TalkView html={html} n1={post.talk?.n1} n2={post.talk?.n2} c1={post.talk?.c1} c2={post.talk?.c2} />
+              <TalkView html={html} people={talkPeople(post.talk)} />
             </div>
           ) : (
           <div className="post-body" style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}
