@@ -14,6 +14,9 @@
   --b-line:color-mix(in srgb,var(--accent) 38%,transparent);
   --b-line-soft:color-mix(in srgb,var(--accent) 22%,transparent);
   --b-grad:linear-gradient(90deg,var(--rail-c1),var(--rail-c2) 50%,var(--rail-c3));
+  /* 제목·목록 아래 구분선 — 단색 (사용자 요청: 그라데이션은 왼쪽 메뉴선에만) */
+  --b-rule:color-mix(in srgb,var(--accent) 75%,transparent);
+  --b-rule-line:linear-gradient(var(--b-rule),var(--b-rule));
 }
 
 /* ---------------------------------------------------------
@@ -112,7 +115,7 @@
    --------------------------------------------------------- */
 @media (max-width:620px){
   .topbar{border-bottom:none;position:sticky}
-  .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--b-grad);opacity:.85}
+  .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--b-rule)}
   .mmenu-pop{border-color:var(--b-line);border-radius:var(--radius)}
   .mmenu-pop button.top{letter-spacing:.14em;text-transform:uppercase;font-size:calc(12.5px*var(--fs,1))}
   .mmenu-pop .g.open > .top{color:var(--top-brand)}
@@ -124,11 +127,14 @@
    3) 목록 머리 — 제목 · 말머리 알약 · 둥근 검색 · 그라데이션 구분선
    --------------------------------------------------------- */
 @media (min-width:621px){   /* 모바일은 제목을 숨기는 설정이 있어 선만 남지 않게 PC에서만 */
-  .page-head:has(h1):not(:has(+ .toolrow)){padding-bottom:16px;margin-bottom:22px;background:var(--b-grad) left bottom/100% 1.5px no-repeat}
+  .page-head:has(h1):not(:has(+ .toolrow)){padding-bottom:16px;margin-bottom:22px;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
   .page-head:has(h1):not(:has(+ .toolrow)) .head-actions:not(.stack){bottom:14px}
 }
+@media (min-width:621px){   /* 상단 바가 빠져 제목이 화면 맨 위에 붙어 보여서 위쪽 여백 */
+  .page{padding-top:44px}
+}
 /* 말머리·검색 줄이 있으면 그 아래에 선 (B 목록과 같은 자리) */
-.toolrow{padding-bottom:14px;margin-bottom:20px;background:var(--b-grad) left bottom/100% 1.5px no-repeat}
+.toolrow{padding-bottom:14px;margin-bottom:20px;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
 .page-head h1{letter-spacing:.18em}
 
 /* 말머리 탭·보기 전환 → 알약 버튼 */
@@ -167,8 +173,8 @@
    --------------------------------------------------------- */
 .char-card{position:relative;border-radius:var(--radius)}
 .char-card .thumb{aspect-ratio:3/4.4}
-.char-card .thumb img{transition:transform .5s}
-.char-card:hover .thumb img{transform:scale(1.04)}
+/* 자캐 카드는 움직이지 않게 (사용자 요청) — 올렸을 때 떠오르기·확대 모두 끔, 테두리 색만 */
+.char-card:hover{transform:none}
 .char-card .nm{
   position:absolute;left:0;right:0;bottom:0;padding:36px 16px 14px;z-index:2;
   background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));color:#fff;
@@ -177,17 +183,11 @@
 .char-card .nm i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
 @media (max-width:620px){.char-card .nm{padding:26px 10px 9px}.char-card .nm b{font-size:calc(13px*var(--fs,1));letter-spacing:.06em}}
 
-/* 캐릭터 상세 — 정보 표를 B처럼 줄 긋기 */
-.spec{gap:0;column-gap:14px}
-.spec dt,.spec dd{padding:9px 0;border-bottom:1px solid var(--b-line-soft)}
-.spec dt{font-size:calc(11.5px*var(--fs,1));letter-spacing:.1em}
+/* 캐릭터 상세 — 탭 제목·왼쪽 탭 아이콘 (정보 표 밑줄은 쓰지 않음) */
 .profile-info h3.tab-tt{font-size:calc(22px*var(--fs,1));letter-spacing:.16em}
-.profile-info .sub{position:relative;padding-bottom:12px;background:var(--b-grad) left bottom/56px 1.5px no-repeat}
 .side-icons button{border-radius:50%;border-color:var(--b-line-soft)}
 .side-icons button.on{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
 
-/* 자관 카드 — 이름 아래 B식 그라데이션 짧은 선 */
-.rel-card .nm b{padding-bottom:8px;margin-bottom:6px;background:var(--b-grad) left bottom/40px 1.5px no-repeat}
 
 /* ---------------------------------------------------------
    6) 메인 위젯 — 제목을 명조·대문자 간격으로, 테두리는 위젯 설정 그대로
@@ -216,5 +216,5 @@
 /* ---------------------------------------------------------
    9) 본문 — 이전/다음 칸, 구분선
    --------------------------------------------------------- */
-.post-body hr{border-top:none;height:1.5px;background:var(--b-grad);opacity:.7}
+.post-body hr{border-top:none;height:1px;background:var(--b-rule)}
 .post-body blockquote{border-left-color:var(--accent)}
