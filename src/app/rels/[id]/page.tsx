@@ -343,7 +343,6 @@ function RelDetailInner() {
   const [qaPickPos, setQaPickPos] = useState<{ left: number; top: number } | null>(null);
   // 관리자 추가 모달
   const [memberOpen, setMemberOpen] = useState(false);
-  const [memberManageOpen, setMemberManageOpen] = useState(false);
   const [mMode, setMMode] = useState<'exist' | 'new'>('exist');
   const [mCharId, setMCharId] = useState('');
   const [mQuery, setMQuery] = useState('');   // 기존 캐릭터 검색어
@@ -948,8 +947,6 @@ function RelDetailInner() {
       {/* 관리자 액션 (좌상단) */}
       {isAdmin && (
         <div className="rel-admin-actions">
-          <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
-            onClick={() => setMemberManageOpen(true)}>멤버 관리</button>
           {/* AU 선택 중이면 그 AU의 일러·캐치프레이즈를 편집 (v1.9) */}
           <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
             onClick={() => router.push(`/rels/${rel.id}/edit${isBaseAu ? '' : `?au=${au!.id}`}`)}>
@@ -1032,7 +1029,15 @@ function RelDetailInner() {
       </div>
 
       {isDuo ? (
-        <div className="rel-body rel-art-only" style={{ fontFamily: familyOf(auBodyFont) }}>
+        <div className="rel-body" style={{ fontFamily: familyOf(auBodyFont) }}>
+          {pairSlots[0]
+            ? <MiniProf member={pairSlots[0]} char={charOf(pairSlots[0].charId)} isAdmin={isAdmin}
+                auUnregistered={auUnregOf(pairSlots[0].charId)}
+                side="l" onMoveSide={() => moveSide(pairSlots[0]!.charId)}
+                onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
+                onGo={() => router.push(charHref(pairSlots[0]!.charId))}
+                onRemove={() => removeMember(pairSlots[0]!.charId)} />
+            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
           <div className={`rel-center ${single ? 'one-mode' : ''}`}
             style={{ background: 'rgba(255,255,255,.04)', border: '1px solid var(--line-dark)' }}>
             {/* 전신 — 등록 이미지(AU별 우선) + 크기/앞뒤는 자관 수정의 미리보기에서 (v1.9) */}
@@ -1087,10 +1092,71 @@ function RelDetailInner() {
               </div>
             )}
           </div>
+          {pairSlots[1]
+            ? <MiniProf member={pairSlots[1]} char={charOf(pairSlots[1].charId)} isAdmin={isAdmin}
+                auUnregistered={auUnregOf(pairSlots[1].charId)}
+                side="r" onMoveSide={() => moveSide(pairSlots[1]!.charId)}
+                onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
+                onGo={() => router.push(charHref(pairSlots[1]!.charId))}
+                onRemove={() => removeMember(pairSlots[1]!.charId)} />
+            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
         </div>
       ) : (
         /* 다인 자관 — 프로토타입 multi-body: 좌 멤버 리스트(430px) + 우 그룹 일러 */
-        <div className="multi-body rel-art-only" style={{ fontFamily: familyOf(auBodyFont) }}>
+        <div className="multi-body" style={{ fontFamily: familyOf(auBodyFont) }}>
+          <div className="panel flush" style={{ padding: '6px 0' }}>
+            {rel.members.map(m => {
+              const c = charOf(m.charId);
+              if (!c) return null;
+              const unreg = auUnregOf(m.charId);
+              const mm = asAu(m) ?? m;
+              const rep = c.thumbId ?? c.arts?.[0];
+              return (
+                <div key={m.charId} className="mrow" style={{ ['--cc' as string]: rgbTriple(c.color) }}
+                  onClick={() => router.push(charHref(m.charId))}
+                  onContextMenu={e => {
+                    if (!isAdmin || !rep) return;
+                    e.preventDefault();
+                    setMrowCtx({ x: e.clientX, y: e.clientY, charId: m.charId, ref: rep, crop: mm.faceCrop });
+                  }}>
+                  {/* 이미지가 있으면 어두운 자리표시 배경(ph)을 깔지 않는다 — 투명 PNG가 검게 보이던 것.
+                      2인 자관 카드와 같이 밝은 바탕에 얹고, 위치는 1:1 얼굴칸 크롭(우클릭 > 썸네일 위치 조정) */}
+                  <div className={`face ${rep && !unreg ? 'has-img' : `ph ${c.thumbClass}`}`}>
+                    {!unreg && rep && (
+                      <CroppedBlobImg fileRef={rep} crop={mm.faceCrop ?? c.thumbCrop} ph={c.thumbClass} />
+                    )}
+                  </div>
+                  <div className="nm">
+                    {unreg ? (
+                      /* AU 프로필 미등록 (v1.9) — 원본 프로필 대신 등록 안내 */
+                      <>
+                        <b style={{ fontFamily: familyOf(findChar(chars, m.charId)?.fontId) }}>{findChar(chars, m.charId)?.name}</b>
+                        <small>이 AU의 프로필 미등록 — 눌러서 등록</small>
+                      </>
+                    ) : (
+                      <>
+                        <b style={{ fontFamily: familyOf(c.fontId) }}>{c.name}</b><i>{c.sub}</i>
+                        <small>{c.specs.slice(0, 3).map(s => s.value).join(' · ')}</small>
+                        {(m.quote || noteOf(m) || m.keywords[0]) && (
+                          <span className="ext">{m.quote || noteOf(m) || m.keywords[0]}</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="gem-mini">
+                    {(c.colors ?? []).slice(0, 3).map(p => <i key={p.hex + p.label} style={{ background: p.hex }} />)}
+                  </div>
+                  {isAdmin && (
+                    <span className="rm" onClick={e => { e.stopPropagation(); removeMember(m.charId); }}>제거</span>
+                  )}
+                </div>
+              );
+            })}
+            {isAdmin && rel.members.length < 6 && (
+              <div className="mrow add" onClick={() => setMemberOpen(true)}>＋ ADD MEMBER (최대 6인)</div>
+            )}
+          </div>
+
           {/* 우: 그룹 일러 — 여러 장이면 클릭 넘김 + 도트 */}
           <div className="multi-illust" ref={artBoxRef}
             style={{ cursor: auArts.length > 1 ? 'pointer' : undefined }}
@@ -1437,19 +1503,6 @@ function RelDetailInner() {
       )}
 
       {/* ---------- 멤버 추가 모달 ---------- */}
-      {/* 공개 화면의 멤버 카드는 제거하되 추가·제거·프로필 접근은 관리자 모달에 유지한다. */}
-      <Modal open={memberManageOpen} onClose={() => setMemberManageOpen(false)} title="멤버 관리">
-        <div style={{ display: 'grid', gap: 12 }}>
-          {rel.members.map(m => <MiniProf key={m.charId} member={asAu(m) ?? m} char={charOf(m.charId)}
-            isAdmin={isAdmin} auUnregistered={auUnregOf(m.charId)}
-            side={pairSlots[1]?.charId === m.charId ? 'r' : 'l'} onMoveSide={() => moveSide(m.charId)}
-            onFaceCrop={ref => setFaceEdit({ charId: m.charId, ref, crop: (asAu(m) ?? m).faceCrop })}
-            onGo={() => router.push(charHref(m.charId))} onRemove={() => removeMember(m.charId)} />)}
-          {rel.members.length < (isDuo ? 2 : 6) &&
-            <button className="btn btn-accent" onClick={() => { setMemberManageOpen(false); setMemberOpen(true); }}>＋ 멤버 추가</button>}
-        </div>
-      </Modal>
-
       <Modal open={memberOpen} onClose={() => setMemberOpen(false)} small title="멤버 추가"
         dirty={!!(mCharId || mName || mQuote)}
         desc="내 캐릭터를 연동하거나, 상대(타인) 캐릭터를 간단 등록 — 상대 캐릭터는 내 캐릭터 리스트에 표시되지 않음"

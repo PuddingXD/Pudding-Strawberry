@@ -82,7 +82,7 @@ export interface Character {
   quote?: string;        // 한마디 — 대표 아트 위 가운데 (자관의 한마디와 같은 모양)
   quoteColor?: string;   // 한마디 글씨색 (미지정: 기본)
   quoteMarkColor?: string;   // 한마디 따옴표색 (미지정: 포인트 소프트)
-  quoteSize?: number;        // 한마디 글자 크기 px (미지정: 16pt = 64/3px)
+  quoteSize?: number;        // 한마디 글자 크기 px (미지정: 12pt = 16px)
   quoteFontId?: string;      // 미지정이면 캐릭터 본문 폰트
   /** 아트별 상세 화면 보기 위치 (아트 ref → 크롭). 대표 썸네일 크롭과 별개 */
   artCrops?: Record<string, import("@/components/ui/CropEditor").CropValue>;

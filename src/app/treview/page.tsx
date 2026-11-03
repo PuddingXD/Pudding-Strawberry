@@ -1,5 +1,5 @@
 'use client';
-// TRPG 리뷰 게시판 (v2.1 사용자 요청) — 시나리오마다 인물별 별점 + 한줄평. 3:4 타일 그리드 · 페어 말머리 탭 · 검색 · 12개씩 페이지.
+// TRPG 리뷰 게시판 (v2.1 사용자 요청) — 시나리오마다 인물별 별점 + 한줄평. 4:3 타일 그리드 · 페어 말머리 탭 · 검색 · 12개씩 페이지.
 // 쓰기·수정은 페이지(/treview/write · /treview/[id]/edit). 말머리는 환경설정 > 게시판 관리 「TRPG 리뷰 말머리」,
 // 글쓰기 권한은 환경설정 「권한」(기본: 가입자). 수정은 쓴 사람·관리자·글쓰기 권한이 있는 회원 —
 // 저장할 때 editorIds에 적고, 옛 글은 관리자가 열 때 채운다
@@ -91,7 +91,7 @@ function ReviewPageInner() {
             const rs = ratersOf(r);
             return (
               <article key={r.id} className="panel tc-card rv-card" onClick={() => router.push(`/treview/${r.id}`)}>
-                {/* 3:4 타일 — 대표 이미지, 없으면 자리표시자 */}
+                {/* 4:3 타일 — 대표 이미지, 없으면 자리표시자 */}
                 <div className="rv-img">
                   <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" label={r.thumbId ? undefined : 'REVIEW'} />
                   {r.category && <span className="rv-badge" style={boardBadgeStyle(badgeOf(r.category))}>{r.category}</span>}

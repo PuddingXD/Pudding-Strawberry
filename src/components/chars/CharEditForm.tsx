@@ -64,7 +64,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [quoteColor, setQuoteColor] = useState<string | undefined>(initial?.quoteColor);
   const [quoteMarkColor, setQuoteMarkColor] = useState<string | undefined>(initial?.quoteMarkColor);
   // 저장값은 기존 데이터와 호환되는 px, 편집 화면에서는 pt로 표시한다.
-  const [quoteSize, setQuoteSize] = useState(initial?.quoteSize != null ? initial.quoteSize * 3 / 4 : 16);
+  const [quoteSize, setQuoteSize] = useState(initial?.quoteSize != null ? initial.quoteSize * 3 / 4 : 12);
   const [quoteFontId, setQuoteFontId] = useState(initial?.quoteFontId ?? '');
   // 기본 정보 항목 — 그룹 단위 (새 캐릭터: 나이·성별 / 키·체중·혈액형·생일)
   const [specGroups, setSpecGroups] = useState<TabGroup[]>(() => (initial
@@ -142,7 +142,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       quote: quote.trim() || undefined,
       quoteColor: quote.trim() ? quoteColor : undefined,
       quoteMarkColor: quote.trim() ? quoteMarkColor : undefined,
-      quoteSize: quote.trim() && quoteSize !== 16 ? quoteSize * 4 / 3 : undefined,
+      quoteSize: quote.trim() && quoteSize !== 12 ? quoteSize * 4 / 3 : undefined,
       quoteFontId: quote.trim() ? (quoteFontId || undefined) : undefined,
       artCrops: Object.keys(artCropsOut).length ? artCropsOut : undefined,
       artCrop: artCropsOut[artIds[0]],
