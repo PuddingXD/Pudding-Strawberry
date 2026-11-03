@@ -122,6 +122,8 @@ export function inlineMd(escaped: string): string {
 }
 /** 발화 글 — 이스케이프 + 서식 */
 const md = (s: string) => inlineMd(esc(s));
+/** 역극 방 화면용 — 발화 글을 서식 있는 안전한 HTML로 (마스토돈에서 가져온 굵게·기울임 등) */
+export const rpMdHtml = md;
 
 /** 스타일 속성에 넣어도 되는 색만 — 저장된 값이 이상하면 기본색 */
 const safeHex = (c?: string) => (c && /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(c) ? c : '#5d636d');

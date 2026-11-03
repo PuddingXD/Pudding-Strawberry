@@ -21,7 +21,10 @@ import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 import { RpLogModal } from '@/components/rp/RpLogModal';
-import { rpLogHtml, openLogWindow } from '@/lib/rpLog';
+import { rpLogHtml, openLogWindow, rpMdHtml } from '@/lib/rpLog';
+import { MastodonImport, type ImportedMsg } from '@/components/rp/MastodonImport';
+/** 발화 글 — **굵게** *기울임* ~~취소선~~ 서식을 살려서 (글은 이스케이프한 뒤 태그만 만든다) */
+const Md = ({ t }: { t: string }) => <span dangerouslySetInnerHTML={{ __html: rpMdHtml(t) }} />;
 import { isMsgSoundOn, setMsgSoundOn, MSG_SOUND_EVT } from '@/lib/msgSound';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { putBlob, BlobImg } from '@/lib/blobStore';
@@ -429,6 +432,27 @@ export default function RpPage() {
 
   // 로그 (커플홈) — txt/html 저장 · RP LOG에 올리기. 예전의 HTML 내보내기(EXPORT)를 대신한다
   const [logOpen, setLogOpen] = useState(false);
+  // 마스토돈 타래 불러오기 (사용자 요청) — 방장·관리자
+  const [importOpen, setImportOpen] = useState(false);
+  // 고를 수 있는 캐릭터: 기반 자관이 있으면 그 자관의 양쪽 캐릭터 전부(상대 대사도 넣어야 하므로), 없으면 전체
+  const importChars = useMemo(() => {
+    if (!rel) return rpChars;
+    const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
+    return ids.map(id => rpChars.find(c => c.id === id)).filter(Boolean) as Character[];
+  }, [rel, rpChars]);
+  const importMsgs = (list: ImportedMsg[], keepTime: boolean) => {
+    if (!sel || !user) return;
+    // 이어 붙이기면 지금 마지막 대화 뒤로 1초씩 — 시각 대신 순서만 지킨다 (방은 시각을 보여 주지 않는다)
+    const base = Math.max(Date.now(), ...msgsOf(sel).map(m => msgKey(m))) + 1000;
+    const rows: RpMessageRow[] = list.map((m, i) => ({
+      id: newId(), roomId: sel.id, kind: m.kind, charId: m.charId,
+      charOwn: m.kind === 'char' ? rpChars.find(c => c.id === m.charId)?.own : undefined,
+      authorId: user.id, text: m.text,
+      date: keepTime ? m.date : new Date(base + i * 1000).toISOString(),
+    }));
+    setMsgRows([...msgRows, ...rows]);
+    toast(`대사 ${rows.length}개를 불러왔습니다`);
+  };
   // 알림음 켬/끔 (커플홈) — 브라우저마다. 처음 그릴 때는 서버와 같은 값(켬)으로 두고 마운트 뒤 읽는다
   const [soundOn, setSoundOn] = useState(true);
   useEffect(() => {
@@ -564,6 +588,11 @@ export default function RpPage() {
                       </button>
                     </>
                   )}
+                  {/* 마스토돈 타래 불러오기 (사용자 요청) — 방장·관리자 */}
+                  {canManage && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      onClick={() => setImportOpen(true)}>IMPORT</button>
+                  )}
                   {/* 로그 — 참여자 누구나, 진행 중에도 (중간 백업용). 게시판 올리기는 모달 안에서 관리자만 */}
                   {msgsOf(sel).length > 0 && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
@@ -608,11 +637,11 @@ export default function RpPage() {
                       const dm = m.text.trim().match(/^(\d{4}\s?[.\-/]\s?\d{1,2}\s?[.\-/]\s?\d{1,2}\.?)([\s\S]*)$/);
                       return (
                         <div key={m.id} className={`im-sys${dm ? ' im-date' : ''}`} onContextMenu={e => openMsgCtx(e, m)}>
-                          {dm ? <><b>{dm[1]}</b>{dm[2]}</> : m.text}{acts}
+                          {dm ? <><b>{dm[1]}</b>{dm[2]}</> : <Md t={m.text} />}{acts}
                         </div>
                       );
                     }
-                    return <div key={m.id} className="msg-desc" onContextMenu={e => openMsgCtx(e, m)}>{m.text}{acts}</div>;
+                    return <div key={m.id} className="msg-desc" onContextMenu={e => openMsgCtx(e, m)}><Md t={m.text} />{acts}</div>;
                   }
                   const ch = rpChars.find(c => c.id === m.charId);
                   const name = ch?.name ?? '';
@@ -655,7 +684,7 @@ export default function RpPage() {
                             )}
                             {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
                             {(m.text || !m.imgId) && (
-                              <div className={`im-bub${m.text.trim().length <= 3 ? ' short' : ''}`}>{m.text}</div>
+                              <div className={`im-bub${m.text.trim().length <= 3 ? ' short' : ''}`}><Md t={m.text} /></div>
                             )}
                           </div>
                           {acts}
@@ -677,7 +706,7 @@ export default function RpPage() {
                         {nameNeeded && <div className="who">{name}</div>}
                         <div className="bub">
                           {m.imgId && <div className="rp-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>}
-                          {m.text}
+                          <Md t={m.text} />
                         </div>
                         {/* 시각은 어디에도 안 적는다 (v2.1 사용자 요청 — 대본 방에 남아 있던 HH:MM 줄도 뺐다). 순서는 date가 정한다 */}
                       </div>
@@ -928,6 +957,11 @@ export default function RpPage() {
           )}
         </div>,
         document.body,
+      )}
+      {/* 마스토돈 타래 불러오기 */}
+      {importOpen && sel && (
+        <MastodonImport open onClose={() => setImportOpen(false)} chars={importChars}
+          hasMsgs={msgsOf(sel).length > 0} onImport={importMsgs} />
       )}
       {/* 역극 로그 — 열 때만 그린다 (게시판 목록도 그때 불러온다) */}
       {logOpen && sel && (
