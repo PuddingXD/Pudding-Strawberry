@@ -157,7 +157,7 @@
 /* ---------------------------------------------------------
    4) 카드·패널 — 얇은 테두리, 낮은 그림자, 올리면 테두리가 진해짐
    --------------------------------------------------------- */
-.panel:not(.widget):not(.login-box){border:1px solid var(--b-line-soft)}
+.panel:not(.widget):not(.login-box):where(:not(.profile-info):not(.mini-prof)){border:1px solid var(--b-line-soft)}
 .panel.flush{border-color:var(--b-line-soft)}
 .g-item,.feed-item,.bticket,.char-card,.rel-card{border:1px solid var(--b-line-soft);transition:transform .22s,border-color .22s,box-shadow .22s}
 .g-item:hover,.feed-item:hover,.bticket:hover,.char-card:hover,.rel-card:hover{border-color:var(--accent);box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 22%,transparent)}
@@ -386,7 +386,7 @@
   font-size:calc(24px*var(--fs,1));letter-spacing:.08em;text-shadow:0 2px 10px rgba(0,0,0,.3)}
 .tix-drag{position:absolute;left:14px;top:14px;z-index:3;background:rgba(255,255,255,.85);border-radius:8px;padding:2px 7px}
 /* 뒷면 — 흰 티켓, 가운데 정렬 */
-.tix-back{background:var(--panel-solid);display:flex}
+.tix-back{background:var(--panel);display:flex}
 .tix-info{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
   padding:clamp(16px,4.4%,28px) calc(clamp(22px,7%,44px) + var(--wave)) clamp(14px,3.6%,22px) clamp(22px,7%,44px);gap:3px;overflow:hidden}
 .tix-top{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;min-height:16px}
@@ -426,8 +426,8 @@
 .rp-face-row small{color:var(--faint);font-size:calc(10.5px*var(--fs,1));margin-left:6px}
 
 /* 자캐 상세 — 정보는 유지하고 카드 배경·테두리·흐림 효과를 제거 */
-.profile-info{
-  background:transparent;border:0;border-radius:0;
+.panel.profile-info{
+  background:transparent;border:0;outline:0;border-radius:0;
   -webkit-backdrop-filter:none;backdrop-filter:none;
   box-shadow:none;
 }
@@ -438,10 +438,10 @@
   border:0;
 }
 
-/* 자관: 원래 멤버 카드와 배치를 유지하고 색·테두리·그림자만 제거한다. */
+/* 자관: 타임라인과 같은 카드 배경을 쓰고 테두리·그림자는 제거한다. */
 .page-rel-detail .mini-prof,
 .page-rel-detail .multi-body > .panel.flush{
-  background:transparent;border:0;box-shadow:none;
+  background:var(--panel);border:0;outline:0;box-shadow:none;
   -webkit-backdrop-filter:none;backdrop-filter:none;
 }
 .page-rel-detail .mini-prof .hd,
@@ -453,7 +453,7 @@
 /* 마스크 처리된 앞/뒷면의 실제 윤곽에 가는 선을 더한다.
    사각 border가 아니라 잘린 모서리와 오른쪽 물결까지 따라간다. */
 .tix-in{
-  --ticket-outline:color-mix(in srgb,var(--accent,#c96a73) 65%,var(--ink,#333));
+  --ticket-outline:var(--b-line,var(--line,#d9dce2));
   filter:drop-shadow(.6px 0 0 var(--ticket-outline))
     drop-shadow(-.6px 0 0 var(--ticket-outline))
     drop-shadow(0 .6px 0 var(--ticket-outline))
