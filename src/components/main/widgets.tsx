@@ -21,6 +21,17 @@ import { useSched, eventColor, nextOccurrence, type SchedEvent } from '@/lib/sch
 import { StickyMemo, MEMO_SEED, MEMO_SIZE_W, useMemoSettings } from '@/lib/memoStore';
 import { BlobImg, useBlobUrl } from '@/lib/blobStore';
 import { normalizeInternalLink } from '@/lib/link';
+import { LockIcon } from '@/components/ui/LockIcon';
+
+/** 볼 수 없는 메뉴의 위젯 — 위젯 틀(제목·테두리·크기)은 그대로 두고 내용만 가린다 (사용자 요청: 메인에 배치한 모양은 보이게) */
+function LockedWidget({ title, style }: { title: string; style?: React.CSSProperties }) {
+  return (
+    <div className="panel widget wg-locked" style={{ margin: 0, ...style }}>
+      <h4>{title}</h4>
+      <p className="hint wg-lock-msg"><LockIcon title="멤버 공개" /> 멤버에게만 보여요</p>
+    </div>
+  );
+}
 
 /* 편집모드 우클릭 「설정」 → 해당 위젯의 설정 모달 열기 (v1.9 사용자 확정 — 이벤트로 연결) */
 function useEditEvent(id: string, onOpen: () => void) {
@@ -179,7 +190,7 @@ export function DiaryWidget() {
     .filter(p => p.visibility === 'public' || (p.visibility === 'member' && !!user))
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 3);
-  if (!canSee) return null;   // 메뉴가 비공개면 위젯 자체를 띄우지 않는다 (v2.0)
+  if (!canSee) return <LockedWidget title="DIARY" />;   // 메뉴가 비공개면 틀만 보이고 내용은 가린다
   return (
     <div className="panel widget" style={{ margin: 0 }}>
       <h4>DIARY <span className="more" onClick={() => router.push('/diary')}>더보기 ›</span></h4>
@@ -223,7 +234,7 @@ export function LatestWidget() {
     })),
   ].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
   const phFallback = ['cool', 'warm', 'red'];
-  if (!seeRoad && !seeGal) return null;   // 둘 다 비공개면 위젯 자체를 띄우지 않는다 (v2.0)
+  if (!seeRoad && !seeGal) return <LockedWidget title="LATEST" />;   // 둘 다 비공개면 틀만 보이고 내용은 가린다
   return (
     <div className="panel widget" style={{ margin: 0 }}>
       <h4>LATEST <span className="more" onClick={() => router.push('/gallery')}>더보기 ›</span></h4>
@@ -356,7 +367,7 @@ export function UpcomingWidget() {
     .filter((x): x is { e: SchedEvent; d: string } => x.d !== null)
     .sort((a, b) => a.d.localeCompare(b.d))
     .slice(0, 3);
-  if (!canSee) return null;   // 메뉴가 비공개면 위젯 자체를 띄우지 않는다 (v2.0)
+  if (!canSee) return <LockedWidget title="UPCOMING" />;   // 메뉴가 비공개면 틀만 보이고 내용은 가린다
   return (
     <div className="panel widget" style={{ cursor: 'var(--cur-pointer,pointer)' }} onClick={() => router.push('/cal')}>
       <h4>UPCOMING <span className="more">더보기 ›</span></h4>
@@ -559,7 +570,7 @@ export function MemoBoardWidget() {
   const [settings] = useMemoSettings();
   // 메뉴에서 비공개로 둔 메모장은 위젯에도 안 나온다 (v2.0)
   const [menuSet] = useMenuSettings();
-  if (!canViewHref(menuSet, '/memo', { loggedIn: !!user, isAdmin, id: user?.id })) return null;
+  if (!canViewHref(menuSet, '/memo', { loggedIn: !!user, isAdmin, id: user?.id })) return <LockedWidget title="STICKY" style={{ display: 'flex', flexDirection: 'column' }} />;
   return (
     <div className="panel widget" style={{ display: 'flex', flexDirection: 'column' }}>
       <h4>STICKY</h4>

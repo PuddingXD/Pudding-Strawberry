@@ -30,7 +30,7 @@
     position:relative;z-index:60;flex:0 0 var(--rail);width:var(--rail);height:100vh;
     display:flex;flex-direction:column;align-items:stretch;gap:0;
     padding:26px 0 18px;
-    background:color-mix(in srgb,var(--top-bg) 72%,transparent);backdrop-filter:blur(10px);
+    background:transparent;   /* 페이지 배경 그라데이션이 메뉴 밑까지 끊기지 않고 이어지게 (사용자 요청) */
     border-bottom:none;border-right:none;
   }
   /* 세로선 — 화면 위에서 아래까지 */
@@ -63,7 +63,7 @@
   .gnb > button:hover::before,.gnb > .grp:hover > button::before{background:var(--top-hv)}
   /* 지금 보고 있는 메뉴 — 크게·진하게, 점에 빛 */
   .gnb > button.on,.gnb > .grp.cur > button{
-    color:var(--top-brand);opacity:1;font-size:calc(14.5px*var(--fs,1));font-weight:700;letter-spacing:.12em;
+    color:var(--top-brand);opacity:1;font-size:calc(14.5px*var(--fs,1));letter-spacing:.12em;
   }
   .gnb > button.on::before,.gnb > .grp.cur > button::before{
     width:11px;height:11px;margin-top:-5.5px;left:-20.5px;background:var(--top-brand);
@@ -88,7 +88,7 @@
   }
   .grp.cur .sub button::before{content:"";position:absolute;left:2px;top:50%;width:6px;height:1px;background:currentColor;opacity:.6}
   .grp.cur .sub button:hover{background:transparent;color:var(--top-hv);opacity:1}
-  .grp .sub button.on{color:var(--top-brand) !important;opacity:1;font-weight:700;background:color-mix(in srgb,var(--accent) 14%,transparent)}
+  .grp .sub button.on{color:var(--top-brand) !important;opacity:1;background:color-mix(in srgb,var(--accent) 14%,transparent)}
   .grp.cur .sub button.on{background:transparent}
   .grp.more{display:none}
 
@@ -127,14 +127,18 @@
    3) 목록 머리 — 제목 · 말머리 알약 · 둥근 검색 · 그라데이션 구분선
    --------------------------------------------------------- */
 @media (min-width:621px){   /* 모바일은 제목을 숨기는 설정이 있어 선만 남지 않게 PC에서만 */
-  .page-head:has(h1):not(:has(+ .toolrow)){padding-bottom:16px;margin-bottom:22px;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
-  .page-head:has(h1):not(:has(+ .toolrow)) .head-actions:not(.stack){bottom:14px}
+  .page-head:has(h1):not(:has(~ .toolrow)){padding-bottom:16px;margin-bottom:34px;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
+  .page-head:has(h1):not(:has(~ .toolrow)) .head-actions:not(.stack){bottom:14px}
+  /* 로드비처럼 제목 바로 아래 말머리 줄이 오면: 제목 → 말머리 → 선 (다른 게시판과 같은 순서) */
+  .page-head:has(h1):has(+ .loadb-cats){background:none;padding-bottom:0;margin-bottom:16px}
+  .page-head:has(h1):has(+ .loadb-cats) .head-actions:not(.stack){bottom:0}
 }
 @media (min-width:621px){   /* 상단 바가 빠져 제목이 화면 맨 위에 붙어 보여서 위쪽 여백 */
   .page{padding-top:44px}
 }
+.loadb-cats{padding-bottom:14px;margin-bottom:34px !important;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
 /* 말머리·검색 줄이 있으면 그 아래에 선 (B 목록과 같은 자리) */
-.toolrow{padding-bottom:14px;margin-bottom:20px;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
+.toolrow{padding-bottom:14px;margin-bottom:34px !important;background:var(--b-rule-line) left bottom/100% 1px no-repeat}
 .page-head h1{letter-spacing:.18em}
 
 /* 말머리 탭·보기 전환 → 알약 버튼 */
@@ -153,7 +157,7 @@
 /* ---------------------------------------------------------
    4) 카드·패널 — 얇은 테두리, 낮은 그림자, 올리면 테두리가 진해짐
    --------------------------------------------------------- */
-.panel{border:1px solid var(--b-line-soft)}
+.panel:not(.widget):not(.login-box){border:1px solid var(--b-line-soft)}
 .panel.flush{border-color:var(--b-line-soft)}
 .g-item,.feed-item,.bticket,.char-card,.rel-card{border:1px solid var(--b-line-soft);transition:transform .22s,border-color .22s,box-shadow .22s}
 .g-item:hover,.feed-item:hover,.bticket:hover,.char-card:hover,.rel-card:hover{border-color:var(--accent);box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 22%,transparent)}
@@ -179,7 +183,7 @@
   position:absolute;left:0;right:0;bottom:0;padding:36px 16px 14px;z-index:2;
   background:linear-gradient(180deg,transparent,rgba(0,0,0,.5));color:#fff;
 }
-.char-card .nm b{font-family:var(--serif);font-size:calc(17px*var(--fs,1));letter-spacing:.14em;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+.char-card .nm b{font-size:calc(17px*var(--fs,1));letter-spacing:.14em;text-shadow:0 1px 6px rgba(0,0,0,.35)}
 .char-card .nm i{box-shadow:0 0 0 2px rgba(255,255,255,.85)}
 @media (max-width:620px){.char-card .nm{padding:26px 10px 9px}.char-card .nm b{font-size:calc(13px*var(--fs,1));letter-spacing:.06em}}
 
@@ -192,7 +196,9 @@
 /* ---------------------------------------------------------
    6) 메인 위젯 — 제목을 명조·대문자 간격으로, 테두리는 위젯 설정 그대로
    --------------------------------------------------------- */
-.widget h4,.login-box h3{font-family:var(--serif);letter-spacing:.2em;text-transform:uppercase}
+.widget h4,.login-box h3{letter-spacing:.2em;text-transform:uppercase}
+/* 볼 수 없는 메뉴의 위젯 — 틀만 두고 내용 자리에 안내 */
+.wg-locked .wg-lock-msg{display:flex;align-items:center;justify-content:center;gap:2px;min-height:60px;margin:0;opacity:.8}
 .dday-row{border-bottom-style:dotted;border-bottom-color:var(--b-line)}
 .banner .cap b{letter-spacing:.24em}
 
