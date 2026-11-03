@@ -300,6 +300,8 @@ function CharDetailInner() {
           {eff.quote?.trim() && (
             <div className="profile-quote in-info" style={{
               color: eff.quoteColor,
+              fontFamily: familyOf(eff.quoteFontId) ?? 'inherit',
+              fontWeight: 700,
               fontSize: eff.quoteSize ? `calc(${eff.quoteSize}px * var(--fs, 1))` : undefined,
               ['--q-mark' as string]: eff.quoteMarkColor,
             } as React.CSSProperties}>{eff.quote}</div>

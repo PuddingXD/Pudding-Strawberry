@@ -63,7 +63,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   const [quote, setQuote] = useState(initial?.quote ?? '');
   const [quoteColor, setQuoteColor] = useState<string | undefined>(initial?.quoteColor);
   const [quoteMarkColor, setQuoteMarkColor] = useState<string | undefined>(initial?.quoteMarkColor);
-  const [quoteSize, setQuoteSize] = useState(initial?.quoteSize ?? 15);
+  // 저장값은 기존 데이터와 호환되는 px, 편집 화면에서는 pt로 표시한다.
+  const [quoteSize, setQuoteSize] = useState(initial?.quoteSize != null ? initial.quoteSize * 3 / 4 : 16);
+  const [quoteFontId, setQuoteFontId] = useState(initial?.quoteFontId ?? '');
   // 기본 정보 항목 — 그룹 단위 (새 캐릭터: 나이·성별 / 키·체중·혈액형·생일)
   const [specGroups, setSpecGroups] = useState<TabGroup[]>(() => (initial
     ? specGroupsOf(initial).map(g => ({ id: newId(), items: g.items.map(x => ({ ...x, id: newId() })) }))
@@ -140,7 +142,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       quote: quote.trim() || undefined,
       quoteColor: quote.trim() ? quoteColor : undefined,
       quoteMarkColor: quote.trim() ? quoteMarkColor : undefined,
-      quoteSize: quote.trim() && quoteSize !== 15 ? quoteSize : undefined,
+      quoteSize: quote.trim() && quoteSize !== 16 ? quoteSize * 4 / 3 : undefined,
+      quoteFontId: quote.trim() ? (quoteFontId || undefined) : undefined,
       artCrops: Object.keys(artCropsOut).length ? artCropsOut : undefined,
       artCrop: artCropsOut[artIds[0]],
       specGroups: specGroups
@@ -236,7 +239,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
         </button>
 
         {/* 한마디 — 대표 아트 위에 가운데 정렬로 표시 */}
-        <label className="k-label" style={{ margin: 0 }}>한마디 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 대표 아트 위에 표시 (비우면 안 보임)</span></label>
+        <label className="k-label" style={{ margin: 0 }}>한마디 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 이름·캐치프레이즈 아래 표시 (비우면 안 보임)</span></label>
         <KInput placeholder="한마디" value={quote} onChange={e => setQuote(e.target.value)} />
         {quote.trim() && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -245,7 +248,13 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
             <span className="cp-lb">따옴표</span>
             <ColorField value={quoteMarkColor ?? '#c96a73'} onChange={setQuoteMarkColor} />
             <span className="cp-lb">크기</span>
-            <KStep value={quoteSize} onChange={setQuoteSize} min={10} max={40} step={1} suffix="px" />
+            <KStep value={quoteSize} onChange={setQuoteSize} min={6} max={40} step={1} suffix="pt" />
+            <span className="cp-lb">폰트</span>
+            <KSelect value={quoteFontId} onChange={setQuoteFontId}
+              options={[{ value: '', label: '본문 폰트 따라가기 (굵게)' }, ...fonts.map(f => ({
+                value: f.id,
+                label: <span style={{ fontFamily: deVarFamily(f.family) }}>{f.name}</span>,
+              }))]} />
             {(quoteColor || quoteMarkColor) && (
               <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
                 onClick={() => { setQuoteColor(undefined); setQuoteMarkColor(undefined); }}>색 기본값</button>
