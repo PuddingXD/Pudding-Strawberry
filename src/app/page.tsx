@@ -167,6 +167,23 @@ export default function MainPage() {
             <button onClick={() => { updateWidget(me.id, { freeMove: !me.freeMove }); setCtx(null); }}>
               {me.freeMove ? '그리드 반영' : '그리드 무시'}
             </button>
+            {/* 가운데 정렬 두 가지 (B 디자인 — 왼쪽 메뉴가 생겨서) */}
+            {me.ax != null && (() => {
+              const center = (screen: boolean) => {
+                const canvasW = gridRef.current?.clientWidth ?? 0;
+                const w = me.w ?? Math.round((document.querySelector(`[data-wid="${me.id}"]`) as HTMLElement | null)?.getBoundingClientRect().width ?? 0);
+                if (!canvasW || !w) return;
+                updateWidget(me.id, { ax: Math.round((canvasW - w) / 2), cMode: screen ? 'screen' : undefined });
+                setCtx(null);
+              };
+              return (
+                <>
+                  <div className="sep" />
+                  <button onClick={() => center(false)}>가운데 정렬 (메뉴 제외)</button>
+                  <button onClick={() => center(true)}>가운데 정렬 (메뉴 포함)</button>
+                </>
+              );
+            })()}
             {(EDITABLE.includes(me.type) || !me.fixed) && <div className="sep" />}
             {/* 내용 편집 — 편집모드에서도 우클릭으로 설정 모달을 연다 (v1.9 사용자 확정) */}
             {EDITABLE.includes(me.type) && (

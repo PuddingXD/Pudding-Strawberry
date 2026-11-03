@@ -337,3 +337,9 @@
 .xbanners .xb img{display:block;width:auto;max-width:100%}
 .xbanners button.xb{padding:0;border:none;background:none;cursor:var(--cur-pointer,pointer)}
 .xbanners .xb.own{outline:1px dashed var(--accent);outline-offset:2px}
+
+/* 메인 위젯 「가운데 정렬 (메뉴 포함)」 — 본문 가운데에서 왼쪽 메뉴 폭의 절반만큼 왼쪽으로 = 화면 전체의 한가운데.
+   창 크기·메뉴 폭(1440px 미만에서 좁아짐)이 달라져도 늘 화면 가운데에 온다. 모바일은 세로 나열이라 해당 없음 */
+@media (min-width:621px){
+  .main-grid.abs > .wgt.wgt-screen-c{margin-left:calc(var(--rail) / -2) !important}
+}
