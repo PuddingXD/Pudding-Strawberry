@@ -362,9 +362,6 @@ function TrpgPageInner() {
   // sp: 편집모드 드래그 정렬 props (다른 목록과 같은 방식, v2.0)
   // 로그 백업 티켓 (사용자 요청 — 참고 이미지: 가로형 · 타공 없음 · 앞면은 그림만, 마우스를 올리면 뒤집혀 뒷면 정보)
   const Ticket = ({ l }: { l: TrpgLog }) => {
-    const r = l.relId ? rels.find(x => x.id === l.relId) : undefined;
-    const au = r && l.auId ? r.aus?.find(a => a.id === l.auId) : undefined;
-    const kind = r ? (au ? `${r.name} · ${au.label || 'AU'}` : r.name) : '';
     return (
       <div className={`tix ${editOn ? 'editing' : ''}`}
         onContextMenu={e => openOrder(e, l.id)}
@@ -376,25 +373,25 @@ function TrpgPageInner() {
             {!l.thumbId && <b className="tix-ftitle" style={l.serifTitle ? { fontFamily: 'var(--serif)' } : undefined}>{l.title}</b>}
             {editOn && <span className="drag-h tix-drag">⠿</span>}
           </div>
-          {/* 뒷면 — 왼쪽 띠(ADMIT ONE · 번호) + 정보 */}
+          {/* 뒷면 — 참고 티켓(공연 티켓)처럼 가운데 정렬: 라벨 · 큰 제목 · 가는 선 · 세 칸 · 태그 */}
           <div className="tix-face tix-back">
-            <div className="tix-band" style={thumbStyle(l)}><span>ADMIT ONE</span><span>{logNo(l)}</span></div>
             <div className="tix-info">
-              <div className="tix-top">
-                {kind && <span className="tix-kind">{kind}</span>}
+              {/* 상단은 제목 + 캐치프레이즈만 (사용자 요청) — 잠금·숨김 표시가 있을 때만 작은 줄 */}
+              {(editOn && l.listHidden || !canOpen(l)) && <div className="tix-top">
                 {/* 편집모드에서만 — 지금 목록 숨김이라 관리자에게만 예외로 보이는 중 (v2.0) */}
                 {editOn && l.listHidden && <span className="tix-lock">숨김</span>}
                 {/* 나만보기 등도 목록엔 뜨므로(v2.0) — 못 여는 로그는 왜 못 여는지 */}
                 {!canOpen(l) && <span className="tix-lock">{l.password ? '비밀번호 필요' : '권한 없음'}</span>}
-              </div>
+              </div>}
               <h3 style={l.serifTitle ? { fontFamily: 'var(--serif)', letterSpacing: '.08em' } : undefined}>{l.title}</h3>
-              {l.catchphrase && <p className="tix-catch">{l.catchphrase}</p>}
-              <dl className="tix-meta">
-                <dt>WITH</dt><dd>{l.withText || '—'}</dd>
-                <dt>WRITER</dt><dd>{l.writer || '—'}</dd>
-                <dt>DATE</dt><dd>{l.date ? l.date.replace(/-/g, '.') : '—'}</dd>
-              </dl>
-              {!!l.tags?.length && <div className="tix-tags">{l.tags.map(t => <span key={t}>#{t}</span>)}</div>}
+              {/* 캐치프레이즈 — <br>(또는 엔터)로 줄을 나눌 수 있다, 두 줄까지 */}
+              {l.catchphrase && <p className="tix-catch">{l.catchphrase.split(/<br\s*\/?>|\n/i).map((ln, i) => <React.Fragment key={i}>{i > 0 && <br />}{ln}</React.Fragment>)}</p>}
+              <div className="tix-meta">
+                <div><small>With</small><b>{l.withText || '—'}</b></div>
+                <div><small>Writer</small><b>{l.writer || '—'}</b></div>
+                <div><small>Date</small><b>{l.date ? l.date.replace(/-/g, '.') : '—'}</b></div>
+              </div>
+              <div className="tix-tags">{l.tags?.length ? l.tags.map(t => <span key={t}>#{t}</span>) : <span>{logNo(l)}</span>}</div>
             </div>
           </div>
         </div>
@@ -536,7 +533,7 @@ function TrpgPageInner() {
               style={{ maxWidth: 200 }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <KInput placeholder="캐치프레이즈 (선택)" value={nCatch} onChange={e => setNCatch(e.target.value)} />
+            <KInput placeholder="캐치프레이즈 (선택 · 티켓에서 줄을 나누려면 <br>)" value={nCatch} onChange={e => setNCatch(e.target.value)} />
             {/* 페이지 주소 별명 (커플홈 사용자 요청 — 무작위 id 대신 /trpg/별명) — 입력하는 대로 캐릭터와 같은 규칙으로 다듬는다 */}
             <KInput placeholder="페이지 주소 (선택) — /trpg/여기" value={nSlug} onChange={e => setNSlug(slugify(e.target.value))}
               style={{ maxWidth: 220 }} />

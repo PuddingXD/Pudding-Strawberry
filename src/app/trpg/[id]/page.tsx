@@ -610,7 +610,7 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
           letterSpacing: l.serifTitle ? '.12em' : '.04em',
         }}>{l.title}</h2>
         {l.catchphrase && (
-          <p style={{ fontSize: 11.5, color: 'var(--faint)', letterSpacing: '.14em', marginBottom: 16 }}>{l.catchphrase}</p>
+          <p style={{ fontSize: 11.5, color: 'var(--faint)', letterSpacing: '.14em', marginBottom: 16 }}>{/* 목록 티켓에서 줄을 나누려고 넣은 <br>은 여기선 한 줄로 */}{l.catchphrase.replace(/<br\s*\/?>/gi, ' ')}</p>
         )}
         {editing && !bd?.src ? (
           /* 원본 발화가 없는 로그(파일·직접 작성) — 본문 글을 그대로 고친다 */
@@ -700,7 +700,7 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
               style={{ maxWidth: 200 }} />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <KInput placeholder="캐치프레이즈 (선택)" value={e.catchphrase} onChange={ev => setE(s => ({ ...s, catchphrase: ev.target.value }))} />
+            <KInput placeholder="캐치프레이즈 (선택 · 티켓에서 줄을 나누려면 <br>)" value={e.catchphrase} onChange={ev => setE(s => ({ ...s, catchphrase: ev.target.value }))} />
             {/* 페이지 주소 별명 (커플홈 사용자 요청 — 무작위 id 대신 /trpg/별명) — id 주소는 계속 열린다 */}
             <KInput placeholder={`페이지 주소 (비우면 ${l.id})`} value={e.slug} onChange={ev => setE(s => ({ ...s, slug: slugify(ev.target.value) }))}
               style={{ maxWidth: 220 }} />

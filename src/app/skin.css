@@ -345,40 +345,59 @@
 }
 
 /* ---------------------------------------------------------
-   12) 로그 백업 티켓 — 가로형 · 타공 없음 · 앞면 그림 / 마우스를 올리면 뒤집혀 뒷면 정보 (사용자 참고 이미지)
+   12) 로그 백업 티켓 — 참고 이미지(공연 티켓) 기반 가로형
+   윤곽: 크게 안으로 파인 네 모서리 + 오른쪽 변 물결 · 앞면 그림 / 마우스를 올리면 뒤집혀 가운데 정렬 정보
    --------------------------------------------------------- */
-.tix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tix-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 @media (max-width:980px){.tix-grid{grid-template-columns:1fr}}
-.tix{position:relative;aspect-ratio:16/9;perspective:1400px;cursor:var(--cur-pointer,pointer)}
+.tix{position:relative;aspect-ratio:16/9;perspective:1400px;cursor:var(--cur-pointer,pointer);
+  --cut:22px;    /* 안으로 파인 모서리 반지름 */
+  --wave:7px;    /* 오른쪽 물결 반지름 */
+  /* 그림자는 파인 모양을 따라가도록 drop-shadow로 */
+  filter:drop-shadow(0 6px 14px color-mix(in srgb,var(--accent) 22%,transparent));transition:filter .3s}
+.tix:hover{filter:drop-shadow(0 12px 22px color-mix(in srgb,var(--accent) 32%,transparent))}
 .tix-in{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.75,.25,1)}
 .tix:hover .tix-in,.tix:focus-within .tix-in{transform:rotateY(180deg)}
-.tix-face{position:absolute;inset:0;border-radius:calc(var(--radius) + 4px);overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  border:1px solid var(--b-line-soft);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 16%,transparent)}
-/* 앞면 — 그림만 */
+.tix-face{position:absolute;inset:0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  /* 맨 위 층 = 오른쪽 물결(나머지와 겹치는 부분만 남김) · 아래 네 층 = 네 모서리를 안으로 파기(합침) */
+  -webkit-mask:
+    radial-gradient(circle at 100% 50%,transparent var(--wave),#000 calc(var(--wave) + .5px)) 0 0/100% calc(var(--wave) * 2.6) repeat-y,
+    radial-gradient(circle at 0 0,transparent var(--cut),#000 calc(var(--cut) + .5px)) top left/51% 51% no-repeat,
+    radial-gradient(circle at 100% 0,transparent var(--cut),#000 calc(var(--cut) + .5px)) top right/51% 51% no-repeat,
+    radial-gradient(circle at 0 100%,transparent var(--cut),#000 calc(var(--cut) + .5px)) bottom left/51% 51% no-repeat,
+    radial-gradient(circle at 100% 100%,transparent var(--cut),#000 calc(var(--cut) + .5px)) bottom right/51% 51% no-repeat;
+  -webkit-mask-composite:source-in,source-over,source-over,source-over,source-over;
+  mask:
+    radial-gradient(circle at 100% 50%,transparent var(--wave),#000 calc(var(--wave) + .5px)) 0 0/100% calc(var(--wave) * 2.6) repeat-y,
+    radial-gradient(circle at 0 0,transparent var(--cut),#000 calc(var(--cut) + .5px)) top left/51% 51% no-repeat,
+    radial-gradient(circle at 100% 0,transparent var(--cut),#000 calc(var(--cut) + .5px)) top right/51% 51% no-repeat,
+    radial-gradient(circle at 0 100%,transparent var(--cut),#000 calc(var(--cut) + .5px)) bottom left/51% 51% no-repeat,
+    radial-gradient(circle at 100% 100%,transparent var(--cut),#000 calc(var(--cut) + .5px)) bottom right/51% 51% no-repeat;
+  mask-composite:intersect,add,add,add,add}
+/* 앞면 — 그림만 (그림이 없으면 색 위에 제목) */
 .tix-front{background:var(--panel-solid)}
 .tix-front > div:first-child{position:absolute;inset:0}
-.tix-ftitle{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;color:#fff;
-  font-size:calc(22px*var(--fs,1));letter-spacing:.08em;text-shadow:0 2px 10px rgba(0,0,0,.3)}
-.tix-drag{position:absolute;left:10px;top:10px;z-index:3;background:rgba(255,255,255,.85);border-radius:8px;padding:2px 7px}
-/* 뒷면 — 왼쪽 띠 + 정보 */
-.tix-back{transform:rotateY(180deg);display:grid;grid-template-columns:44px 1fr;background:var(--panel-solid)}
-.tix-band{display:flex;align-items:center;justify-content:space-between;writing-mode:vertical-rl;transform:rotate(180deg);
-  padding:16px 0;background:var(--btn-dark,var(--accent));color:var(--btn-dark-fg,#fff);
-  font-size:calc(9px*var(--fs,1));letter-spacing:.32em;font-weight:600}
-.tix-band span:last-child{opacity:.8}
-.tix-info{min-width:0;display:flex;flex-direction:column;padding:clamp(14px,3.2%,22px) clamp(16px,4%,26px);gap:4px;overflow:hidden}
-.tix-top{display:flex;align-items:center;gap:6px;min-height:18px;flex-wrap:wrap}
-.tix-kind{font-size:calc(10px*var(--fs,1));font-weight:600;letter-spacing:.06em;padding:2px 9px;border-radius:999px;
-  background:var(--btn-dark,var(--accent));color:var(--btn-dark-fg,#fff);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tix-ftitle{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#fff;
+  font-size:calc(24px*var(--fs,1));letter-spacing:.08em;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+.tix-drag{position:absolute;left:14px;top:14px;z-index:3;background:rgba(255,255,255,.85);border-radius:8px;padding:2px 7px}
+/* 뒷면 — 흰 티켓, 가운데 정렬 */
+.tix-back{transform:rotateY(180deg);background:var(--panel-solid);display:flex}
+.tix-info{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:clamp(16px,4.4%,28px) calc(clamp(22px,7%,44px) + var(--wave)) clamp(14px,3.6%,22px) clamp(22px,7%,44px);gap:3px;overflow:hidden}
+.tix-top{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;min-height:16px}
+.tix-kind{font-size:calc(11px*var(--fs,1));letter-spacing:.06em;color:var(--faint);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tix-lock{font-size:calc(9.5px*var(--fs,1));padding:1px 8px;border-radius:999px;color:var(--accent);border:1px dashed var(--accent)}
-.tix-info h3{font-family:var(--font-pagetitle,var(--serif));font-size:calc(22px*var(--fs,1));line-height:1.3;letter-spacing:.03em;color:var(--page-title,var(--ink));
-  margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tix-catch{font-size:calc(11.5px*var(--fs,1));line-height:1.6;color:var(--sub);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tix-meta{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin-top:auto;padding-top:10px;border-top:1px dashed var(--b-line);font-size:calc(12px*var(--fs,1))}
-.tix-meta dt{font-size:calc(8.5px*var(--fs,1));letter-spacing:.24em;font-weight:700;color:var(--faint);align-self:center}
-.tix-meta dd{color:var(--sub);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tix-tags{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px;font-size:calc(10.5px*var(--fs,1));color:color-mix(in srgb,var(--accent) 75%,var(--faint));
-  max-height:1.6em;overflow:hidden}
+.tix-info h3{font-family:var(--font-pagetitle,var(--serif));font-size:calc(23px*var(--fs,1));font-weight:800;line-height:1.25;letter-spacing:.02em;
+  color:var(--btn-dark-hv,var(--accent));max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tix-catch{font-size:calc(11.5px*var(--fs,1));line-height:1.55;color:var(--sub);max-width:100%;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+/* 세 칸 — 가는 선 위아래 · 칸 사이 세로선 (참고 티켓의 Section | Row | Seat) */
+.tix-meta{width:100%;display:grid;grid-template-columns:1.3fr 1fr 1fr;margin-top:14px;padding:9px 0;border-top:1px solid var(--b-line);border-bottom:1px solid var(--b-line)}
+.tix-meta > div{min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 8px}
+.tix-meta > div + div{border-left:1px solid var(--b-line)}
+.tix-meta small{font-size:calc(10.5px*var(--fs,1));color:var(--faint);letter-spacing:.04em}
+.tix-meta b{font-size:calc(13.5px*var(--fs,1));font-weight:700;color:var(--btn-dark-hv,var(--accent));max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tix-tags{display:flex;justify-content:center;flex-wrap:wrap;gap:2px 8px;margin-top:8px;font-size:calc(11px*var(--fs,1));color:var(--faint);max-height:1.6em;overflow:hidden}
 /* 편집모드 — 뒤집지 않고 앞면으로 끌어 옮긴다 */
 .tix.editing .tix-in{transform:none !important}
 .tix.editing{cursor:var(--cur-drag,grab)}
@@ -387,3 +406,14 @@
   .tix:not(.editing) .tix-in{transform:rotateY(180deg)}
 }
 @media (prefers-reduced-motion:reduce){.tix-in{transition:none}}
+
+/* 역극(RP) — 대화 칸을 화면 높이에 맞춰 크게 (사용자 요청). 왼쪽 방 목록도 같은 높이로 늘어난다 */
+@media (min-width:621px){
+  .rp-layout{height:max(600px,calc(100vh - 250px))}
+}
+/* 역극 방 프로필 사진 바꾸기 (PROFILE) */
+.rp-face-list{display:grid;gap:8px}
+.rp-face-row{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s)}
+.rp-face-row .f{width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative;flex-shrink:0}
+.rp-face-row b{flex:1;min-width:0;font-size:calc(13px*var(--fs,1))}
+.rp-face-row small{color:var(--faint);font-size:calc(10.5px*var(--fs,1));margin-left:6px}
