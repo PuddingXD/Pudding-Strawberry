@@ -53,7 +53,10 @@ function CharEditInner() {
     return rels.find(r => r.id === relId)?.aus.find(a => a.id === auId)?.label ?? auKey;
   })();
 
-  const back = auKey ? `/chars/${ch.id}?au=${encodeURIComponent(auKey)}` : `/chars/${ch.id}`;
+  // 아트 전용 프로필이면 그 아트가 속한 자관 AU와 아트를 함께 — 돌아가서 같은 AU·같은 아트가 보이게
+  const back = artRef
+    ? `/chars/${ch.id}?${artOwner ? `au=${encodeURIComponent(artOwner)}&` : ''}art=${encodeURIComponent(artRef)}`
+    : auKey ? `/chars/${ch.id}?au=${encodeURIComponent(auKey)}` : `/chars/${ch.id}`;
 
   // AU 프로필 초기값 (v1.9 사용자 확정) — 이미 등록된 AU면 그 값, 처음이면 "아예 새 등록"처럼 빈 폼
   // (이름·스펙·아트·탭 전부 비움 — 폰트·대표색 등 스타일 기본만 base에서)

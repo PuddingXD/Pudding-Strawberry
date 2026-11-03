@@ -19,8 +19,14 @@ function CharReadInner() {
   const [chars, setChars, loaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const { familyOf } = useFonts();
   const ch = findByKey(chars, id);
-  const auKey = params.get('au');
-  const eff = ch ? charWithAu(ch, auKey) : undefined;
+  // 자관 AU(au)와 아트 전용 프로필(art) — 아트 전용 탭이면 그 프로필의 탭을 읽고 고친다 (사용자 제보:
+  // 「AU의 아트 전용 프로필 탭을 전체 읽기 하면 문서가 없다」 — 예전엔 AU 키만 넘겨 AU 프로필에서 찾았다)
+  const au0 = params.get('au');
+  const artRef = params.get('art') ?? (au0?.startsWith('art:') ? au0.slice(4) : null);
+  const relAu = au0?.startsWith('art:') ? null : au0;
+  const auKey = artRef ? `art:${artRef}` : relAu;   // 탭이 들어 있는 프로필
+  const eff = ch ? (artRef ? charWithAu(charWithAu(ch, relAu), auKey) : charWithAu(ch, auKey)) : undefined;
+  const qs = [relAu && `au=${encodeURIComponent(relAu)}`, artRef && `art=${encodeURIComponent(artRef)}`].filter(Boolean).join('&');
   const docs = useMemo<DocItem[]>(() => (eff?.tabs ?? [])
     .filter(t => t.fullRead && t.html.trim() && t.html.trim() !== '<p></p>')   // 전체 읽기를 켠 탭만
     .map(t => ({ id: t.id, icon: t.icon, title: t.title, subtitle: t.subtitle, html: t.html, size: t.size })), [eff]);
@@ -35,7 +41,7 @@ function CharReadInner() {
   }, [pageColor, setPageTheme]);
 
   if (!loaded) return <section className="page" />;
-  const back = ch ? `/chars/${ch.id}${auKey ? `?au=${encodeURIComponent(auKey)}` : ''}` : '/chars';
+  const back = ch ? `/chars/${ch.id}${qs ? `?${qs}` : ''}` : '/chars';
   const msg = !ch || !eff ? '캐릭터를 찾을 수 없습니다'
     : (ch.visibility === 'private' && !isAdmin) ? '비공개 캐릭터입니다'
     : (ch.visibility === 'member' && !user) ? '멤버공개 — 로그인 후 열람할 수 있습니다' : null;
@@ -78,7 +84,7 @@ function CharReadInner() {
         </div>
       </div>
       <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc} onReorder={reorderDocs}
-        onPick={tid => router.replace(`/chars/${ch.id}/read?tab=${tid}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`, { scroll: false })} />
+        onPick={tid => router.replace(`/chars/${ch.id}/read?tab=${tid}${qs ? `&${qs}` : ''}`, { scroll: false })} />
     </section>
   );
 }

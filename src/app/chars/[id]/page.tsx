@@ -50,6 +50,8 @@ function CharDetailInner() {
   // AU 편집에서 ?au= 로 돌아오면 그 AU가 선택된 채 시작
   // 아트 전용 프로필 편집에서 ?au=art:<ref> 로 돌아오면 — AU가 아니라 원본에서 그 아트를 띄운다
   const initAu = params.get('au');
+  // 돌아올 때 그 아트부터 — ?art=<ref> (자관 AU와 함께 올 수 있다) · 예전 형식 ?au=art:<ref>도 받는다
+  const initArt = params.get('art') ?? (initAu?.startsWith('art:') ? initAu.slice(4) : null);
   const [auKey, setAuKey] = useState<string | null>(() => (initAu && !initAu.startsWith('art:') ? initAu : null));
   const [artProfDel, setArtProfDel] = useState<string | null>(null);   // 아트 전용 프로필 지우기 확인
   // 대표 아트 우클릭 → 상세 화면에 보일 위치 조정 (v2.0)
@@ -117,7 +119,7 @@ function CharDetailInner() {
   // AU 전환 시 탭 구성·아트가 달라지므로 리셋
   useEffect(() => { setTab('basic'); setArtIdx(0); }, [auKey]);
   // 아트 전용 프로필 편집에서 돌아왔으면 그 아트부터 (한 번만)
-  const artJump = useRef(initAu?.startsWith('art:') ? initAu.slice(4) : null);
+  const artJump = useRef(initArt);
   useEffect(() => {
     if (!loaded || !artJump.current) return;
     const i = artList.indexOf(artJump.current);
@@ -395,7 +397,8 @@ function CharDetailInner() {
               {curTab?.fullRead ? (
                 /* 전체 읽기를 쓰는 탭 — 본문은 읽기 화면에서 (미리보기 없음) */
                 curTab.html.trim() && curTab.html.trim() !== '<p></p>' && (
-                  <ReadMore onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}`)} />
+                  /* 아트 전용 프로필의 탭이면 그 아트도 함께 넘긴다 (사용자 제보 — AU 키만 넘겨 「문서가 없다」고 떴다) */
+                  <ReadMore onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}${artKey ? `&art=${encodeURIComponent(artKey.slice(4))}` : ''}`)} />
                 )
               ) : (
                 <DocBody flat html={curTab?.html ?? ''} size={curTab?.size} />
