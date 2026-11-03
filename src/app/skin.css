@@ -574,6 +574,7 @@
   background:color-mix(in srgb,var(--accent) 6%,transparent)}
 /* 자관 문서(전체 읽기) 아이콘 (사용자 요청) — 기본은 아래 타임라인 카드처럼 흰색,
    마우스를 올리면 자관 테마색이 옅게 물든다 (자관 테마를 쓰면 --accent가 그 색) */
-.rel-doc-icons button{background:var(--panel-solid,#fff);color:var(--accent);border:1px solid var(--b-line-soft,var(--line));opacity:1}
-.rel-doc-icons button:hover{background:color-mix(in srgb,var(--accent) 16%,var(--panel-solid,#fff));color:var(--accent);
-  border-color:color-mix(in srgb,var(--accent) 40%,transparent);opacity:1}
+.rel-doc-icons button{background:transparent;border:0;box-shadow:none;opacity:1;
+  color:color-mix(in srgb,var(--accent) 72%,#2a1830);font-size:calc(22px*var(--fs,1))}   /* 상자 없이 기호만, 테마색을 진하게 (사용자 요청 — 흰 상자는 튀었다) */
+.rel-doc-icons button:hover{background:color-mix(in srgb,var(--accent) 14%,transparent);border:0;opacity:1;
+  color:color-mix(in srgb,var(--accent) 85%,#2a1830)}
