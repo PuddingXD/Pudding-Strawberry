@@ -1006,10 +1006,10 @@ function RelDetailInner() {
 
       <div className="rel-hero">
         {isDuo && pairSlots[0] && (
-          <div className={`quote l ${auSt.quoteLine ?? true ? 'q-line' : ''}`} style={{
-            color: pairSlots[0].quoteColor,
+          <div className={`quote l ${auSt.quoteLine ? 'q-line' : ''}`} style={{
+            color: pairSlots[0].quoteColor ?? charOf(pairSlots[0].charId)?.color,
             ...quoteFontOf(pairSlots[0]),
-            ['--q-mark' as string]: pairSlots[0].quoteMarkColor,
+            ['--q-mark' as string]: pairSlots[0].quoteMarkColor ?? charOf(pairSlots[0].charId)?.color,
           } as React.CSSProperties}>{pairSlots[0].quote}</div>
         )}
         {/* CP/NCP 뱃지 — 자관명 위 가운데 (v2.0 사용자 요청) · 색은 자관 수정에서 */}
@@ -1031,16 +1031,20 @@ function RelDetailInner() {
           {au?.catchphrase || rel.catchphrase}
         </div>
         {isDuo && pairSlots[1] && (
-          <div className={`quote r ${auSt.quoteLine ?? true ? 'q-line' : ''}`} style={{
-            color: pairSlots[1].quoteColor,
+          <div className={`quote r ${auSt.quoteLine ? 'q-line' : ''}`} style={{
+            color: pairSlots[1].quoteColor ?? charOf(pairSlots[1].charId)?.color,
             ...quoteFontOf(pairSlots[1]),
-            ['--q-mark' as string]: pairSlots[1].quoteMarkColor,
+            ['--q-mark' as string]: pairSlots[1].quoteMarkColor ?? charOf(pairSlots[1].charId)?.color,
           } as React.CSSProperties}>{pairSlots[1].quote}</div>
         )}
       </div>
 
       {isDuo ? (
-        <div className="rel-body" style={{ fontFamily: familyOf(auBodyFont) }}>
+        <div className="rel-body" style={{
+          fontFamily: familyOf(auBodyFont),
+          // 멤버 카드 글씨색 (사용자 요청) — 안 정했으면 CSS 자동값
+          ['--mc-cp' as string]: auSt.mcCpColor, ['--mc-key' as string]: auSt.mcKeyColor, ['--mc-val' as string]: auSt.mcValColor,
+        } as React.CSSProperties}>
           {pairSlots[0]
             ? <MiniProf member={pairSlots[0]} char={charOf(pairSlots[0].charId)} isAdmin={isAdmin}
                 auUnregistered={auUnregOf(pairSlots[0].charId)}

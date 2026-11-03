@@ -430,7 +430,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, artMode, exist
       )}
       {/* 상세 화면 보기 조절 — 상세 아트 칸(3:4)과 같은 비율로 미리보기 */}
       {viewEdit && arts.find(a => a.id === viewEdit) && (
-        <FirstArtCrop open item={arts.find(a => a.id === viewEdit)!} crop={viewCrops[viewEdit]}
+        <FirstArtCrop open fit item={arts.find(a => a.id === viewEdit)!} crop={viewCrops[viewEdit]}
           onClose={() => setViewEdit(null)}
           onApply={c => { setViewCrops(m => ({ ...m, [viewEdit]: c })); setViewEdit(null); }} />
       )}
@@ -493,8 +493,10 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
 }
 
 /** 첫 아트(새 파일 또는 저장된 blob)를 소스로 3:4 크롭 편집기 표시 */
-function FirstArtCrop({ open, item, crop, onClose, onApply }: {
+function FirstArtCrop({ open, item, crop, onClose, onApply, fit }: {
   open: boolean; item: ArtItem; crop?: CropValue;
+  /** 상세 보기 조절 — 높이 맞춤·축소 (사용자 요청) */
+  fit?: boolean;
   onClose: () => void; onApply: (c: CropValue) => void;
 }) {
   const [loadedUrl, setLoadedUrl] = useState('');
@@ -504,6 +506,6 @@ function FirstArtCrop({ open, item, crop, onClose, onApply }: {
   }, [item, open]);
   const src = item.url || loadedUrl;
   if (!src || !open) return null;
-  return <CropEditor open={open} src={src} aspect="3:4" initial={crop} onClose={onClose} onApply={onApply} />;
+  return <CropEditor open={open} src={src} aspect="3:4" initial={crop} onClose={onClose} onApply={onApply} fit={fit} />;
 }
 

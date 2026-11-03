@@ -44,6 +44,9 @@ export interface RelFormValue {
   illuOn?: string;           // 전신/일러 스위치 선택색 (미지정: 포인트색)
   nameColor?: string;        // 자관명(히어로 타이틀) 글씨색 (v1.9 사용자 요청 — 미지정: 테마)
   cpColor?: string;          // 캐치프레이즈 글씨색 (미지정: 테마)
+  mcCpColor?: string;        // 멤버 카드 글씨색 (사용자 요청) — 캐치프레이즈 · 항목명 · 항목값
+  mcKeyColor?: string;
+  mcValColor?: string;
   cpTagBg?: string;          // CP/NCP 뱃지 배경색 (v2.0 사용자 요청)
   cpTagFg?: string;          // CP/NCP 뱃지 글씨색
   nameShadowColor?: string;  // 자관명 그림자 색 (v2.0 사용자 요청)
@@ -52,7 +55,7 @@ export interface RelFormValue {
   headerBgG2?: string;
   headerBgAngle?: number;
   headerTone?: number;       // 헤더 배경 밝게 0~80 (사용자 요청 — 미지정 50)
-  quoteLine?: boolean;       // 상단 한마디 1px 테두리 (사용자 요청 — 미지정 켬)
+  quoteLine?: boolean;       // 상단 한마디 1px 테두리 (사용자 요청 — 미지정 끔)
   pageBgG1?: string;         // 페이지 전체 배경 그라데이션 (v2.0 사용자 요청)
   pageBgG2?: string;
   pageBgAngle?: number;
@@ -231,6 +234,11 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [txtCustom, setTxtCustom] = useState(!!(st?.nameColor || st?.cpColor));
   const [nameColor, setNameColor] = useState(st?.nameColor ?? '#e8eaee');
   const [cpColor, setCpColor] = useState(st?.cpColor ?? '#8a8f98');
+  // 멤버 카드 글씨색 (사용자 요청 — 자동 색이 배경에 묻힐 때)
+  const [mcCustom, setMcCustom] = useState(!!(st?.mcCpColor || st?.mcKeyColor || st?.mcValColor));
+  const [mcCpColor, setMcCpColor] = useState(st?.mcCpColor ?? '#8a5a6e');
+  const [mcKeyColor, setMcKeyColor] = useState(st?.mcKeyColor ?? '#7a3c55');
+  const [mcValColor, setMcValColor] = useState(st?.mcValColor ?? '#c2185b');
   // CP/NCP 뱃지 색 (v2.0 사용자 요청) — 미지정이면 기본 pill 색
   const [tagCustom, setTagCustom] = useState(!!(st?.cpTagBg || st?.cpTagFg));
   const [cpTagBg, setCpTagBg] = useState(st?.cpTagBg ?? '#eef0f2');
@@ -245,7 +253,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [headerBgG2, setHeaderBgG2] = useState(st?.headerBgG2 ?? '#1a1d22');
   const [headerBgAngle, setHeaderBgAngle] = useState(st?.headerBgAngle ?? 180);
   const [headerTone, setHeaderTone] = useState(st?.headerTone ?? 50);
-  const [quoteLine, setQuoteLine] = useState(st?.quoteLine ?? true);
+  const [quoteLine, setQuoteLine] = useState(st?.quoteLine ?? false);
   // 페이지 전체 배경 (v2.0 사용자 요청) — 디자인 탭의 사이트 배경과 같은 방식(색 2개 + 각도)
   const [pageBgCustom, setPageBgCustom] = useState(!!(st?.pageBgG1 || st?.pageBgG2));
   const [pageBgG1, setPageBgG1] = useState(st?.pageBgG1 ?? '#2b3038');
@@ -350,6 +358,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       illuOn: illuCustom ? illuOn : undefined,
       nameColor: txtCustom ? nameColor : undefined,
       cpColor: txtCustom ? cpColor : undefined,
+      mcCpColor: mcCustom ? mcCpColor : undefined,
+      mcKeyColor: mcCustom ? mcKeyColor : undefined,
+      mcValColor: mcCustom ? mcValColor : undefined,
       nameShadowColor: shadowCustom ? nameShadowColor : undefined,
       nameShadow: shadowCustom ? nameShadow : undefined,
       headerBgG1: headerBgCustom ? headerBgG1 : undefined,
@@ -787,6 +798,20 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                 )}
               </div>
             )}
+            {/* 양옆 멤버 카드 글씨색 (사용자 요청) — 안 정하면 테마에서 자동 */}
+            <div>
+              <KCheck label="멤버 카드 글씨색 직접 지정 (캐치프레이즈·정보 항목)" checked={mcCustom} onChange={setMcCustom} />
+              {mcCustom && (
+                <div className="cf-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                  <span className="cp-lb">캐치프레이즈</span>
+                  <ColorField value={mcCpColor} onChange={setMcCpColor} />
+                  <span className="cp-lb">항목명</span>
+                  <ColorField value={mcKeyColor} onChange={setMcKeyColor} />
+                  <span className="cp-lb">항목값</span>
+                  <ColorField value={mcValColor} onChange={setMcValColor} />
+                </div>
+              )}
+            </div>
             {/* 그림자 (v2.0 사용자 요청) — 어떤 색으로 얼마나 진하게 깔릴지. 자관명과 전신에 함께 걸린다 */}
             {(
               <div>

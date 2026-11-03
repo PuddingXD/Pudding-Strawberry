@@ -46,7 +46,8 @@ export function TopBar() {
   const menu = ready
     ? buildMenu(menuSet, [...boardEntries(boards), ...sectionMenuEntries(secMap), ...linkEntries(links)], { loggedIn: !!user, isAdmin, id: user?.id })
     : [];
-  const [site, , siteLoaded] = useSiteSettings();    // 로고 텍스트/서브/정렬 (5.2)
+  const [site, , siteLoaded] = useSiteSettings();
+  const logoUrl = useBlobUrl(site.logoImg);    // 로고 텍스트/서브/정렬 (5.2)
   const avatarSrc = useBlobUrl(user?.avatarUrl);     // 프로필 이미지 (마이페이지, v1.9)
   const userRef = useRef<HTMLDivElement>(null);
 
@@ -182,7 +183,11 @@ export function TopBar() {
     <header className="topbar">
       {/* 로고 — 텍스트·서브타이틀·정렬은 환경설정 > 디자인 (5.2) */}
       <div className="brand" onClick={() => nav('/')}>
-        {siteLoaded && site.title}
+        {/* 로고 이미지가 있으면 글자 대신 그림 (사용자 요청 — 환경설정 > 디자인 > 로고 이미지) */}
+        {siteLoaded && (site.logoImg && logoUrl
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img className="brand-img" src={logoUrl} alt={site.title} style={{ height: site.logoH ?? 40 }} />
+          : site.title)}
         {siteLoaded && site.subtitle && <small className={`al-${site.align}`}>{site.subtitle}</small>}
       </div>
 

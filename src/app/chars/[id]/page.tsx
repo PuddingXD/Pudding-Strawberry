@@ -296,7 +296,9 @@ function CharDetailInner() {
                   맞지 않는다 — 여기서 따로 잡은 값이 있을 때만 쓰고, 없으면 가운데 기준 (v2.0) */}
               <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
                 crop={eff.artCrops?.[arts[cur]] ?? (cur === 0 ? eff.artCrop : undefined)}
-                ph={ch.thumbClass} label="CHARACTER FULL ART" />
+                ph={ch.thumbClass} label="CHARACTER FULL ART"
+                /* 크롭을 안 잡은 아트는 세로가 칸에 딱 맞게 — 세로로 긴 그림도 위아래가 안 잘린다 (사용자 요청) */
+                fitDefault />
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                   {arts.map((_, i) => (
@@ -452,7 +454,7 @@ function CharDetailInner() {
           onApply={c => { saveChipCrop(chipEdit.key, c); setChipEdit(null); }} />
       )}
       {artCropOpen && (
-        <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrops?.[artCropOpen.ref] ?? (artCropOpen.ref === eff?.arts?.[0] ? eff?.artCrop : undefined)}
+        <ArtCropModal fit fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrops?.[artCropOpen.ref] ?? (artCropOpen.ref === eff?.arts?.[0] ? eff?.artCrop : undefined)}
           onClose={() => setArtCropOpen(null)}
           onApply={c => { saveArtCrop(c, artCropOpen.ref); setArtCropOpen(null); }} />
       )}
@@ -463,14 +465,15 @@ function CharDetailInner() {
 
 /** 상세 아트 위치 편집기 (v2.0) — 실제 표시 영역의 비율 그대로 열어야 보이는 대로 맞출 수 있다.
  *  이 영역은 화면 높이에 따라 달라지므로 고정 비율(3:4 등)을 쓰면 편집기와 결과가 어긋난다. */
-function ArtCropModal({ fileRef, ratio, crop, label, onClose, onApply }: {
+function ArtCropModal({ fileRef, ratio, crop, label, onClose, onApply, fit }: {
   fileRef: string; ratio: number; crop?: CropValue; label?: string; onClose: () => void; onApply: (c: CropValue) => void;
+  fit?: boolean;   // 상세 아트 — 높이 맞춤·축소 (사용자 요청)
 }) {
   const url = useBlobUrl(fileRef);
   if (!url) return null;
   return (
     <CropEditor open src={url} aspect={ratio} aspectLabel={label ?? '상세 화면과 같은 비율'}
-      initial={crop} onClose={onClose} onApply={onApply} />
+      initial={crop} onClose={onClose} onApply={onApply} fit={fit} />
   );
 }
 

@@ -527,14 +527,27 @@
 .panel.body-card.in-wrap{padding:18px}
 .panel.body-card .panel.in-card{background:transparent !important;box-shadow:none !important;border:0 !important;border-radius:0;
   -webkit-backdrop-filter:none !important;backdrop-filter:none !important}
-.thr-layout.body-card > .panel.in-card.side,
-.cal-layout.body-card > .cal-side{border-left:1px solid var(--b-line-soft,var(--line));padding-left:18px !important}
-.cal-layout.body-card .cal-side .panel.in-card{padding-left:0;padding-right:0}
-.cal-layout.body-card .cal-side .panel.in-card + .panel.in-card{border-top:1px solid var(--b-line-soft,var(--line)) !important;border-radius:0}
-@media (max-width:960px){
-  .cal-layout.body-card > .cal-side{border-left:0;padding-left:0 !important;border-top:1px solid var(--b-line-soft,var(--line));padding-top:10px}
-}
+.thr-layout.body-card > .panel.in-card.side{border-left:1px solid var(--b-line-soft,var(--line));padding-left:18px !important}
+/* 달력 오른쪽 위젯(고른 날 일정 · D-DAY · 카테고리)은 위젯 모양 그대로 — 모두 D-DAY와 같은 배경·테두리 (사용자 요청) */
 @media (max-width:620px){
   .thr-layout.body-card > .panel.in-card.side{border-left:0;padding-left:10px !important;border-top:1px solid var(--b-line-soft,var(--line))}
   .panel.body-card.in-wrap{padding:12px}
 }
+
+/* 자관 멤버 카드 글씨색 (사용자 요청) — 자관 수정에서 직접 지정하면 그 색, 아니면 자동 */
+.page-rel-detail .mini-prof .hd small{color:var(--mc-cp,var(--faint))}
+.page-rel-detail .mini-prof .specs b{color:var(--mc-key,var(--faint))}
+.page-rel-detail .mini-prof .specs{color:var(--mc-val,var(--sub))}
+/* 타임라인 · 역극 · 로그 칸 — 흰 상자 대신 전신/일러스트 칸처럼 반투명 흰색 + 얇은 테두리 (사용자 요청).
+   타임라인 PNG 내보내기는 따로 그리므로(lib/timelinePng) 그대로 흰 카드 */
+.page-rel-detail .panel.timeline,
+.page-rel-detail .panel.widget{
+  background:rgba(255,255,255,.28) !important;
+  border:1px solid rgba(255,255,255,.62) !important;
+  box-shadow:none !important;
+}
+.page-rel-detail .panel.timeline .tl-dot{box-shadow:0 0 0 4px color-mix(in srgb,var(--panel-solid,#fff) 55%,transparent)}
+/* 갤러리 미리보기 카드 — 썸네일 아래 선 하나 (사용자 요청 — 투명 썸네일이면 밋밋해서) */
+.g-item .thumb{border-bottom:1px solid var(--b-line-soft,var(--line))}
+/* 상단바 로고 이미지 (사용자 요청) — 메뉴 폭을 넘지 않게 */
+.brand .brand-img{display:block;max-width:100%;width:auto;object-fit:contain}

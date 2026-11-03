@@ -329,6 +329,8 @@ export function auMember(m: RelMember, au?: RelAu): RelMember {
 export interface RelAuStyle {
   nameColor?: string;
   cpColor?: string;
+  /** 멤버 카드 글씨색 (사용자 요청 — 자동 색이 배경에 묻힐 때) — 캐치프레이즈 · 정보 항목명 · 항목값 */
+  mcCpColor?: string; mcKeyColor?: string; mcValColor?: string;
   cpTagBg?: string;
   cpTagFg?: string;
   nameShadowColor?: string;
@@ -336,7 +338,7 @@ export interface RelAuStyle {
   headerBgG1?: string; headerBgG2?: string; headerBgAngle?: number;
   /** 헤더 배경 밝게 0~80 (사용자 요청 — 어두운 헤더에 글자가 묻힌다). 미지정: 50 · 0이면 예전 그대로 */
   headerTone?: number;
-  /** 상단 한마디 1px 테두리 (사용자 요청 — 글씨색보다 조금 어둡게 자동). 미지정: 켬 */
+  /** 상단 한마디 1px 테두리 (사용자 요청 — 글씨색보다 조금 어둡게 자동). 미지정: 끔 */
   quoteLine?: boolean;
   pageBgG1?: string; pageBgG2?: string; pageBgAngle?: number;
   illuBg?: string; illuOn?: string;
@@ -347,6 +349,7 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
   const s = au?.style;
   const base: RelAuStyle = {
     nameColor: rel.nameColor, cpColor: rel.cpColor,
+    mcCpColor: rel.mcCpColor, mcKeyColor: rel.mcKeyColor, mcValColor: rel.mcValColor,
     cpTagBg: rel.cpTagBg, cpTagFg: rel.cpTagFg,
     nameShadowColor: rel.nameShadowColor, nameShadow: rel.nameShadow,
     headerBgG1: rel.headerBgG1, headerBgG2: rel.headerBgG2, headerBgAngle: rel.headerBgAngle,
@@ -371,6 +374,9 @@ export function auStyle(rel: Relation, au?: RelAu): RelAuStyle {
     out.headerBgG1 = s.headerBgG1; out.headerBgG2 = s.headerBgG2; out.headerBgAngle = s.headerBgAngle;
   }
   if (s.headerTone !== undefined) out.headerTone = s.headerTone;
+  if (s.mcCpColor !== undefined || s.mcKeyColor !== undefined || s.mcValColor !== undefined) {
+    out.mcCpColor = s.mcCpColor; out.mcKeyColor = s.mcKeyColor; out.mcValColor = s.mcValColor;
+  }
   if (s.quoteLine !== undefined) out.quoteLine = s.quoteLine;
   if (s.pageBgG1 !== undefined || s.pageBgG2 !== undefined) {
     out.pageBgG1 = s.pageBgG1; out.pageBgG2 = s.pageBgG2; out.pageBgAngle = s.pageBgAngle;
@@ -467,6 +473,9 @@ export interface Relation {
   illuOn?: string;               // 전신/일러 스위치 선택색 (미지정: 포인트색)
   nameColor?: string;            // 자관명(히어로 타이틀) 글씨색 (v1.9 — 미지정: 테마)
   cpColor?: string;              // 캐치프레이즈 글씨색 (미지정: 테마)
+  mcCpColor?: string;            // 멤버 카드 캐치프레이즈 글씨색 (사용자 요청 — 미지정: 자동)
+  mcKeyColor?: string;           // 멤버 카드 정보 항목명(나이·성별…) 글씨색
+  mcValColor?: string;           // 멤버 카드 정보 항목값 글씨색
   cpTagBg?: string;              // CP/NCP 뱃지 배경색 (v2.0 — 미지정: 기본 pill)
   cpTagFg?: string;              // CP/NCP 뱃지 글씨색 (v2.0)
   nameShadowColor?: string;      // 자관명 그림자 색 (v2.0 — 미지정: 검정)
@@ -478,7 +487,7 @@ export interface Relation {
   headerBgAngle?: number;
   /** 헤더 배경 밝게 0~80 (사용자 요청) — 미지정: 50 */
   headerTone?: number;
-  /** 상단 한마디 1px 테두리 (사용자 요청) — 미지정: 켬 */
+  /** 상단 한마디 1px 테두리 (사용자 요청) — 미지정: 끔 */
   quoteLine?: boolean;
   // 이 자관 페이지 전체의 배경 그라데이션 (v2.0 사용자 요청) — 색 2개 + 각도.
   // 위 headerBg*는 상단 헤더 자리에만 깔리는 것이고, 이건 페이지 바탕 전체다.

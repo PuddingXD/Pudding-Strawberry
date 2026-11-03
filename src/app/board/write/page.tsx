@@ -15,6 +15,7 @@ import { lockText, unlockText, unlockedOf, rememberUnlocked } from '@/lib/pwLock
 import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { ConfirmModal, Modal } from '@/components/ui/Modal';
 import { parseKakao, kakaoToBody, swapTalkNumbers, type KakaoParsed, type KakaoSlot } from '@/lib/kakao';
+import { useTalkColors, talkColorOf, groupIndexOf } from '@/lib/talkColors';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -64,6 +65,23 @@ function WriteInner() {
   // 썰 백업 — 대화 참여자 · 러닝 — 카드 요약
   const [people, setPeople] = useState<TalkPerson[]>(() => talkPeople());
   const setPerson = (i: number, p: Partial<TalkPerson>) => setPeople(ps => ps.map((x, j) => (j === i ? { ...x, ...p } : x)));
+  // 자주 나오는 사람의 기본 말풍선 색 (사용자 요청) — 이 글에서 색을 안 정하면 이 색
+  const [talkGroups, saveTalkGroups] = useTalkColors();
+  const [tgOpen, setTgOpen] = useState(false);
+  /** 이 글의 참여자 색을 기본색으로 — 이름이 같은 묶음(님 붙여도 같음)에 넣고, 없으면 새 묶음 */
+  const saveColorsAsDefault = () => {
+    const g = talkGroups.map(x => ({ ...x, names: [...x.names] }));
+    let n = 0;
+    people.forEach(p => {
+      if (!p.name.trim() || !p.color) return;
+      const i = groupIndexOf(g, p.name);
+      if (i >= 0) g[i].color = p.color; else g.push({ names: [p.name.trim()], color: p.color });
+      n++;
+    });
+    if (!n) { toast('색을 정한 참여자가 없습니다'); return; }
+    saveTalkGroups(g);
+    toast(`${n}명의 말풍선 색을 기본으로 저장했습니다`);
+  };
   // 카톡 대화 불러오기 (썰 백업) — 파일을 읽고 사람마다 번호를 정한 뒤 본문으로
   const kakaoInput = useRef<HTMLInputElement>(null);
   const [kakao, setKakao] = useState<KakaoParsed | null>(null);
@@ -301,10 +319,37 @@ function WriteInner() {
                     <button className={p.side === 'r' ? 'on' : ''} onClick={() => setPerson(i, { side: 'r' })}>오른쪽</button>
                   </div>
                   <span className="k-label" style={{ marginLeft: 6 }}>말풍선</span>
-                  <ColorField value={p.color || '#ffffff'} onChange={v => setPerson(i, { color: v })} />
+                  <ColorField value={p.color || talkColorOf(talkGroups, p.name) || '#ffffff'} onChange={v => setPerson(i, { color: v })} />
                   {p.color && <button className="btn btn-ghost" style={{ height: 26, padding: '0 10px', fontSize: 10.5 }} onClick={() => setPerson(i, { color: '' })}>기본색</button>}
+                  {!p.color && talkColorOf(talkGroups, p.name) && <span className="hint" style={{ margin: 0 }}>자주 나오는 사람 기본색</span>}
                 </div>
               ))}
+              {/* 자주 나오는 사람 기본 말풍선 색 (사용자 요청) — 관리자 */}
+              {isAdmin && (
+                <div className="form-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                  <label className="k-label" style={{ width: 60 }}>기본 색</label>
+                  <button className="btn btn-ghost" style={{ height: 30, fontSize: 11 }} onClick={saveColorsAsDefault}>이 글의 색을 기본으로 저장</button>
+                  <button className="btn btn-ghost" style={{ height: 30, fontSize: 11 }} onClick={() => setTgOpen(o => !o)}>{tgOpen ? '목록 닫기' : '자주 나오는 사람 목록'}</button>
+                  <span className="hint" style={{ margin: 0 }}>이름이 같으면(「님」을 붙여도) 색을 안 정한 글에서도 이 색으로 나와요</span>
+                </div>
+              )}
+              {isAdmin && tgOpen && (
+                <div style={{ display: 'grid', gap: 6, padding: '4px 0 6px 68px' }}>
+                  {talkGroups.map((g, gi) => (
+                    <div key={gi} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {/* 쉼표를 칠 수 있게 입력 중엔 그대로 두고, 칸을 벗어날 때 저장 */}
+                      <KInput key={`${gi}:${g.names.join(',')}`} defaultValue={g.names.join(', ')} style={{ width: 220 }} placeholder="이름 (쉼표로 여러 개)"
+                        onBlur={e => saveTalkGroups(talkGroups.map((x, j) => (j === gi ? { ...x, names: e.target.value.split(',').map((s: string) => s.trim()).filter(Boolean) } : x)))} />
+                      <ColorField value={g.color || '#ffffff'} onChange={v => saveTalkGroups(talkGroups.map((x, j) => (j === gi ? { ...x, color: v } : x)))} />
+                      {!g.color && <span className="hint" style={{ margin: 0 }}>색 미지정</span>}
+                      <button className="btn btn-ghost" style={{ height: 26, padding: '0 10px', fontSize: 10.5 }}
+                        onClick={() => saveTalkGroups(talkGroups.filter((_, j) => j !== gi))}>삭제</button>
+                    </div>
+                  ))}
+                  <button className="btn btn-ghost" style={{ height: 28, fontSize: 11, justifySelf: 'start' }}
+                    onClick={() => saveTalkGroups([...talkGroups, { names: [], color: '' }])}>＋ 사람 추가</button>
+                </div>
+              )}
               <div className="form-row" style={{ gap: 8 }}>
                 <label className="k-label" style={{ width: 60 }}>번호 바꾸기</label>
                 <KSelect value={swA} onChange={setSwA} minWidth={90} options={[1, 2, 3, 4].map(n => ({ value: String(n), label: `${n}번${people[n - 1]?.name ? ` · ${people[n - 1].name}` : ''}` }))} />

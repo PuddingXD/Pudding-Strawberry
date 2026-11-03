@@ -191,7 +191,7 @@ function CalInner() {
         {/* 우: 고른 날짜의 일정 / D-day / 투두(메인 위젯 데이터 공유) / 카테고리 */}
         <div className="cal-side" style={{ display: 'grid', alignContent: 'start' }}>
           {/* 고른 날짜의 일정 (v2.0 사용자 확정) — 여기서 추가·순서 변경, 달력에는 위 3개만 */}
-          <div className="panel widget in-card side">
+          <div className="panel widget">
             <h4>
               {picked.slice(5).replace('-', '월 ')}일 일정
               {canWrite && <span className="more" onClick={() => openNew(picked)}>＋ 추가</span>}
@@ -223,7 +223,7 @@ function CalInner() {
           </div>
           {ddayConf && <DdayWidget conf={ddayConf} />}
           {todoConf && <TodoWidget conf={todoConf} />}
-          <div className="panel widget in-card side">
+          <div className="panel widget">
             <h4>카테고리 {isAdmin && <span className="more" onClick={() => setCatMng(true)}>관리 ›</span>}</h4>
             {st.cats.map(c => (
               <div key={c.id} className="dday-row">

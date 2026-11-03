@@ -7,6 +7,7 @@
 //   이미지를 넣으면 바로 위 줄을 말한 사람의 말풍선으로 들어간다
 import React, { useMemo } from 'react';
 import type { TalkPerson } from '@/lib/postStore';
+import { useTalkColors, talkColorOf } from '@/lib/talkColors';
 
 type Line =
   | { k: 'say'; who: number; text: string; imgs: string[] }   // who = 0~3
@@ -50,6 +51,8 @@ export function parseTalk(safeHtml: string): Line[] {
 
 export function TalkView({ html, people }: { html: string; people: TalkPerson[] }) {
   const lines = useMemo(() => parseTalk(html), [html]);
+  // 이 글에서 색을 안 정한 사람은 「자주 나오는 사람」 기본색 (사용자 요청)
+  const [groups] = useTalkColors();
   return (
     <div className="talk">
       {lines.map((l, i) => {
@@ -69,7 +72,7 @@ export function TalkView({ html, people }: { html: string; people: TalkPerson[] 
         return (
           <div key={i} className={`talk-row ${who.side} p${l.who + 1} ${first ? 'first' : ''}`}>
             {first && who.name && <b className="talk-name">{who.name}</b>}
-            <div className="talk-bub" style={who.color ? { background: who.color } : undefined}>
+            <div className="talk-bub" style={(who.color || talkColorOf(groups, who.name)) ? { background: who.color || talkColorOf(groups, who.name) } : undefined}>
               {l.text && <span>{l.text}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {l.imgs.map(src => <img key={src} src={src} alt="" />)}

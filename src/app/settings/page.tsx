@@ -75,7 +75,7 @@ function BodyCardRow() {
   const opts = [['line', '테두리 있음'], ['noline', '테두리 없음'], ['none', '카드 없음']] as const;
   return (
     <div className="set-row" style={{ flexWrap: 'wrap' }}>
-      <div className="l"><b>게시판 본문 카드</b><small>합작·갤러리·시트·썰 백업·TRPG 기록·리뷰·로그 백업·타래·달력 — 카드는 가름선 길이만큼, 글 폭은 그대로 · 「카드 없음」은 배경 위에 바로</small></div>
+      <div className="l"><b>게시판 본문 카드</b><small>합작·갤러리·시트·썰 백업·TRPG 기록·리뷰·로그 백업·타래·달력·환경설정 — 카드는 가름선 길이만큼, 글 폭은 그대로 · 「카드 없음」은 배경 위에 바로</small></div>
       <div className="mini-seg">
         {opts.map(([v, lb]) => (
           <button key={v} className={skin.cardStyle === v ? 'on' : ''} onClick={() => patchSkin({ cardStyle: v })}>{lb}</button>
@@ -364,6 +364,12 @@ function DesignPane() {
             <CP label="글씨" k="topBrand" />
           </div>
         </div>
+      </div>
+
+      {/* 로고 이미지 (사용자 요청) — 있으면 로고 글자 대신 그림 */}
+      <div className="set-row" style={{ flexWrap: 'wrap' }}>
+        <div className="l"><b>로고 이미지</b><small>올리면 상단바 로고 글자 대신 그림이 나옵니다 (서브타이틀은 그대로 아래) — 배경이 투명한 PNG 권장</small></div>
+        <LogoImageControl />
       </div>
 
       <div className="set-row">
@@ -1616,6 +1622,42 @@ function CrawlDescControl() {
 
 /** 브라우저 탭 아이콘 (v2.0 사용자 요청) — 지정 전에는 기본 아이콘(배포 기본값)이 뜬다.
  *  탭 제목 바로 아래에 같은 드래프트/SAVE 흐름으로 둔다. */
+/** 상단바 로고 이미지 (사용자 요청) — 드래프트로 미리보기, 디자인 탭 SAVE로 저장 */
+function LogoImageControl() {
+  const { site, set } = useSiteDraft();
+  const toast = useToast();
+  const url = useBlobUrl(site.logoImg);
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      {url && (
+        <span style={{ height: 35, maxWidth: 140, padding: '3px 6px', borderRadius: 'var(--radius-s)', border: '1px solid var(--line)', background: 'var(--panel)', display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="" style={{ maxHeight: 27, maxWidth: '100%', objectFit: 'contain' }} />
+        </span>
+      )}
+      <input id="siteLogoImg" type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={async e => {
+          const f = e.target.files?.[0];
+          e.target.value = '';
+          if (!f) return;
+          try { set({ logoImg: await putBlob(f) }); } catch (err) {
+            toast(`로고를 저장소에 올리지 못했습니다 — ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }} />
+      <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11 }}
+        onClick={() => document.getElementById('siteLogoImg')?.click()}>{site.logoImg ? 'CHANGE' : 'UPLOAD'}</button>
+      {site.logoImg && (
+        <>
+          <span className="cp-lb">높이</span>
+          <KStep value={site.logoH ?? 40} min={16} max={140} step={2} suffix="px" onChange={v => set({ logoH: v })} />
+          <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11 }}
+            onClick={() => set({ logoImg: undefined })}>REMOVE</button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FaviconControl() {
   const { site, set } = useSiteDraft();
   const toast = useToast();
@@ -3542,13 +3584,14 @@ function SettingsInner() {
           { label: '저장하지 않고 이동', kind: 'ghost', onClick: () => leaveWith('discard') },
           { label: 'CANCEL', kind: 'ghost', onClick: () => { pendingClick.current = null; setLeaveAsk(false); } },
         ]} />
+      {/* 환경설정 카드도 게시판 본문 카드 설정(디자인 > 게시판 본문 카드)을 따른다 (사용자 요청) */}
       <div className="settings-layout">
-        <div className="panel set-nav">
+        <div className="panel set-nav body-card">
           {CATEGORIES.map(c => (
             <button key={c} className={tab === c ? 'on' : ''} onClick={() => setTab(c)}>{c}</button>
           ))}
         </div>
-        <div className="panel" style={{ padding: 26 }}>
+        <div className="panel body-card" style={{ padding: 26 }}>
           {tab === '디자인' ? (
             <DesignPane />
           ) : tab === '메인 페이지' ? (

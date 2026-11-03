@@ -9,7 +9,12 @@ import { Modal } from './Modal';
 import { useBlobUrl, isVideoRef, VideoThumb } from '@/lib/blobStore';
 
 /** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율 */
-export interface CropValue { x: number; y: number; scale: number }
+export interface CropValue {
+  x: number; y: number; scale: number;
+  /** 높이 맞춤 (사용자 요청 — 자캐 상세 아트). 배율 1 = 그림 세로가 프레임 세로에 딱 맞음, 세로로 긴 그림도 위아래가 안 잘린다.
+   *  1보다 작게(축소)도 된다. 없으면 예전 방식(프레임을 꽉 덮음) */
+  fit?: boolean;
+}
 export type CropAspect = '3:4' | '4:3' | '16:9' | '1:1';
 
 const RATIO: Record<CropAspect, number> = { '3:4': 3 / 4, '4:3': 4 / 3, '16:9': 16 / 9, '1:1': 1 };
@@ -30,7 +35,9 @@ export function coverImgStyle(crop: CropValue | undefined, wide: boolean): React
 
 /** 프레임 채움 크롭 이미지 — 컨테이너·원본 비율을 측정해 커버 방향을 자동 결정.
  *  부모는 position:relative(또는 absolute)여야 함. */
-export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt?: string }) {
+export function CropImg({ src, crop, alt, fitDefault }: { src: string; crop?: CropValue; alt?: string; fitDefault?: boolean }) {
+  // 높이 맞춤 — 크롭이 높이 맞춤이거나, 아직 안 잡았는데 기본이 높이 맞춤인 자리 (자캐 상세 아트)
+  const fit = crop ? !!crop.fit : !!fitDefault;
   const wrapRef = useRef<HTMLDivElement>(null);
   const natRef = useRef<{ w: number; h: number } | null>(null);
   const [wide, setWide] = useState<boolean | null>(null);
@@ -53,14 +60,16 @@ export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt ?? ''} draggable={false}
         onLoad={e => { const im = e.currentTarget; natRef.current = { w: im.naturalWidth, h: im.naturalHeight }; compute(); }}
-        style={wide == null ? { opacity: 0 } : coverImgStyle(crop, wide)} />
+        style={fit ? coverImgStyle(crop, true) : wide == null ? { opacity: 0 } : coverImgStyle(crop, wide)} />
     </div>
   );
 }
 
 /** 파일 참조 + 크롭을 적용해 표시하는 썸네일 (없으면 플레이스홀더) */
-export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt }: {
+export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt, fitDefault }: {
   fileRef?: string; crop?: CropValue; ph?: string; label?: string; alt?: string;
+  /** 크롭을 안 잡았을 때 높이 맞춤으로 (사용자 요청 — 자캐 상세 아트) */
+  fitDefault?: boolean;
   /** 자리표시자 배경 직접 지정 (커플홈 — 캐릭터 테마색, lib/color의 phStyle) */
   phStyle?: React.CSSProperties;
 }) {
@@ -69,10 +78,10 @@ export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt }: {
     return <div className={`ph ${ph ?? ''}`} style={{ width: '100%', height: '100%', ...phStyle }}>{label && <span>{label}</span>}</div>;
   }
   if (isVideoRef(fileRef)) return <VideoThumb src={url} />;   // 영상은 크롭 없이 첫 장면을 꽉 채워
-  return <CropImg src={url} crop={crop} alt={alt} />;
+  return <CropImg src={url} crop={crop} alt={alt} fitDefault={fitDefault} />;
 }
 
-export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, onApply }: {
+export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, onApply, fit: fitProp }: {
   open: boolean;
   src: string;
   aspect: CropAspect | number;     // 게시판 규격 프리셋 또는 임의 비율(가로/세로 — 예: 현재 배너 비율)
@@ -80,29 +89,37 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   initial?: CropValue;
   onClose: () => void;
   onApply: (crop: CropValue) => void;
+  /** 높이 맞춤 편집 (자캐 상세 아트) — 처음·초기화가 높이 맞춤이고 1보다 작게 줄일 수 있다.
+   *  예전에 잡아 둔 크롭(fit 없음)은 그 방식 그대로 열리고, 초기화하면 높이 맞춤으로 */
+  fit?: boolean;
 }) {
-  const [crop, setCrop] = useState<CropValue>(initial ?? { x: 0, y: 0, scale: 1 });
+  const blank: CropValue = fitProp ? { x: 0, y: 0, scale: 1, fit: true } : { x: 0, y: 0, scale: 1 };
+  const [crop, setCrop] = useState<CropValue>(initial ?? blank);
+  const fitMode = !!crop.fit;
+  const minS = fitMode ? 0.5 : 1;
   const frameRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<HTMLDivElement>(null);
   const [natR, setNatR] = useState<number | null>(null);  // 원본 가로/세로 비
   const frameR = typeof aspect === 'number' ? aspect : RATIO[aspect];
   const aspectText = aspectLabel ?? (typeof aspect === 'number' ? `${aspect.toFixed(2)}:1` : aspect);
-  const wide = natR != null ? natR >= frameR : true;
+  const wide = fitMode ? true : natR != null ? natR >= frameR : true;
 
   useEffect(() => {
-    if (open) setCrop(initial ?? { x: 0, y: 0, scale: 1 });
-  }, [open, initial]);
+    if (open) setCrop(initial ?? blank);
+  }, [open, initial]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // 이미지가 항상 프레임을 가득 채우도록 오프셋 클램프 — 빈 공간이 보이는 상태 방지.
   // 커버 크기는 비율만으로 계산 (프레임 픽셀 크기 불필요 — x·y와 같은 fraction 단위)
   const clamp = (c: CropValue): CropValue => {
-    const scale = Math.min(3, Math.max(1, c.scale));
+    const scale = Math.min(3, Math.max(minS, c.scale));
     if (natR == null) return { ...c, scale };
     const coverW = wide ? natR / frameR : 1;   // 프레임 폭 대비 이미지 표시 폭
     const coverH = wide ? 1 : frameR / natR;   // 프레임 높이 대비 이미지 표시 높이
-    const maxX = Math.max(0, (scale * coverW - 1) / 2);
-    const maxY = Math.max(0, (scale * coverH - 1) / 2);
+    // 그림이 프레임보다 크면 빈 곳이 안 보이게, 작으면(높이 맞춤·축소) 프레임 안에서만 움직이게
+    const maxX = Math.abs(scale * coverW - 1) / 2;
+    const maxY = Math.abs(scale * coverH - 1) / 2;
     return {
+      ...c,
       scale,
       x: Math.min(maxX, Math.max(-maxX, c.x)),
       y: Math.min(maxY, Math.max(-maxY, c.y)),
@@ -129,7 +146,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   const setZoomFromPointer = (clientX: number) => {
     const r = zoomRef.current!.getBoundingClientRect();
     const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-    setCrop(c => clamp({ ...c, scale: 1 + t * 2 })); // 1x ~ 3x
+    setCrop(c => clamp({ ...c, scale: minS + t * (3 - minS) })); // 1x ~ 3x (높이 맞춤은 0.5x ~ 3x)
   };
 
   const onZoomDrag = (e: React.PointerEvent) => {
@@ -174,16 +191,16 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
           style={{ flex: 1, maxWidth: 220, height: 4, borderRadius: 4, background: '#d7dae0', position: 'relative', cursor: 'var(--cur-pointer,pointer)' }}>
           <i style={{
             position: 'absolute', left: 0, top: 0, height: '100%', borderRadius: 4,
-            width: `${((crop.scale - 1) / 2) * 100}%`, background: 'var(--accent)',
+            width: `${((crop.scale - minS) / (3 - minS)) * 100}%`, background: 'var(--accent)',
           }} />
           <i style={{
-            position: 'absolute', top: '50%', left: `${((crop.scale - 1) / 2) * 100}%`,
+            position: 'absolute', top: '50%', left: `${((crop.scale - minS) / (3 - minS)) * 100}%`,
             width: 14, height: 14, borderRadius: '50%', background: '#fff', transform: 'translate(-50%,-50%)',
             boxShadow: '0 1px 5px rgba(0,0,0,.35)',
           }} />
         </div>
         <button className="btn btn-ghost" style={{ padding: '5px 11px', fontSize: 11 }}
-          onClick={() => setCrop({ x: 0, y: 0, scale: 1 })}>초기화</button>
+          onClick={() => setCrop(blank)}>초기화</button>
       </div>
     </Modal>
   );
