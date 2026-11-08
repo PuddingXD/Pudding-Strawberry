@@ -185,7 +185,7 @@ function PlaylogPageInner() {
                 {show('scenario') && (
                   <td className="td-sc">
                     {r.scenarioLink
-                      ? <a href={r.scenarioLink} target="_blank" rel="noopener noreferrer" data-tip="시나리오 링크 (새 탭)">{r.scenario}</a>
+                      ? <a href={r.scenarioLink} target="_blank" rel="noopener noreferrer">{r.scenario}</a>
                       : r.scenario}
                   </td>
                 )}
