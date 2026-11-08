@@ -11,7 +11,9 @@ export type WidgetType =
   | 'banner' | 'member'                 // 고정 요소 (삭제 불가)
   | 'menu' | 'memo' | 'diary' | 'latest'
   | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
-  | 'banners';   // 배너 교환 (B 디자인에서 가져온 위젯)   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
+  | 'banners'   // 배너 교환 (아래 주석 참조)
+  | 'clicker';  // 키캡 클리커 — 키를 누르면 키캡 이미지가 눌리고 소리가 나는 위젯 (티스토리 클리커 위젯 이식)
+  // (B 디자인에서 가져온 위젯)   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
 
 export interface WidgetConf {
   id: string;
@@ -57,6 +59,7 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   deco: { title: '이미지', desc: '패널 없이 이미지만' },
   memoboard: { title: 'STICKY', desc: '스티커 메모 미니보드 — 클릭 시 메모장 (4.6)' },
   banners: { title: 'BANNER', desc: '배너 교환 — 친구 홈 배너 + 내 배너 코드 복사' },
+  clicker: { title: 'CLICKER', desc: '키캡 클리커 — 5×2 키캡 10개, 키보드를 누르면 눌리고 소리가 납니다' },
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */
@@ -238,6 +241,8 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
       const w: WidgetConf = {
         id, type, col, enabled: true, tx: 0, ty: 0,
         ax: colX[col], ay: maxY,
+        // 클리커는 키보드 위젯이라 폰에서는 기본으로 빼 둔다 (설정 > 위젯에서 켤 수 있음) · 5×2 키캡이 들어갈 기본 크기
+        ...(type === 'clicker' ? { w: 360, h: 190, mOff: true } : {}),
         settings: type === 'freetext' ? { text: '자유 텍스트' } : {},
       };
       return { ...s, widgets: [...s.widgets, w], mobileOrder: [...s.mobileOrder, id] };
@@ -318,6 +323,25 @@ export function useMainStore(): MainCtx {
 }
 
 /* ---------- 이미지 위젯 슬라이드 (v2.0) ---------- */
+
+/* ---------- 키캡 클리커 위젯 (settings) ---------- */
+export const CLICKER_COLS = 5, CLICKER_ROWS = 2, CLICKER_N = CLICKER_COLS * CLICKER_ROWS;
+/** 기본 키 — 숫자 1 2 3 4 5 / 6 7 8 9 0 (오른쪽 숫자 패드의 같은 숫자도 똑같이 반응) */
+export const CLICKER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+/** 눌린 키 이름 — 숫자 패드는 NumLock이 꺼져 있어도(key가 End·ArrowDown 등으로 옴) code로 숫자를 알아낸다 */
+export function clickerKeyOf(e: { key: string; code: string }): string {
+  const m = /^Numpad(\d)$/.exec(e.code);
+  return m ? m[1] : e.key.toLowerCase();
+}
+export interface ClickerSlot { imgId?: string; key: string }
+/** 저장된 칸 10개를 읽는다 — 모자라거나 비어 있으면 기본 키로 채운다 */
+export function clickerSlots(settings: Record<string, unknown>): ClickerSlot[] {
+  const list = (settings.slots as ClickerSlot[] | undefined) ?? [];
+  return Array.from({ length: CLICKER_N }, (_, i) => ({
+    imgId: list[i]?.imgId || undefined,
+    key: (list[i]?.key || CLICKER_KEYS[i]).toLowerCase(),
+  }));
+}
 
 export interface DecoSlide {
   id: string;

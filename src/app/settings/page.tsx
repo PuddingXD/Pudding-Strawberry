@@ -46,7 +46,7 @@ import { Character, CHAR_SEED, Relation, REL_SEED } from '@/lib/charStore';
 import { useLocalList } from '@/lib/postStore';
 import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat, diaryCatMode, ownerSides, parseDiaryLink } from '@/lib/diaryStore';
 import {
-  TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor, BannersEditor,
+  TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor, BannersEditor, ClickerEditor,
 } from '@/components/main/widgetEditors';
 import { useBgm, BgmTrack, parseVideoId } from '@/lib/bgmStore';
 import { useFonts, fontCssUrl, FontDef, FontRole, ROLE_LABEL, FOLLOW_MENU, FOLLOW_TITLE } from '@/lib/fontStore';
@@ -648,7 +648,7 @@ function WidgetsPane() {
   const { state } = useMainStore();
   // 설정값이 있는 위젯만 — 실데이터 연동 위젯(DIARY·LATEST·UPCOMING)과 메뉴리스트·회원정보창은 설정값 없음
   const editable = state.widgets.filter(w =>
-    (['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'banners'] as const).some(t => t === w.type));
+    (['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'banners', 'clicker'] as const).some(t => t === w.type));
 
   const editorOf = (w: WidgetConf) => {
     switch (w.type) {
@@ -659,6 +659,7 @@ function WidgetsPane() {
       case 'deco': return <DecoEditor conf={w} />;
       case 'banner': return <BannerEditor conf={w} />;
       case 'banners': return <BannersEditor conf={w} />;
+      case 'clicker': return <ClickerEditor conf={w} />;
       default: return null;
     }
   };

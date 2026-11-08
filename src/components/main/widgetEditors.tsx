@@ -2,11 +2,11 @@
 // 위젯 설정 공용 에디터 (5장 「위젯」 카테고리 · 메인 위젯 관리 모달 공유)
 // 같은 mainStore를 갱신하므로 메인에서 바꾸든 환경설정에서 바꾸든 즉시 서로 반영됨
 import React, { useEffect, useState } from 'react';
-import { WidgetConf, useMainStore, decoSlides, DecoSlide } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, decoSlides, DecoSlide, clickerSlots, clickerKeyOf, ClickerSlot, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
 import { KInput, KTextarea, KCheck, KStep, KDate } from '@/components/ui/Kit';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue, CropImg, CroppedBlobImg } from '@/components/ui/CropEditor';
-import { putBlob, useBlobUrl } from '@/lib/blobStore';
+import { putBlob, useBlobUrl, BlobImg } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirmDelete } from '@/components/ui/Modal';
 import { normalizeInternalLink } from '@/lib/link';
@@ -548,6 +548,105 @@ export function BannersEditor({ conf }: { conf: WidgetConf }) {
       />
       <button className="btn btn-dark" style={{ marginTop: 10 }}
         onClick={() => set([...items, { id: `xb${Date.now().toString(36)}`, img: '', link: '', title: '' }])}>＋ 배너 추가</button>
+    </div>
+  );
+}
+
+/* ---------- 키캡 클리커 — settings: title / tabColor / tabText / bg / showInfo / sounds / slots[10] ----------
+   티스토리 클리커 위젯을 이식한 것. 5×2 = 키캡 10칸에 각각 이미지와 키를 지정한다.
+   소리는 따로 지정하지 않으면 내장 클릭음(합성), 주소를 한 줄에 하나씩 넣으면 그중 무작위로 재생. */
+
+/** 키 입력칸 — 눌러 두고 바꿀 키를 누르면 그 키로 정해진다 */
+function KeyCapture({ value, onChange }: { value: string; onChange: (k: string) => void }) {
+  return (
+    <input readOnly value={value === ' ' ? 'Space' : value.toUpperCase()} title="눌러 두고 바꿀 키를 누르세요"
+      onKeyDown={e => {
+        if (e.key === 'Tab' || e.key === 'Escape') return;   // 칸 이동·취소는 그대로
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        const k = clickerKeyOf(e);   // 숫자 패드의 숫자는 일반 숫자와 같은 키로 저장
+        if (k.length === 1 || k === ' ') { e.preventDefault(); onChange(k); }
+      }}
+      style={{ width: 52, textAlign: 'center', fontSize: 11, cursor: 'var(--cur-pointer,pointer)' }} />
+  );
+}
+
+export function ClickerEditor({ conf, onClose }: { conf: WidgetConf; onClose?: () => void }) {
+  const { updateWidget } = useMainStore();
+  const toast = useToast();
+  const slots = clickerSlots(conf.settings);
+  const [pick, setPick] = useState<number | null>(null);   // 이미지 올릴 칸
+  const inputId = `clkF-${conf.id}`;
+  const set = (patch: Record<string, unknown>) =>
+    updateWidget(conf.id, { settings: { ...conf.settings, ...patch } }, { persist: true });
+  const setSlot = (i: number, p: Partial<ClickerSlot>) =>
+    set({ slots: slots.map((s, j) => (j === i ? { ...s, ...p } : s)) });
+  const str = (k: string, d: string) => (conf.settings[k] as string | undefined) ?? d;
+
+  const cell = (i: number) => (
+    <div key={i} style={{ display: 'grid', gap: 5, justifyItems: 'center' }}>
+      <div onClick={() => { setPick(i); document.getElementById(inputId)?.click(); }}
+        data-tip="눌러서 이미지 올리기 / 바꾸기"
+        style={{ width: 64, height: 64, borderRadius: 10, overflow: 'hidden', border: '1.5px dashed var(--line)', cursor: 'var(--cur-pointer,pointer)', position: 'relative' }}>
+        <BlobImg fileRef={slots[i].imgId} ph="" />
+        {!slots[i].imgId && <span style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', fontSize: 18, color: 'var(--faint)' }}>＋</span>}
+      </div>
+      <KeyCapture value={slots[i].key} onChange={k => setSlot(i, { key: k })} />
+      {slots[i].imgId
+        ? <button className="btn btn-ghost" style={{ height: 20, padding: '0 8px', fontSize: 9.5 }} onClick={() => setSlot(i, { imgId: undefined })}>이미지 빼기</button>
+        : <span style={{ height: 20 }} />}
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <input id={inputId} type="file" accept="image/*" multiple style={{ display: 'none' }}
+        onChange={async e => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          if (!files.length) return;
+          // 여러 장을 한 번에 고르면 고른 칸부터 차례로 채운다
+          const start = pick ?? Math.max(0, slots.findIndex(s => !s.imgId));
+          setPick(null);
+          const next = slots.map(s => ({ ...s }));
+          for (let k = 0; k < files.length && start + k < CLICKER_N; k++) next[start + k].imgId = await putBlob(files[k]);
+          set({ slots: next });
+          toast(files.length > 1 ? `이미지 ${Math.min(files.length, CLICKER_N - start)}장이 칸에 채워졌습니다` : '이미지가 저장되었습니다');
+        }} />
+
+      <div className="cp-lb">키캡 10칸 — 이미지를 올리고, 키 칸을 눌러 두고 원하는 키를 누르면 그 키로 바뀝니다</div>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${CLICKER_COLS}, 64px)`, gap: '10px 12px', justifyContent: 'start' }}>
+        {Array.from({ length: CLICKER_N }, (_, i) => cell(i))}
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">위쪽 이름</span>
+        <KInput value={str('title', 'CLICKER.exe')} onChange={e => set({ title: e.target.value })} style={{ width: 200 }} />
+        <KCheck label="아래 안내 문구 보이기" checked={conf.settings.showInfo !== false} onChange={v => set({ showInfo: v ? undefined : false })} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">상단 탭 색</span>
+        <div style={{ width: 150 }}><ColorField value={str('tabColor', '#525252')} onChange={v => set({ tabColor: v })} /></div>
+        <span className="cp-lb">탭 글자색</span>
+        <div style={{ width: 150 }}><ColorField value={str('tabText', '#ffffff')} onChange={v => set({ tabText: v })} /></div>
+        <span className="cp-lb">배경색</span>
+        <div style={{ width: 150 }}><ColorField value={str('bg', '#ffffff')} onChange={v => set({ bg: v })} /></div>
+      </div>
+
+      <div>
+        <div className="cp-lb" style={{ marginBottom: 4 }}>소리 파일 주소 (선택) — 한 줄에 하나, 누를 때마다 그중 무작위로 재생 · 비우면 기본 클릭음</div>
+        <KTextarea rows={3} placeholder="https://… .mp3" value={str('sounds', '')} onChange={e => set({ sounds: e.target.value })} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+          onClick={() => set({ slots: undefined })}>키·이미지 초기화</button>
+        {onClose && <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={onClose}>CLOSE</button>}
+      </div>
+      <p className="hint" style={{ margin: 0 }}>
+        키보드가 있는 PC에서만 키로 눌립니다 (홈 화면이 열려 있을 때). 폰에서는 기본으로 숨겨 두었고, 설정 &gt; 위젯 &gt; 모바일 표시를 켜면 키캡을 눌러서 소리를 낼 수 있습니다.
+        숫자 패드의 숫자도 같은 숫자 키로 반응합니다. 이미 있는 단축키(W·E·X·A·D)와 겹치는 키는 피하는 편이 좋습니다
+      </p>
     </div>
   );
 }

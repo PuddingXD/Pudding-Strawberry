@@ -2,7 +2,7 @@
 // 메인 위젯 렌더러 (4.0) — DIARY/LATEST/UPCOMING 등은 해당 기능(2·3차) 전까지 데모 데이터
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WidgetConf, useMainStore, WIDGET_META, decoSlides } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, WIDGET_META, decoSlides, clickerSlots, clickerKeyOf, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
 import { useAuth } from '@/lib/auth';
 import { boardEntries, useMenuSettings, buildMenu, canViewHref } from '@/lib/menuStore';
 import { sectionHref, MAIN_SEC, useSections, sectionMenuEntries } from '@/lib/sectionStore';
@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { KTextarea, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { useFonts } from '@/lib/fontStore';
-import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem, BannersEditor, type XBanner } from '@/components/main/widgetEditors';
+import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem, BannersEditor, ClickerEditor, type XBanner } from '@/components/main/widgetEditors';
 import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg, CropValue } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
@@ -642,6 +642,144 @@ export function BannersWidget({ conf }: { conf: WidgetConf }) {
   );
 }
 
+
+/* ---------- 키캡 클리커 (티스토리 클리커 위젯 이식) ----------
+   5×2 키캡 이미지. 홈이 열려 있을 때 지정한 키를 누르면(또는 키캡을 누르면) 그 칸이 눌리고 소리가 난다.
+   소리는 내장 클릭음(합성)이 기본, 설정에 주소를 넣으면 그 파일들 중 무작위. 음량은 이 브라우저에 기억. */
+const CLK_VOL = 'ohome-clicker-vol';
+let clkCtx: AudioContext | null = null;
+
+/** 내장 클릭음 — 짧은 잡음 + 낮은 울림, 누를 때마다 음높이를 조금씩 달리한다 */
+function synthClick(vol: number) {
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AC) return;
+    clkCtx = clkCtx ?? new AC();
+    const ctx = clkCtx;
+    if (ctx.state === 'suspended') void ctx.resume();
+    const t = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 0.05);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 + Math.random() * 1600; bp.Q.value = 0.9;
+    const g = ctx.createGain(); g.gain.value = vol * 0.9;
+    src.connect(bp); bp.connect(g); g.connect(ctx.destination); src.start(t);
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(190 + Math.random() * 60, t); o.frequency.exponentialRampToValueAtTime(70, t + 0.06);
+    const og = ctx.createGain(); og.gain.setValueAtTime(vol * 0.5, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    o.connect(og); og.connect(ctx.destination); o.start(t); o.stop(t + 0.08);
+  } catch { /* 소리를 못 내도 위젯은 그대로 */ }
+}
+
+function ClickerKeycap({ imgId, label, down, onPress }: { imgId?: string; label: string; down: boolean; onPress: () => void }) {
+  const url = useBlobUrl(imgId);
+  return (
+    <div onPointerDown={onPress}
+      style={{
+        borderRadius: 10, overflow: 'hidden', minHeight: 0, userSelect: 'none', touchAction: 'manipulation',
+        filter: down ? 'brightness(0.95)' : undefined, transform: down ? 'scaleY(0.95)' : undefined, transformOrigin: 'bottom',
+        background: url ? undefined : 'rgba(0,0,0,.06)', display: 'grid', placeItems: 'center',
+      }}>
+      {url
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={url} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        : <span style={{ fontSize: 11, opacity: .45 }}>{label.toUpperCase()}</span>}
+    </div>
+  );
+}
+
+export function ClickerWidget({ conf }: { conf: WidgetConf }) {
+  const { editOn } = useMainStore();
+  const [open, setOpen] = useState(false);
+  const slots = clickerSlots(conf.settings);
+  const title = (conf.settings.title as string | undefined) ?? 'CLICKER.exe';
+  const tabColor = (conf.settings.tabColor as string | undefined) ?? '#525252';
+  const tabText = (conf.settings.tabText as string | undefined) ?? '#ffffff';
+  const bg = (conf.settings.bg as string | undefined) ?? '#ffffff';
+  const sounds = ((conf.settings.sounds as string | undefined) ?? '').split('\n').map(s => s.trim()).filter(s => /^https?:\/\//.test(s));
+  const [vol, setVol] = useState(0.5);
+  const [down, setDown] = useState<boolean[]>(() => Array(CLICKER_N).fill(false));
+  const [hint, setHint] = useState(true);
+  const timers = useRef<(ReturnType<typeof setTimeout> | null)[]>([]);
+  const lastSnd = useRef(-1);
+  useEditEvent(conf.id, () => setOpen(true));
+  useEffect(() => {
+    try { const v = localStorage.getItem(CLK_VOL); if (v != null) setVol(Math.min(1, Math.max(0, parseFloat(v)))); } catch { /* 무시 */ }
+    try { if (sessionStorage.getItem('ohome-clicker-hint') === '1') setHint(false); } catch { /* 무시 */ }
+  }, []);
+
+  const press = (i: number) => {
+    setDown(d => d.map((x, j) => (j === i ? true : x)));
+    const old = timers.current[i];
+    if (old) clearTimeout(old);
+    timers.current[i] = setTimeout(() => setDown(d => d.map((x, j) => (j === i ? false : x))), 100);
+    if (hint) { setHint(false); try { sessionStorage.setItem('ohome-clicker-hint', '1'); } catch { /* 무시 */ } }
+    if (sounds.length) {
+      // 직전과 같은 소리는 피해서 무작위
+      let k = 0;
+      if (sounds.length > 1) do { k = Math.floor(Math.random() * sounds.length); } while (k === lastSnd.current);
+      lastSnd.current = k;
+      const a = new Audio(sounds[k]); a.volume = vol; void a.play().catch(() => { /* 재생 막힘 무시 */ });
+    } else synthClick(vol);
+  };
+  // 키보드 — 최신 값을 ref로 들고 한 번만 등록
+  const pressRef = useRef(press); pressRef.current = press;
+  const keysRef = useRef(slots.map(s => s.key)); keysRef.current = slots.map(s => s.key);
+  const lockRef = useRef(false); lockRef.current = editOn || open;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (lockRef.current || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (document.querySelector('[role="dialog"], .modal-ov')) return;
+      const i = keysRef.current.indexOf(clickerKeyOf(e));
+      if (i >= 0) {
+        if (e.code.startsWith('Numpad')) e.preventDefault();   // NumLock이 꺼진 숫자 패드가 화면을 스크롤하지 않게
+        pressRef.current(i);   // 꾹 눌러도(반복) 계속 눌린 느낌 + 소리
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const showInfo = conf.settings.showInfo !== false;
+  const keysText = slots.map(s => s.key.toUpperCase()).join(' ');
+  return (
+    <div style={{
+      position: 'relative', width: '100%', height: '100%', minHeight: 110, display: 'flex', flexDirection: 'column',
+      background: bg, borderRadius: 6, overflow: 'hidden', boxShadow: '0 0 6px rgba(0,0,0,.15)',
+    }}>
+      {/* 상단 탭 — 이름 · 음량 */}
+      <div style={{ height: 22, flex: '0 0 22px', display: 'flex', alignItems: 'center', background: tabColor, color: tabText, fontSize: 12 }}>
+        <span style={{ marginLeft: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{title}</span>
+        <input type="range" min={0} max={1} step={0.01} value={vol} aria-label="음량"
+          onChange={e => { const v = parseFloat(e.target.value); setVol(v); try { localStorage.setItem(CLK_VOL, String(v)); } catch { /* 무시 */ } }}
+          style={{ width: 52, height: 4, margin: '0 10px', accentColor: tabText, cursor: 'var(--cur-pointer,pointer)' }} />
+      </div>
+      <div style={{
+        flex: 1, minHeight: 0, padding: '10px 12px 6px', display: 'grid', gap: 4,
+        gridTemplateColumns: `repeat(${CLICKER_COLS}, 1fr)`, gridAutoRows: '1fr',
+      }}>
+        {slots.map((s, i) => (
+          <ClickerKeycap key={i} imgId={s.imgId} label={s.key} down={down[i]} onPress={() => { if (!editOn) press(i); }} />
+        ))}
+      </div>
+      {showInfo && (
+        <div style={{ flex: '0 0 auto', textAlign: 'center', fontSize: 10.5, padding: '0 8px 7px', opacity: hint ? .6 : 0, transition: 'opacity .3s', pointerEvents: 'none' }}>
+          &apos; {keysText} &apos; 키를 눌러주세요!
+        </div>
+      )}
+      <div onClick={e => e.stopPropagation()}>
+        <Modal open={open} onClose={() => setOpen(false)} title="키캡 클리커" desc="5×2 키캡 이미지와 키·색·소리 설정">
+          {open && <ClickerEditor conf={conf} onClose={() => setOpen(false)} />}
+        </Modal>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- 타입 → 렌더러 ---------- */
 export function renderWidget(conf: WidgetConf) {
   // 없어진 종류(커미션 신청자 등)가 옛 배치에 남아 있으면 그리지 않는다 (v2.1 — 커미션 기능 삭제)
@@ -659,6 +797,7 @@ export function renderWidget(conf: WidgetConf) {
     case 'deco': return <DecoWidget conf={conf} />;
     case 'memoboard': return <MemoBoardWidget />;
     case 'banners': return <BannersWidget conf={conf} />;
+    case 'clicker': return <ClickerWidget conf={conf} />;
     default: return <div className="panel widget"><h4>{WIDGET_META[conf.type]?.title ?? conf.type}</h4></div>;
   }
 }
