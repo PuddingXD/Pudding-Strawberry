@@ -51,9 +51,26 @@ export interface BackupPost {
   fold: { type: FoldType; label?: string } | null;
   /** 태그 (v2.0 사용자 요청) — 목록·카드에 나열되고 검색에 걸린다 */
   tags?: string[];
+  /** 관리자가 편집모드에서 카드를 끌어 정한 수동 순서 — 없으면 올린 시각 순(최신 먼저). 수동 순서가 있는 글은 그 자리를 지키고, 새로 올린 글은 그 위에 시각 순으로 쌓인다 */
+  ord?: number;
 }
 
 export const BACKUP_SEED: BackupPost[] = [];
+
+/** 갤러리 글 정렬 — 관리자·회원 글이 섞이지 않게 **올린 시각(최신 먼저)** 이 기준이다.
+ *  섞이던 원인: 목록 순서는 저장된 순번(sort)에 기대는데, 회원은 자기에게 보이는 글만 가진 채 저장하므로
+ *  (비공개 글 등이 빠진 상태로 번호를 매겨) 관리자 글·회원 글의 번호가 서로 어긋날 수 있었다.
+ *  수동 순서(ord)가 있는 글끼리만 그 순서를 따르고, ord가 없는 글(새 글)은 항상 그 위에 시각순으로 둔다. */
+export function sortBackup<T extends { id: string; date: string; ord?: number }>(list: T[]): T[] {
+  const ms = (s: string) => { const n = Date.parse(s); return Number.isNaN(n) ? 0 : n; };
+  return [...list].sort((a, b) => {
+    const ao = a.ord != null, bo = b.ord != null;
+    if (ao && bo) return (a.ord as number) - (b.ord as number) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+    if (ao !== bo) return ao ? 1 : -1;                       // 수동 순서가 없는(=새) 글이 위
+    const d = ms(b.date) - ms(a.date);                        // 최신 먼저
+    return d || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);     // 같은 시각이면 id(만든 순으로 커짐)
+  });
+}
 
 /** 큰 그림 게시판 (v2.1 사용자 요청) — 글은 갤러리 글(BackupPost)과 같은 모양이지만 자기 자리에 쌓인다.
  *  목록이 한 줄에 글 하나·큰 이미지로 나오는 것이 다르다 (유형은 늘 세로 나열) */

@@ -7,7 +7,7 @@ import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, fmtDate } from '@/lib/postStore';
-import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED } from '@/lib/galleryStore';
+import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED, sortBackup } from '@/lib/galleryStore';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useBlobUrl, isVideoRef, blobUrlOf } from '@/lib/blobStore';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -123,7 +123,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   };
 
   const nb = pickNeighbors(
-    posts.filter(x => (x.secId ?? MAIN_SEC) === (p.secId ?? MAIN_SEC)
+    (feed ? posts : sortBackup(posts)).filter(x => (x.secId ?? MAIN_SEC) === (p.secId ?? MAIN_SEC)
       && !(x.visibility === 'private' && !isAdmin) && !(x.visibility === 'member' && !user)),
     p.id,
   );

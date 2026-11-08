@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
 import { useLocalList, fmtDate } from '@/lib/postStore';
-import { BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
+import { BackupPost, BACKUP_SEED, sortBackup } from '@/lib/galleryStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { createPortal } from 'react-dom';
 import { CroppedBlobImg, CropEditor, CropValue } from '@/components/ui/CropEditor';
@@ -59,14 +59,14 @@ function BackupPageInner() {
     setCtx({ x: e.clientX, y: e.clientY, post: p });
   };
 
-  const visible = posts
+  const visible = sortBackup(posts)   // 올린 시각 순 (관리자 글·회원 글 섞임 방지) — 수동 순서(ord)가 있으면 그 자리 유지
     .filter(p => isAdmin || p.visibility === 'public' || (p.visibility === 'member' && user))
     .filter(p => !cat || p.category === cat)   // 말머리 탭 — ALL이면 전부
     .filter(p => !q || p.title.includes(q) || p.category.includes(q)
       || (p.tags ?? []).some(t => t.toLowerCase().includes(q.toLowerCase())));   // 태그 검색 (v2.0)
 
   // 편집모드 카드 드래그 정렬 (v1.9 — 갤러리 보기)
-  const sort = useCardSort(visible, next => setPosts(mergeOrder(posts, next)), editOn && isAdmin);
+  const sort = useCardSort(visible, next => setPosts(mergeOrder(sortBackup(posts), next).map((x, i) => ({ ...x, ord: i }))), editOn && isAdmin);   // 끌어 정하면 지금 순서를 수동 순서(ord)로 기록
 
   /* 게시물이 쌓이면 페이지로 (v2.0 사용자 요청) — 보기에 따라 한 장 분량이 다르다.
      갤러리 보기는 한 줄에 3개라 12개(4줄), 리스트 보기는 글 목록과 같은 20개. */
