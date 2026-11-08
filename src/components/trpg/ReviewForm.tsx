@@ -42,7 +42,7 @@ function ThumbCrop({ url, refId, crop, onClose, onApply }: {
   const loaded = useBlobUrl(refId);
   const src = url || loaded;
   if (!src) return null;
-  return <CropEditor open src={src} aspect="4:3" aspectLabel="타일 (4:3)" initial={crop} onClose={onClose} onApply={onApply} />;
+  return <CropEditor open src={src} aspect="16:9" aspectLabel="타일 (16:9)" initial={crop} onClose={onClose} onApply={onApply} />;
 }
 
 const blankRater = (role: 'GM' | 'PC'): ReviewRater => ({ id: newId(), role, name: '', stars: 0, text: '' });
@@ -223,7 +223,7 @@ export function ReviewForm({ initial }: { initial: TrpgReview | null }) {
               data-tip={img ? '이미지 바꾸기' : undefined}>
               {img
                 ? (img.url ? <CropImg src={img.url} crop={crop} /> : <CroppedBlobImg fileRef={img.ref} crop={crop} ph="cool" />)
-                : <span>＋ 이미지<small>목록에 4:3 타일로</small></span>}
+                : <span>＋ 이미지<small>목록에 16:9 타일로</small></span>}
             </div>
             {img && (
               <div className="rv-f-thumb-acts">

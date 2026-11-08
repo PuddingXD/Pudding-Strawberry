@@ -1697,7 +1697,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 @media(max-width:1080px){.rv-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.rv-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
 .rv-card{cursor:var(--cur-pointer,pointer)}
-.rv-card .rv-img{aspect-ratio:3/4;position:relative;overflow:hidden}
+.rv-card .rv-img{aspect-ratio:16/9;position:relative;overflow:hidden}   /* 목록 썸네일 16:9 */
 .rv-card .rv-img .ph{position:absolute;inset:0}
 .rv-card .rv-badge{position:absolute;left:8px;top:8px;z-index:2}
 .rv-card .bd .rv-stars{justify-content:flex-start;gap:6px 10px;margin-top:6px}
@@ -1726,8 +1726,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rv-f-row{display:flex;gap:16px 22px;flex-wrap:wrap;align-items:flex-start}
 .rv-f-field{min-width:150px}
 .rv-f-field.grow{flex:1;min-width:200px}
-.rv-f-media{display:grid;grid-template-columns:150px 1fr;gap:26px;align-items:start}
-.rv-f-thumb{width:150px;aspect-ratio:3/4;border-radius:var(--radius-s);border:1.5px dashed var(--line);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:calc(12px*var(--fs,1));cursor:var(--cur-pointer,pointer);position:relative;overflow:hidden;transition:border-color .15s}
+.rv-f-media{display:grid;grid-template-columns:240px 1fr;gap:26px;align-items:start}
+.rv-f-thumb{width:240px;aspect-ratio:16/9;border-radius:var(--radius-s);border:1.5px dashed var(--line);display:grid;place-items:center;text-align:center;color:var(--faint);font-size:calc(12px*var(--fs,1));cursor:var(--cur-pointer,pointer);position:relative;overflow:hidden;transition:border-color .15s}
 .rv-f-thumb:hover{border-color:var(--accent)}
 .rv-f-thumb.has{border-style:solid}
 .rv-f-thumb .ph{position:absolute;inset:0}
@@ -1766,8 +1766,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rv-d-log .ar{margin-left:auto;flex-shrink:0;color:var(--faint)}
 @media(max-width:620px){
   .rv-form{padding:20px 16px;gap:22px}
-  .rv-f-media{grid-template-columns:110px 1fr;gap:16px}
-  .rv-f-thumb{width:110px}
+  .rv-f-media{grid-template-columns:150px 1fr;gap:16px}
+  .rv-f-thumb{width:150px}
   .rv-rater-hd .rv-rater-name{width:100%;order:3}
   .rv-detail-panel{padding:18px}
 }

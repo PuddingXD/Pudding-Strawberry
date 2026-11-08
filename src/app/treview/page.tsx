@@ -1,9 +1,10 @@
 'use client';
-// TRPG 리뷰 게시판 (v2.1 사용자 요청) — 시나리오마다 인물별 별점 + 한줄평. 4:3 타일 그리드 · 페어 말머리 탭 · 검색 · 12개씩 페이지.
+// TRPG 리뷰 게시판 (v2.1 사용자 요청) — 시나리오마다 인물별 별점 + 한줄평. 16:9 타일 그리드 · 페어 말머리 탭 · 검색 · 12개씩 페이지.
 // 쓰기·수정은 페이지(/treview/write · /treview/[id]/edit). 말머리는 환경설정 > 게시판 관리 「TRPG 리뷰 말머리」,
 // 글쓰기 권한은 환경설정 「권한」(기본: 가입자). 수정은 쓴 사람·관리자·글쓰기 권한이 있는 회원 —
 // 저장할 때 editorIds에 적고, 옛 글은 관리자가 열 때 채운다
 import React, { Suspense, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, MAIN_SEC, secQuery } from '@/lib/sectionStore';
@@ -16,7 +17,8 @@ import { useBoardSettings, reviewCatsOf, boardBadgeStyle } from '@/lib/boardStor
 import { useMenuSettings } from '@/lib/menuStore';
 import { useMembers } from '@/lib/members';
 import { SearchBar, Pager } from '@/components/ui/Kit';
-import { CroppedBlobImg } from '@/components/ui/CropEditor';
+import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
+import { useBlobUrl } from '@/lib/blobStore';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
 const PER = 12;        // 4열 × 3줄
@@ -36,6 +38,24 @@ function ReviewPageInner() {
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   useEffect(() => { setPage(1); }, [q, cat]);
+
+  /* 우클릭 → 썸네일 수정 — 수정 화면까지 안 가고 목록에서 바로 16:9 위치를 고친다 (갤러리와 같은 방식).
+     관리자·쓴 사람·수정 권한(editorIds)이 있는 회원만, 이미지가 있는 글만 */
+  const [ctx, setCtx] = useState<{ x: number; y: number; r: TrpgReview } | null>(null);
+  const [cropR, setCropR] = useState<TrpgReview | null>(null);
+  useEffect(() => {
+    if (!ctx) return;
+    const close = () => setCtx(null);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [ctx]);
+  const canEditR = (r: TrpgReview) => isAdmin || (!!user && (r.authorId === user.id || !!r.editorIds?.includes(user.id)));
+  const onCtx = (e: React.MouseEvent, r: TrpgReview) => {
+    if (!r.thumbId || !canEditR(r)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setCtx({ x: e.clientX, y: e.clientY, r });
+  };
 
   /* 수정 가능 회원 채우기 (v2.1) — 서버 규칙은 문서에 적힌 editorIds만 보므로, 관리자가 이 페이지를 열 때
      「지금 글쓰기 권한이 있는 회원」을 옛 글에도 적어 둔다 (이미 맞으면 아무것도 안 쓴다) */
@@ -91,8 +111,8 @@ function ReviewPageInner() {
             const rs = ratersOf(r);
             return (
               <article key={r.id} className="panel tc-card rv-card" onClick={() => router.push(`/treview/${r.id}`)}>
-                {/* 4:3 타일 — 대표 이미지, 없으면 자리표시자 */}
-                <div className="rv-img">
+                {/* 16:9 타일 — 대표 이미지, 없으면 자리표시자 · 우클릭 = 썸네일 수정 */}
+                <div className="rv-img" onContextMenu={e => onCtx(e, r)}>
                   <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" label={r.thumbId ? undefined : 'REVIEW'} />
                   {r.category && <span className="rv-badge" style={boardBadgeStyle(badgeOf(r.category))}>{r.category}</span>}
                 </div>
@@ -121,8 +141,42 @@ function ReviewPageInner() {
         </div>
       )}
       {visible.length > PER && <Pager page={cur} total={pages} onChange={setPage} />}
+
+      {/* 우클릭 메뉴 */}
+      {ctx && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed', left: ctx.x, top: ctx.y, zIndex: 130,
+          background: 'var(--panel-solid,#fff)', border: '1px solid var(--line)', borderRadius: 9,
+          boxShadow: 'var(--sh-dd)', padding: 4, display: 'grid', minWidth: 128,
+        }} onMouseDown={e => e.stopPropagation()}>
+          <div style={{
+            padding: '6px 12px 5px', fontSize: 10.5, color: 'var(--faint)', maxWidth: 200,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            borderBottom: '1px solid var(--line)', marginBottom: 3,
+          }}>{ctx.r.title}</div>
+          <button style={{ padding: '7px 12px', fontSize: 12, borderRadius: 6, textAlign: 'left' }}
+            onClick={() => { setCropR(ctx.r); setCtx(null); }}>썸네일 수정</button>
+        </div>,
+        document.body,
+      )}
+
+      {/* 썸네일 크롭 — 작성 폼과 같은 16:9 */}
+      {cropR && (
+        <ThumbCropModal r={cropR} onClose={() => setCropR(null)}
+          onApply={crop => {
+            setAll(all.map(x => (x.id === cropR.id ? { ...x, thumbCrop: crop } : x)));
+            setCropR(null);
+          }} />
+      )}
     </section>
   );
+}
+
+/** 대표 이미지 크롭 모달 — blob을 URL로 풀어 CropEditor에 (훅이라 컴포넌트로 분리) */
+function ThumbCropModal({ r, onClose, onApply }: { r: TrpgReview; onClose: () => void; onApply: (c: CropValue) => void }) {
+  const url = useBlobUrl(r.thumbId);
+  if (!url) return null;
+  return <CropEditor open src={url} aspect="16:9" aspectLabel="타일 (16:9)" initial={r.thumbCrop} onClose={onClose} onApply={onApply} />;
 }
 
 /** ?s= 를 읽으므로 Suspense 경계가 필요하다 (Next App Router) */
