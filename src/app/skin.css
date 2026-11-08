@@ -463,16 +463,19 @@
     drop-shadow(0 .6px 0 var(--ticket-outline))
     drop-shadow(0 -.6px 0 var(--ticket-outline));
 }
-/* 리뷰 썸네일은 내용·원본 이미지 비율과 관계없이 4:3 프레임을 유지한다. */
+/* 리뷰 목록 썸네일은 내용·원본 이미지 비율과 관계없이 16:9 프레임을 유지하고, 같은 줄 카드는 세로 길이를 맞춘다. */
 .rv-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-.rv-card{min-width:0;align-self:start}
-.rv-card .rv-img{width:100%;height:auto;min-height:0;aspect-ratio:4/3;flex-shrink:0}
+.rv-card{min-width:0;align-self:stretch;display:flex;flex-direction:column}
+.rv-card .bd{flex:1}
+.rv-card .rv-img{width:100%;height:auto;min-height:0;aspect-ratio:16/9;flex-shrink:0}
 .rv-card .rv-img > div{position:absolute;inset:0}
 @media(max-width:1080px){.rv-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){.rv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* 리뷰 등록 미리보기·상세 이미지도 목록과 같은 가로형 4:3. */
-.rv-f-thumb,.rv-detail-img{aspect-ratio:4/3}
+/* 리뷰 등록 미리보기·상세 이미지도 목록과 같은 가로형 16:9. 상세는 16:9가 너무 작아 보이지 않게 이미지 칸을 넓힌다. */
+.rv-f-thumb,.rv-detail-img{aspect-ratio:16/9}
+.rv-detail-panel:has(.rv-detail-img){grid-template-columns:380px 1fr}
+@media(max-width:720px){.rv-detail-panel:has(.rv-detail-img){grid-template-columns:1fr}.rv-detail-img{max-width:none}}
 
 /* ─── 자관 상세: 양옆 캐릭터 카드는 네모 없이 글자만 (사용자 요청) ───
    어두운 헤더 위에서도 묻히지 않게

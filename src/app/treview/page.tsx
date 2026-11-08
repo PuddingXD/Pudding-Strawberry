@@ -22,7 +22,7 @@ import { useBlobUrl } from '@/lib/blobStore';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
 const PER = 12;        // 4열 × 3줄
-const TILE_RATERS = 3; // 타일에 보이는 평가 줄 수 — 넘치면 「외 N명」
+const TILE_RATERS = 2; // 타일에 보이는 평가 줄 수 — 최대 2줄 (넘치는 사람은 숨김, 카드 높이는 같은 줄끼리 맞춤)
 
 function ReviewPageInner() {
   const router = useRouter();
@@ -126,7 +126,6 @@ function ReviewPageInner() {
                       {[...rs].sort((a, b) => (a.role === b.role ? 0 : a.role === 'GM' ? -1 : 1)).slice(0, TILE_RATERS).map(x => (
                         <div key={x.id} className="rv-tr"><span className="who">{raterLabel(x)}</span><i>{starText(x.stars)}</i></div>
                       ))}
-                      {rs.length > TILE_RATERS && <div className="rv-tr more">외 {rs.length - TILE_RATERS}명</div>}
                     </div>
                   )}
                 </div>

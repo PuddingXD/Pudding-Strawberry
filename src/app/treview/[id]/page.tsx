@@ -60,7 +60,7 @@ function ReviewDetailInner() {
       </div>
 
       <div className="panel rv-detail-panel body-card wide" style={{ ['--bc-in' as string]: '908px' } as React.CSSProperties}>
-        {/* 왼쪽 — 대표 이미지 (3:4) */}
+        {/* 왼쪽 — 대표 이미지 (16:9) */}
         {r.thumbId && (
           <div className="rv-detail-img">
             <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" />
