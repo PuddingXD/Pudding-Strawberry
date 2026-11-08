@@ -36,7 +36,6 @@ function DotoriPageInner() {
   const [tab, setTab] = useState<Tab>('all');
   const [q, setQ] = useState('');
   const [delFor, setDelFor] = useState<DotoriItem | null>(null);
-  const [statusFor, setStatusFor] = useState<string | null>(null);   // 상태 전환 팝업이 열린 카드 id
   const [trpgSet] = useTrpgSettings(); // 상태 라벨·뱃지 색 (환경설정 > TRPG)
   const { editOn } = useMainStore();
 
@@ -56,9 +55,6 @@ function DotoriPageInner() {
 
   const countOf = (t: Tab) =>
     items.filter(it => (t === 'all' ? !dotoriHiddenInAll(trpgSet, it.status) : it.status === t)).length;
-
-  const setStatus = (id: string, s: DotoriStatus) =>
-    setItems(items.map(x => (x.id === id ? { ...x, status: s } : x)));
 
   // 편집모드 카드 드래그 정렬 (v1.9) — 훅이므로 early return보다 먼저.
   // 정렬은 `shown` 전체 기준으로 다루고 카드에는 전체 기준 위치를 넘긴다(아래) — 페이지 안 위치로
@@ -85,7 +81,7 @@ function DotoriPageInner() {
   if (!loaded) return <section className="page" />;
 
   return (
-    <section className="page" onClick={() => setStatusFor(null)}>
+    <section className="page">
       <div className="page-head">
         <PageTitle>{sec.id === 'main' ? 'DOTORI' : sec.name}</PageTitle>
         <EditableDesc k="dotori-desc" def="가고 싶은 시나리오 저장함 — 도토리처럼 모아두기" />
@@ -129,19 +125,7 @@ function DotoriPageInner() {
               )}
               {canEdit(it) && (
                 <div className="hv-actions dt-actions" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setStatusFor(s => (s === it.id ? null : it.id))}>STATUS</button>
                   <button className="del" onClick={() => setDelFor(it)}>DELETE</button>
-                </div>
-              )}
-              {/* 상태 전환 팝업 — [상태] 클릭 시에만 (기본 UI에는 미노출) */}
-              {statusFor === it.id && (
-                <div className="dt-status-pop" onClick={e => e.stopPropagation()}>
-                  {dotoriStatusKeys(trpgSet).map(s => (
-                    <button key={s} className={it.status === s ? 'on' : ''}
-                      onClick={() => { setStatus(it.id, s); setStatusFor(null); }}>
-                      {dotoriStatusOf(trpgSet, s).label}
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
