@@ -1511,6 +1511,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dt-actions button{font-size:calc(10px*var(--fs,1));padding:4px 9px;border-radius:999px;background:rgba(15,17,20,.55);color:#dfe2e7}
 .dt-actions button.del{background:color-mix(in srgb,var(--accent) 75%,transparent);color:#fff}
 .dt-card:hover .hv-actions{opacity:1;pointer-events:auto}
+/* 도토리 추가 링크 칩 (세팅 배포 등) */
+.dt-links{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.dt-links a{font-size:calc(10.5px*var(--fs,1));padding:2px 9px;border:1px solid var(--line);border-radius:999px;color:var(--sub);cursor:var(--cur-pointer,pointer);white-space:nowrap;transition:.13s}
+.dt-links a:hover{border-color:var(--accent);color:var(--accent)}
 /* 카드 안 태그 — 부모 kw-row의 프로필용 패딩 제거 (좌측 정렬) */
 .dt-card .kw-row{padding:0}
 /* 상태 전환 팝업 (관리자 — 호버 액션의 [상태] 클릭 시) */

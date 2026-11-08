@@ -15,6 +15,7 @@ import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useMainStore } from '@/lib/mainStore';
+import { safeHref, normalizeInternalLink } from '@/lib/link';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
 
 type Tab = 'all' | DotoriStatus;
@@ -158,6 +159,17 @@ function DotoriPageInner() {
               <div className="kw-row">
                 {it.tags.map(t => <span key={t} className="pill">{t}</span>)}
               </div>
+              {/* 추가 링크(세팅 배포 등) — 제목 칩, 누르면 새 탭 (카드 클릭=편집과 섞이지 않게 전파 차단) */}
+              {(it.links ?? []).length > 0 && (
+                <div className="dt-links" onClick={e => e.stopPropagation()}>
+                  {(it.links ?? []).map(l => {
+                    const href = safeHref(normalizeInternalLink(l.url));
+                    return href === '#' ? null : (
+                      <a key={l.id} href={href} target="_blank" rel="noopener noreferrer" data-tip={l.url}>↗ {l.title || '링크'}</a>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
           );

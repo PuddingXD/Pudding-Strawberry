@@ -279,6 +279,9 @@ export function useTrpgSettings(): [TrpgSettings, (patch: Partial<TrpgSettings>)
   return [st, patch, loaded];
 }
 
+export interface DotoriLink { id: string; title: string; url: string }
+export const DOTORI_LINK_MAX = 10;
+
 export interface DotoriItem {
   /** 소속 섹션 (v2.0) — 여러 개로 만들었을 때. 없으면 기본 섹션 */
   secId?: string;
@@ -289,6 +292,8 @@ export interface DotoriItem {
   people: string;            // 인원 표기
   tags: string[];            // 태그 (복수)
   link?: string;             // 판매처/소개 페이지
+  /** 추가 링크 (세팅 배포용 등) — ＋로 최대 DOTORI_LINK_MAX개, 각각 무슨 링크인지 짧은 제목. 카드에 제목 칩으로 보이고 누르면 새 탭 */
+  links?: DotoriLink[];
   status: DotoriStatus;      // 카드에서 바로 전환
   imgId?: string;            // 16:9 이미지 (IndexedDB)
   thumbCrop?: CropValue;

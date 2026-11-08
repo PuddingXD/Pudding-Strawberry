@@ -1,7 +1,8 @@
 ﻿'use client';
 // 도토리 등록/수정 공용 폼 (4.15) — 16:9 이미지 + 시나리오 정보 + 상태
 import React, { useState } from 'react';
-import { DotoriItem, DotoriStatus, dotoriStatusKeys, dotoriStatusOf, useTrpgSettings } from '@/lib/galleryStore';
+import { DotoriItem, DotoriLink, DOTORI_LINK_MAX, DotoriStatus, dotoriStatusKeys, dotoriStatusOf, useTrpgSettings } from '@/lib/galleryStore';
+import { normalizeInternalLink } from '@/lib/link';
 import { KInput, KSelect } from '@/components/ui/Kit';
 import { CropEditor, CropValue, CropImg, CroppedBlobImg } from '@/components/ui/CropEditor';
 import { putBlob } from '@/lib/blobStore';
@@ -9,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 
 export interface DotoriFormValue {
   name: string; writer: string; rule: string; people: string;
-  tags: string[]; link?: string; status: DotoriStatus;
+  tags: string[]; link?: string; links?: DotoriLink[]; status: DotoriStatus;
   imgId?: string; thumbCrop?: CropValue;
 }
 
@@ -27,6 +28,9 @@ export function DotoriForm({ initial, onSave, onCancel }: {
   const [people, setPeople] = useState(initial?.people ?? '');
   const [tags, setTags] = useState((initial?.tags ?? []).join(', '));
   const [link, setLink] = useState(initial?.link ?? '');
+  // 추가 링크 (세팅 배포용 등) — ＋로 늘려 최대 10개, 각각 짧은 제목
+  const [links, setLinks] = useState<DotoriLink[]>(initial?.links ?? []);
+  const patchLink = (id: string, p: Partial<DotoriLink>) => setLinks(l => l.map(x => (x.id === id ? { ...x, ...p } : x)));
   // 새로 담는 시나리오는 대개 아직 일정이 없다 — 기본값을 「일정 미정」으로 (사용자 확정)
   const [status, setStatus] = useState<DotoriStatus>(initial?.status ?? 'undecided');
   const [file, setFile] = useState<File | null>(null);
@@ -41,6 +45,9 @@ export function DotoriForm({ initial, onSave, onCancel }: {
       name: name.trim(), writer: writer.trim(), rule: rule.trim(), people: people.trim(),
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       link: link.trim() || undefined, status,
+      // 주소가 빈 줄은 버린다 — 제목만 있으면 어디로 갈지 모르므로 (풀주소는 사이트 안 주소로 정리)
+      links: links.map(x => ({ ...x, title: x.title.trim(), url: normalizeInternalLink(x.url) })).filter(x => x.url).length
+        ? links.map(x => ({ ...x, title: x.title.trim(), url: normalizeInternalLink(x.url) })).filter(x => x.url) : undefined,
       imgId: file ? await putBlob(file) : (removed ? undefined : initial?.imgId),
       thumbCrop: crop,
     });
@@ -91,6 +98,23 @@ export function DotoriForm({ initial, onSave, onCancel }: {
             </div>
             <KInput placeholder="태그 — 쉼표로 구분" value={tags} onChange={e => setTags(e.target.value)} />
             <KInput placeholder="링크 (선택)" value={link} onChange={e => setLink(e.target.value)} />
+            {/* 추가 링크 — 세팅 배포용 등. ＋로 늘리고 줄마다 "무슨 링크인지" 짧은 제목 */}
+            <div style={{ display: 'grid', gap: 7, padding: '2px 0' }}>
+              <label className="k-label" style={{ margin: 0 }}>
+                추가 링크 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 세팅 배포 등 · 최대 {DOTORI_LINK_MAX}개 · 카드에 제목으로 표시</span>
+              </label>
+              {links.map(l => (
+                <div key={l.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <KInput placeholder="제목 (예: 세팅 배포)" maxLength={20} value={l.title} onChange={e => patchLink(l.id, { title: e.target.value })} style={{ maxWidth: 150 }} />
+                  <KInput placeholder="https://…" value={l.url} onChange={e => patchLink(l.id, { url: e.target.value })} />
+                  <span className="fx" data-tip="이 링크 빼기" onClick={() => setLinks(x => x.filter(y => y.id !== l.id))}>✕</span>
+                </div>
+              ))}
+              {links.length < DOTORI_LINK_MAX && (
+                <button type="button" className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 11, justifySelf: 'start' }}
+                  onClick={() => setLinks(x => [...x, { id: `l${Date.now().toString(36)}${x.length}`, title: '', url: '' }])}>＋ 링크 추가</button>
+              )}
+            </div>
             <KSelect value={status} onChange={v => setStatus(v as DotoriStatus)}
               options={dotoriStatusKeys(trpgSet).map(s => ({ value: s, label: dotoriStatusOf(trpgSet, s).label }))} />
             <p className="hint" style={{ margin: 0 }}>뱃지는 공수표·일정 확정만 카드에 표시 — 완은 완 탭에서만 보입니다</p>
