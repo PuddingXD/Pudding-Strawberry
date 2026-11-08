@@ -26,7 +26,6 @@ export function DotoriForm({ initial, onSave, onCancel }: {
   const [writer, setWriter] = useState(initial?.writer ?? '');
   const [rule, setRule] = useState(initial?.rule ?? '');
   const [people, setPeople] = useState(initial?.people ?? '');
-  const [tags, setTags] = useState((initial?.tags ?? []).join(', '));
   const [link, setLink] = useState(initial?.link ?? '');
   // 추가 링크 (세팅 배포용 등) — ＋로 늘려 최대 10개, 각각 짧은 제목
   const [links, setLinks] = useState<DotoriLink[]>(initial?.links ?? []);
@@ -43,7 +42,7 @@ export function DotoriForm({ initial, onSave, onCancel }: {
     if (!name.trim()) { toast('시나리오 이름을 입력해 주세요'); return; }
     onSave({
       name: name.trim(), writer: writer.trim(), rule: rule.trim(), people: people.trim(),
-      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      tags: initial?.tags ?? [],   // 태그 입력은 없앴다 — 예전 글의 값만 그대로 보존
       link: link.trim() || undefined, status,
       // 주소가 빈 줄은 버린다 — 제목만 있으면 어디로 갈지 모르므로 (풀주소는 사이트 안 주소로 정리)
       links: links.map(x => ({ ...x, title: x.title.trim(), url: normalizeInternalLink(x.url) })).filter(x => x.url).length
@@ -96,17 +95,16 @@ export function DotoriForm({ initial, onSave, onCancel }: {
               <KInput placeholder="룰" value={rule} onChange={e => setRule(e.target.value)} style={{ maxWidth: 130 }} />
               <KInput placeholder="인원" value={people} onChange={e => setPeople(e.target.value)} style={{ maxWidth: 90 }} />
             </div>
-            <KInput placeholder="태그 — 쉼표로 구분" value={tags} onChange={e => setTags(e.target.value)} />
             <KInput placeholder="링크 (선택)" value={link} onChange={e => setLink(e.target.value)} />
             {/* 추가 링크 — 세팅 배포용 등. ＋로 늘리고 줄마다 "무슨 링크인지" 짧은 제목 */}
             <div style={{ display: 'grid', gap: 7, padding: '2px 0' }}>
               <label className="k-label" style={{ margin: 0 }}>
-                추가 링크 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 세팅 배포 등 · 최대 {DOTORI_LINK_MAX}개 · 카드에 제목으로 표시</span>
+                추가 링크
               </label>
               {links.map(l => (
                 <div key={l.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <KInput placeholder="제목 (예: 세팅 배포)" maxLength={20} value={l.title} onChange={e => patchLink(l.id, { title: e.target.value })} style={{ maxWidth: 150 }} />
-                  <KInput placeholder="https://…" value={l.url} onChange={e => patchLink(l.id, { url: e.target.value })} />
+                  <KInput maxLength={20} value={l.title} onChange={e => patchLink(l.id, { title: e.target.value })} style={{ maxWidth: 150 }} />
+                  <KInput value={l.url} onChange={e => patchLink(l.id, { url: e.target.value })} />
                   <span className="fx" data-tip="이 링크 빼기" onClick={() => setLinks(x => x.filter(y => y.id !== l.id))}>✕</span>
                 </div>
               ))}

@@ -1491,7 +1491,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dt-card{padding:0;overflow:hidden;transition:.2s}
 .dt-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
 .dt-card .th{position:relative;aspect-ratio:16/9;overflow:hidden}
-.dt-card .bd{padding:13px 15px 15px}
+.dt-card .bd{padding:10px 14px 11px}
 /* 제목이 길면 두 줄로 늘어나지 않고 말줄임 (v1.9 사용자 확정 — 카드 높이 유지) */
 .dt-card .nm{display:block;font-size:calc(13.5px*var(--fs,1));line-height:1.5;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dt-card .meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1512,8 +1512,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dt-actions button.del{background:color-mix(in srgb,var(--accent) 75%,transparent);color:#fff}
 .dt-card:hover .hv-actions{opacity:1;pointer-events:auto}
 /* 도토리 추가 링크 칩 (세팅 배포 등) */
-.dt-links{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
-.dt-links a{font-size:calc(10.5px*var(--fs,1));padding:2px 9px;border:1px solid var(--line);border-radius:999px;color:var(--sub);cursor:var(--cur-pointer,pointer);white-space:nowrap;transition:.13s}
+.dt-links{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;max-height:44px;overflow:hidden}   /* 칩은 최대 2줄까지만 — 넘치면 잘림 */
+.dt-links a{font-size:calc(10px*var(--fs,1));line-height:16px;padding:1px 8px;border:1px solid var(--line);border-radius:999px;color:var(--sub);cursor:var(--cur-pointer,pointer);white-space:nowrap;transition:.13s}
 .dt-links a:hover{border-color:var(--accent);color:var(--accent)}
 /* 카드 안 태그 — 부모 kw-row의 프로필용 패딩 제거 (좌측 정렬) */
 .dt-card .kw-row{padding:0}

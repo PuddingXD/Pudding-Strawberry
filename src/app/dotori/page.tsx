@@ -102,7 +102,7 @@ function DotoriPageInner() {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <SearchBar placeholder="시나리오·라이터·태그 검색" onSearch={setQ} />
+          <SearchBar placeholder="시나리오·라이터 검색" onSearch={setQ} />
           {canAdd && <button className="btn btn-dark" onClick={() => router.push('/dotori/new' + secQuery('dotori', sec.id))}>＋ ADD</button>}
         </div>
       </div>
@@ -155,10 +155,6 @@ function DotoriPageInner() {
               <small className="meta">
                 {[it.writer, it.rule, it.people].filter(Boolean).join(' · ')}
               </small>
-              {/* 태그가 없어도 줄은 남긴다 — 태그 유무로 카드 키가 달라지지 않게 (v2.0 사용자 요청) */}
-              <div className="kw-row">
-                {it.tags.map(t => <span key={t} className="pill">{t}</span>)}
-              </div>
               {/* 추가 링크(세팅 배포 등) — 제목 칩, 누르면 새 탭 (카드 클릭=편집과 섞이지 않게 전파 차단) */}
               {(it.links ?? []).length > 0 && (
                 <div className="dt-links" onClick={e => e.stopPropagation()}>
