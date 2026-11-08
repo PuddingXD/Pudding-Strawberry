@@ -697,7 +697,7 @@ export function ClickerWidget({ conf }: { conf: WidgetConf }) {
   const title = (conf.settings.title as string | undefined) ?? 'CLICKER.exe';
   const tabColor = (conf.settings.tabColor as string | undefined) ?? '#525252';
   const tabText = (conf.settings.tabText as string | undefined) ?? '#ffffff';
-  const bg = (conf.settings.bg as string | undefined) ?? '#ffffff';
+  const bg = (conf.settings.bg as string | undefined) ?? 'var(--wg-bg)';   // 안 정하면 다른 위젯과 같은 배경
   const sounds = ((conf.settings.sounds as string | undefined) ?? '').split('\n').map(s => s.trim()).filter(s => /^https?:\/\//.test(s));
   const [vol, setVol] = useState(0.5);
   const [down, setDown] = useState<boolean[]>(() => Array(CLICKER_N).fill(false));
@@ -749,7 +749,9 @@ export function ClickerWidget({ conf }: { conf: WidgetConf }) {
   return (
     <div style={{
       position: 'relative', width: '100%', height: '100%', minHeight: 110, display: 'flex', flexDirection: 'column',
-      background: bg, borderRadius: 6, overflow: 'hidden', boxShadow: '0 0 6px rgba(0,0,0,.15)',
+      // 다른 위젯과 같은 모서리(--radius)·테두리(디자인 탭 「위젯 > 테두리」, 설정에서 이 위젯만 끌 수 있음) · 그림자 없음
+      background: bg, color: 'var(--wg-fg)', borderRadius: 'var(--radius)', overflow: 'hidden',
+      border: conf.settings.noBorder ? 'none' : 'var(--wg-bd-w) solid var(--wg-bd)',
     }}>
       {/* 상단 탭 — 이름 · 음량 */}
       <div style={{ height: 22, flex: '0 0 22px', display: 'flex', alignItems: 'center', background: tabColor, color: tabText, fontSize: 12 }}>

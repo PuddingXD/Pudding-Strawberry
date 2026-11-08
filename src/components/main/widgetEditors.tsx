@@ -622,6 +622,8 @@ export function ClickerEditor({ conf, onClose }: { conf: WidgetConf; onClose?: (
         <span className="cp-lb">위쪽 이름</span>
         <KInput value={str('title', 'CLICKER.exe')} onChange={e => set({ title: e.target.value })} style={{ width: 200 }} />
         <KCheck label="아래 안내 문구 보이기" checked={conf.settings.showInfo !== false} onChange={v => set({ showInfo: v ? undefined : false })} />
+        {/* 다른 위젯과 같은 테두리 — 디자인 탭 「위젯 > 테두리」를 켰을 때 이 위젯에도 그릴지 */}
+        <KCheck label="위젯 테두리" checked={!conf.settings.noBorder} onChange={v => set({ noBorder: v ? undefined : true })} />
       </div>
 
       <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -631,6 +633,9 @@ export function ClickerEditor({ conf, onClose }: { conf: WidgetConf; onClose?: (
         <div style={{ width: 150 }}><ColorField value={str('tabText', '#ffffff')} onChange={v => set({ tabText: v })} /></div>
         <span className="cp-lb">배경색</span>
         <div style={{ width: 150 }}><ColorField value={str('bg', '#ffffff')} onChange={v => set({ bg: v })} /></div>
+        {typeof conf.settings.bg === 'string' && (
+          <button className="btn btn-ghost" style={{ height: 24, padding: '0 9px', fontSize: 10 }} onClick={() => set({ bg: undefined })}>다른 위젯과 같게</button>
+        )}
       </div>
 
       <div>
