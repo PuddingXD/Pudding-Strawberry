@@ -9,6 +9,7 @@ import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
 import { DragList } from '@/components/ui/DragList';
 import { NavLink } from '@/components/ui/NavLink';
+import { useConfirmDelete } from '@/components/ui/Modal';
 
 export interface DocPatch { title: string; subtitle: string; html: string; size: number }
 
@@ -25,13 +26,15 @@ export function ReadMore({ onOpen, href }: { onOpen: () => void; href?: string }
   return <button type="button" className="doc-more" onClick={onOpen}>전체 읽기 &gt;</button>;
 }
 
-export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, onAdd, onReorder, startEditId, onStartedEdit }: {
+export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, onDelete, deleteNote, onAdd, onReorder, startEditId, onStartedEdit }: {
   docs: DocItem[];
   activeId: string;
   onPick: (id: string) => void;
   bodyFont?: string;
   canEdit?: boolean;
   onSave?: (id: string, patch: DocPatch) => void;
+  onDelete?: (id: string) => void;     // 「삭제」 — 확인창을 거친 뒤 부른다 (없으면 삭제 버튼 없음)
+  deleteNote?: string;                 // 삭제 확인창에 덧붙일 안내
   onAdd?: () => void;                  // 「＋ 문서 추가」 (자관) — 없으면 버튼 없음
   onReorder?: (ids: string[]) => void; // 문서 제목을 끌어 순서 변경 (권한 있을 때만) — 프로필/자관 페이지의 아이콘 순서도 같이 바뀐다
   startEditId?: string;                // 이 문서가 열리면 바로 수정 모드로 (방금 추가한 문서)
@@ -42,6 +45,28 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
   const [open, setOpen] = useState(false);   // 모바일 목차 펼침
   const [draft, setDraft] = useState<DocPatch | null>(null);   // 수정 중인 내용
   const [tocOpen, setTocOpen] = useState(true);                 // 문서 제목 아래 소제목(목차) 펼침 — 제목을 누르면 접고 펼친다
+  const del = useConfirmDelete();
+
+  // 단축키 A·D(또는 ←·→) = 이전·다음 문서 (PC 전용, 수정 중·입력 중·팝업이 떠 있을 땐 제외) — W(문서 추가)·E(수정)·X(삭제)는 공용 단축키가 버튼을 눌러 준다
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (draft || !cur) return;
+      if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.isComposing || e.repeat) return;
+      const dir = e.code === 'KeyA' || e.key === 'ArrowLeft' ? -1 : e.code === 'KeyD' || e.key === 'ArrowRight' ? 1 : 0;
+      if (!dir) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (document.querySelector('[role="dialog"], .modal-ov')) return;
+      const go = docs[docs.findIndex(d => d.id === cur.id) + dir];
+      if (!go) return;
+      e.preventDefault();
+      onPick(go.id);
+      document.getElementById('appMain')?.scrollTo({ top: 0 });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
   useEffect(() => { setTocOpen(true); }, [activeId]);
 
   // 다른 문서로 가면 수정 모드 종료 — 방금 추가한 문서면 바로 수정 모드로
@@ -138,11 +163,16 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
                 <button type="button" className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 11, flexShrink: 0 }}
                   onClick={() => setDraft({ title: cur.title, subtitle: cur.subtitle ?? '', html: cur.html, size })}>✎ 수정</button>
               )}
+              {canEdit && onDelete && (
+                <button type="button" className="btn btn-ghost" style={{ padding: '4px 12px', fontSize: 11, flexShrink: 0 }}
+                  onClick={() => del.ask(`「${cur.title || '제목 없음'}」 문서를 삭제하시겠습니까?`, () => onDelete(cur.id), deleteNote ? `${deleteNote} 삭제하면 복구할 수 없습니다.` : undefined)}>삭제</button>
+              )}
             </div>
             <div className="doc-body" dangerouslySetInnerHTML={{ __html: prep.html }} />
           </div>
         )}
       </article>
+      {del.element}
     </div>
   );
 }

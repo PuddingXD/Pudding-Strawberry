@@ -57,6 +57,8 @@ function RelReadInner() {
     setRels(rels.map(x => (x.id === rel.id
       ? { ...x, docs: (x.docs ?? []).map(d => (d.id === did ? { ...d, title: p.title, subtitle: p.subtitle || undefined, html: p.html, size: p.size } : d)) }
       : x)));
+  const deleteDoc = (did: string) =>
+    setRels(rels.map(x => (x.id === rel.id ? { ...x, docs: (x.docs ?? []).filter(d => d.id !== did) } : x)));
   // 문서 순서 변경 — 보이는 문서들이 차지한 자리를 새 순서로 채운다 → 자관 페이지의 문서 아이콘 순서도 같이 바뀐다
   const reorderDocs = (ids: string[]) =>
     setRels(rels.map(x => {
@@ -78,7 +80,7 @@ function RelReadInner() {
           <NavLink className="btn btn-dark" href={back}>‹ 자관으로</NavLink>
         </div>
       </div>
-      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onReorder={reorderDocs} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}
+      <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onDelete={deleteDoc} deleteNote="자관 페이지의 문서 아이콘도 함께 사라집니다." onReorder={reorderDocs} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}
         onPick={did => router.replace(`/rels/${rel.id}/read?doc=${did}`, { scroll: false })} />
     </section>
   );

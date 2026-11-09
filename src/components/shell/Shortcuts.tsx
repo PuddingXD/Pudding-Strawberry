@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 
 const RULES: Record<string, RegExp> = {
-  KeyW: /^(?:[＋+✎]\s*)?(?:ADD|WRITE|NEW)\b|^(?:[＋+✎]\s*)?글쓰기$/i,
+  KeyW: /^(?:[＋+✎]\s*)?(?:ADD|WRITE|NEW)\b|^(?:[＋+✎]\s*)?글쓰기$|^[＋+]\s*문서\s*추가$/i,
   KeyE: /^(?:✎\s*)?(?:EDIT|수정|정보수정)$/i,
   KeyX: /^(?:DELETE|삭제)$/i,
 };

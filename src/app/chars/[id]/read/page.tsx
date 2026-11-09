@@ -59,6 +59,15 @@ function CharReadInner() {
       return { ...x, tabs: patchTabs(x.tabs) };
     }));
   };
+  // 문서 삭제 — 이 문서(탭)를 프로필에서도 지운다
+  const deleteDoc = (tid: string) => {
+    const dropTab = (tabs: typeof eff.tabs) => tabs.filter(t => t.id !== tid);
+    setChars(chars.map(x => {
+      if (x.id !== ch.id) return x;
+      if (auKey && x.auProfiles?.[auKey]?.tabs) return { ...x, auProfiles: { ...x.auProfiles, [auKey]: { ...x.auProfiles[auKey], tabs: dropTab(x.auProfiles[auKey].tabs!) } } };
+      return { ...x, tabs: dropTab(x.tabs) };
+    }));
+  };
   // 문서 순서 변경 — 문서(전체 읽기) 탭들이 차지한 자리를 새 순서로 채운다 (다른 탭 자리는 그대로) → 프로필의 아이콘 순서도 같이 바뀐다
   const reorderDocs = (ids: string[]) => {
     const order = (tabs: typeof eff.tabs) => {
@@ -84,7 +93,7 @@ function CharReadInner() {
           <NavLink className="btn btn-dark" href={back}>‹ 프로필로</NavLink>
         </div>
       </div>
-      <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc} onReorder={reorderDocs}
+      <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc} onDelete={deleteDoc} deleteNote="프로필의 이 탭도 함께 삭제됩니다." onReorder={reorderDocs}
         onPick={tid => router.replace(`/chars/${ch.id}/read?tab=${tid}${qs ? `&${qs}` : ''}`, { scroll: false })} />
     </section>
   );
