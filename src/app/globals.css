@@ -2211,3 +2211,37 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-body.doc-flat{line-height:1.85;color:#3a3f47}
 .doc-body.doc-flat p{margin:0}
 .doc-body.doc-flat :is(ul,ol){margin-bottom:0}
+
+/* ───── 에디터 확장 (글꼴·색·정렬·표) ───── */
+.re-font{display:inline-flex;align-items:center;margin:0 2px}
+.re-font .k-sel,.re-font > div{font-size:calc(11.5px*var(--fs,1))}
+.re-color{position:relative;flex-direction:column;gap:0;padding:0 5px}
+.re-color-l{font-weight:700;line-height:1;font-size:calc(13px*var(--fs,1))}
+.re-color-bar{display:block;width:14px;height:3px;border-radius:2px;margin-top:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.re-tt{background:#f3f4f7;gap:1px}
+.re-tt .re-btn{font-size:calc(11.5px*var(--fs,1));padding:0 6px;white-space:nowrap}
+.re-tt-l{font-size:calc(11px*var(--fs,1));font-weight:700;color:var(--sub);padding:0 8px 0 4px;letter-spacing:.06em}
+.re-pop{position:fixed;z-index:140;background:var(--panel-solid,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh-dd,0 10px 30px rgba(0,0,0,.18));padding:10px;width:max-content;max-width:min(232px,92vw)}
+.re-sw{display:grid;grid-template-columns:repeat(5,22px);gap:5px}
+.re-sw-i{width:22px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.18);padding:0;cursor:var(--cur-pointer,pointer)}
+.re-sw-i:hover{outline:2px solid var(--accent,#6c8cff);outline-offset:1px}
+.re-pop-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
+.re-pop-lbl{display:flex;align-items:center;gap:6px;font-size:calc(11px*var(--fs,1));color:var(--sub)}
+.re-pop-lbl input{width:28px;height:22px;padding:0;border:1px solid var(--line);border-radius:4px;background:none}
+.re-pop-btn{font-size:calc(11px*var(--fs,1));padding:3px 9px;border-radius:6px;border:1px solid var(--line);color:var(--sub)}
+.re-pop-btn:hover{background:#eef0f2;color:var(--ink)}
+.re-tgrid{display:grid;grid-template-columns:repeat(10,17px);gap:2px}
+.re-tg{width:17px;height:17px;border:1px solid var(--line);border-radius:2px;padding:0;background:#fff}
+.re-tg.on{background:var(--accent,#6c8cff);border-color:var(--accent,#6c8cff);opacity:.75}
+.re-pop-cap{margin-top:7px;text-align:center;font-size:calc(11px*var(--fs,1));color:var(--sub)}
+/* 표 — 편집 화면·읽기 화면 공통 */
+.re-content table,.doc-body table,.html-body table{border-collapse:collapse;table-layout:fixed;width:100%;max-width:100%;margin:1em 0}
+.re-content td,.re-content th,.doc-body td,.doc-body th,.html-body td,.html-body th{border:1px solid var(--line-dark,var(--line));padding:6px 9px;vertical-align:top;position:relative;word-break:break-word;min-width:1em}
+.re-content th,.doc-body th,.html-body th{font-weight:700;background:rgba(0,0,0,.045);text-align:left}
+.re-wrap .re-content td p,.re-wrap .re-content th p,.doc-body td p,.doc-body th p,.html-body td p,.html-body th p{margin:0}
+.re-content .tableWrapper{overflow-x:auto;padding-bottom:1px}
+.re-content .selectedCell:after{content:"";position:absolute;inset:0;background:rgba(80,120,255,.2);pointer-events:none;z-index:2}
+.re-content .column-resize-handle{position:absolute;right:-2px;top:0;bottom:-2px;width:4px;background:var(--accent,#6c8cff);pointer-events:none;z-index:3}
+.re-content.resize-cursor,.resize-cursor .re-content{cursor:col-resize}
+table[data-talign="center"],.re-content .tableWrapper[data-talign="center"] > table{margin-left:auto;margin-right:auto}
+table[data-talign="right"],.re-content .tableWrapper[data-talign="right"] > table{margin-left:auto;margin-right:0}

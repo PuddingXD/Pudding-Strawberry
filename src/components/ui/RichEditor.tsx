@@ -2,11 +2,206 @@
 // 리치 텍스트 에디터 (TipTap) — 프로필 탭 등 HTML 콘텐츠 작성용
 // 자체 스타일 툴바 (7장 — 기본 UI 금지) · 출력은 HTML, 저장 시 새니타이즈는 렌더 쪽에서 (6.3)
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyleKit } from '@tiptap/extension-text-style';
+import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
+import { Plugin } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { putBlob } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
+import { useFonts } from '@/lib/fontStore';
+import { KSelect } from '@/components/ui/Kit';
+
+/* ───────── 표 확장 — 셀 배경색·세로 정렬 · 행 높이 · 표 정렬을 저장 가능하게 ───────── */
+const MAX_TABLE = 10;   // 표 최대 10 × 10
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const cellAttrs = (parent: any) => ({
+  ...(parent ?? {}),
+  backgroundColor: {
+    default: null,
+    parseHTML: (el: HTMLElement) => el.style.backgroundColor || null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    renderHTML: (a: any) => (a.backgroundColor ? { style: `background-color:${a.backgroundColor}` } : {}),
+  },
+  vAlign: {
+    default: null,
+    parseHTML: (el: HTMLElement) => el.style.verticalAlign || null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    renderHTML: (a: any) => (a.vAlign ? { style: `vertical-align:${a.vAlign}` } : {}),
+  },
+});
+const RCell = TableCell.extend({ addAttributes() { return cellAttrs(this.parent?.()); } });
+const RHeader = TableHeader.extend({ addAttributes() { return cellAttrs(this.parent?.()); } });
+const RRow = TableRow.extend({
+  addAttributes() {
+    return {
+      ...(this.parent?.() ?? {}),
+      rowHeight: {
+        default: null,
+        parseHTML: (el: HTMLElement) => parseInt(el.style.height, 10) || null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        renderHTML: (a: any) => (a.rowHeight ? { style: `height:${a.rowHeight}px` } : {}),
+      },
+    };
+  },
+});
+const RTable = Table.extend({
+  addAttributes() {
+    return {
+      ...(this.parent?.() ?? {}),
+      tableAlign: {
+        default: 'left',
+        parseHTML: (el: HTMLElement) => el.getAttribute('data-talign') || 'left',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        renderHTML: (a: any) => (a.tableAlign && a.tableAlign !== 'left' ? { 'data-talign': a.tableAlign } : {}),
+      },
+    };
+  },
+  // 편집 화면의 표는 감싸는 칸(tableWrapper)이 있어서, 정렬 값을 그 칸에도 붙여 준다 (읽기 화면은 table에 직접 붙는다)
+  addProseMirrorPlugins() {
+    return [
+      ...(this.parent?.() ?? []),
+      new Plugin({
+        props: {
+          decorations(state) {
+            const decos: Decoration[] = [];
+            state.doc.descendants((node, pos) => {
+              if (node.type.name === 'table' && node.attrs.tableAlign && node.attrs.tableAlign !== 'left') {
+                decos.push(Decoration.node(pos, pos + node.nodeSize, { 'data-talign': String(node.attrs.tableAlign) }));
+              }
+            });
+            return DecorationSet.create(state.doc, decos);
+          },
+        },
+      }),
+    ];
+  },
+}).configure({ resizable: true, cellMinWidth: 40 });
+
+/* 커서가 든 표·행 찾기 — 표 도구 줄(행 높이·균등·정렬)이 쓴다 */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function findAround(state: any, name: string): { node: any; pos: number } | null {
+  const { $from } = state.selection;
+  for (let d = $from.depth; d > 0; d--) {
+    const n = $from.node(d);
+    if (n.type.name === name) return { node: n, pos: $from.before(d) };
+  }
+  return null;
+}
+
+const SWATCHES = [
+  '#000000', '#434343', '#7f7f7f', '#bfbfbf', '#ffffff', '#e03131', '#f08c00', '#f7d046',
+  '#2f9e44', '#1c7ed6', '#7048e8', '#d6336c', '#ffc9c9', '#ffe8cc', '#fff3bf', '#d3f9d8',
+  '#d0ebff', '#e5dbff', '#fcc2d7', '#e9ecef',
+];
+
+/** 눌러서 여는 작은 팝업 — 화면 맨 위(포털)에 띄워 툴바의 가로 스크롤에 안 잘린다 */
+function Pop({ anchor, onClose, children }: { anchor: HTMLElement | null; onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current?.contains(e.target as Node) || anchor?.contains(e.target as Node)) return;
+      onClose();
+    };
+    const onScroll = (e: Event) => { if (!ref.current?.contains(e.target as Node)) onClose(); };
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onClose);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onClose);
+    };
+  }, [anchor, onClose]);
+  if (!anchor || typeof document === 'undefined') return null;
+  const r = anchor.getBoundingClientRect();
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - 232));
+  return createPortal(
+    <div ref={ref} className="re-pop" style={{ left, top: r.bottom + 6 }} onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault(); }}>{children}</div>,
+    document.body,
+  );
+}
+
+/** 색 고르기 — 견본 + 직접 고르기 + 해제 */
+function ColorBtn({ label, title, current, onPick, onClear }: {
+  label: React.ReactNode; title: string; current?: string; onPick: (c: string) => void; onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button ref={btn} type="button" data-tip={title} className={`re-btn re-color ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>
+        <span className="re-color-l">{label}</span>
+        <i className="re-color-bar" style={{ background: current || 'transparent' }} />
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
+          <div className="re-sw">
+            {SWATCHES.map(c => (
+              <button key={c} type="button" className="re-sw-i" style={{ background: c }} aria-label={c}
+                onClick={() => { onPick(c); setOpen(false); }} />
+            ))}
+          </div>
+          <div className="re-pop-row">
+            <label className="re-pop-lbl">직접 고르기
+              <input type="color" value={/^#[0-9a-f]{6}$/i.test(current ?? '') ? current : '#000000'}
+                onChange={e => onPick(e.target.value)} />
+            </label>
+            <button type="button" className="re-pop-btn" onClick={() => { onClear(); setOpen(false); }}>해제</button>
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
+/** 표 넣기 — 칸을 훑어서 크기를 고른다 (최대 10 × 10) */
+function TableBtn({ onInsert }: { onInsert: (rows: number, cols: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const [hv, setHv] = useState({ r: 0, c: 0 });
+  const btn = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="표 넣기 (최대 10×10)" className={`re-btn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => { setHv({ r: 0, c: 0 }); setOpen(o => !o); }}>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
+          <rect x="1.5" y="2.5" width="13" height="11" rx="1" /><path d="M1.5 6.5h13M1.5 10h13M6 2.5v11M10.5 2.5v11" />
+        </svg>
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
+          <div className="re-tgrid" onMouseLeave={() => setHv({ r: 0, c: 0 })}>
+            {Array.from({ length: MAX_TABLE * MAX_TABLE }, (_, i) => {
+              const r = Math.floor(i / MAX_TABLE) + 1, c = (i % MAX_TABLE) + 1;
+              return (
+                <button key={i} type="button" className={`re-tg ${r <= hv.r && c <= hv.c ? 'on' : ''}`}
+                  aria-label={`${r}행 ${c}열`}
+                  onMouseEnter={() => setHv({ r, c })}
+                  onClick={() => { onInsert(r, c); setOpen(false); }} />
+              );
+            })}
+          </div>
+          <div className="re-pop-cap">{hv.r ? `${hv.r}행 × ${hv.c}열` : '넣을 크기를 고르세요'}</div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
+const AlignIcon = ({ kind }: { kind: 'left' | 'center' | 'right' | 'justify' }) => {
+  const w = { left: [12, 8, 12, 8], center: [12, 8, 12, 8], right: [12, 8, 12, 8], justify: [12, 12, 12, 12] }[kind];
+  const x = (len: number) => (kind === 'left' || kind === 'justify' ? 2 : kind === 'center' ? (16 - len) / 2 : 14 - len);
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      {w.map((len, i) => <path key={i} d={`M${x(len)} ${3.5 + i * 3}h${len}`} />)}
+    </svg>
+  );
+};
 
 /** 로컬 모드용 — 파일을 그대로 본문에 심는다 (서버가 없어 올릴 곳이 없을 때) */
 function toDataUrl(f: File): Promise<string> {
@@ -42,11 +237,19 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
   const [linkUrl, setLinkUrl] = useState('');
   // HTML 코드 모드 (v2.1 사용자 요청) — 코드를 그대로 저장한다. 편집기로 돌아가면 지원하지 않는 태그·스타일이 정리될 수 있다
   const [srcMode, setSrcMode] = useState(false);
+  const { fonts, familyOf } = useFonts();
   const editor = useEditor({
     // StarterKit(v3)에 든 링크는 누르면 바로 열리지 않게 — 편집 중 클릭은 커서 이동 (링크 삽입 v2.1)
-    extensions: [StarterKit.configure({ link: { openOnClick: false, autolink: true, defaultProtocol: 'https' } }), Image],
+    extensions: [
+      StarterKit.configure({ link: { openOnClick: false, autolink: true, defaultProtocol: 'https' } }),
+      Image,
+      TextStyleKit,                                        // 글꼴 · 글자색 · 글자 배경색
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),   // 왼쪽·가운데·오른쪽·양쪽 정렬
+      RTable, RRow, RCell, RHeader,                        // 표
+    ],
     content: value || '<p></p>',
     immediatelyRender: false,
+    shouldRerenderOnTransaction: true,   // 커서가 표 안에 들어오면 표 도구 줄이 나타나도록
     editorProps: {
       attributes: { class: doc ? 're-content prose doc-body' : 're-content prose' },
     },
@@ -62,6 +265,88 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
   }, [value, editor]);
 
   if (!editor) return <div className="re-wrap" style={{ minHeight: 200 }} />;
+
+  // 명령 이름이 많아서(글꼴·색·표) 한 곳에서 느슨하게 부른다 — 확장이 등록한 명령이라 타입이 따로 안 잡힌다
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const C = () => editor.chain().focus() as any;
+
+  /* 글꼴 — 지금 커서 글자의 font-family가 어느 폰트인지 거꾸로 찾아 드롭다운에 보여 준다 */
+  const curFam = String(editor.getAttributes('textStyle').fontFamily ?? '').replace(/["']/g, '').replace(/\s+/g, ' ').trim();
+  const curFontId = fonts.find(f => {
+    const fam = (familyOf(f.id) ?? '').replace(/["']/g, '').replace(/\s+/g, ' ').trim();
+    return fam && fam === curFam;
+  })?.id ?? '';
+  const pickFont = (id: string) => {
+    if (!id) { C().unsetFontFamily().run(); return; }
+    const fam = familyOf(id);
+    if (fam) C().setFontFamily(fam).run();
+  };
+
+  /* 표 도구 줄 — 커서가 표 안에 있을 때만 */
+  const inTable = editor.isActive('table');
+  const tbl = inTable ? findAround(editor.state, 'table') : null;
+  const tRows = tbl ? tbl.node.childCount : 0;
+  const tCols = tbl && tbl.node.firstChild
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ? (() => { let n = 0; tbl.node.firstChild.forEach((c: any) => { n += c.attrs.colspan ?? 1; }); return n; })()
+    : 0;
+  const cellAttr = (k: string) => String(editor.getAttributes('tableCell')[k] ?? editor.getAttributes('tableHeader')[k] ?? '');
+  const setTable = (patch: Record<string, unknown>) => editor.commands.command(({ state, tr, dispatch }) => {
+    const t = findAround(state, 'table');
+    if (!t) return false;
+    tr.setNodeMarkup(t.pos, undefined, { ...t.node.attrs, ...patch });
+    dispatch?.(tr);
+    return true;
+  });
+  /** 열 폭을 지워 표 폭 안에서 똑같이 나눈다 */
+  const equalCols = () => editor.commands.command(({ state, tr, dispatch }) => {
+    const t = findAround(state, 'table');
+    if (!t) return false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    t.node.descendants((n: any, pos: number) => {
+      if ((n.type.name === 'tableCell' || n.type.name === 'tableHeader') && n.attrs.colwidth) {
+        tr.setNodeMarkup(t.pos + 1 + pos, undefined, { ...n.attrs, colwidth: null });
+      }
+    });
+    dispatch?.(tr);
+    return true;
+  });
+  /** 현재 행 높이 바꾸기 (null이면 자동) */
+  const rowHeightNow = () => {
+    const r = findAround(editor.state, 'tableRow');
+    if (!r) return 0;
+    const dom = editor.view.nodeDOM(r.pos) as HTMLElement | null;
+    return Math.round(r.node.attrs.rowHeight ?? dom?.offsetHeight ?? 0);
+  };
+  const setRowHeight = (h: number | null) => editor.commands.command(({ state, tr, dispatch }) => {
+    const r = findAround(state, 'tableRow');
+    if (!r) return false;
+    tr.setNodeMarkup(r.pos, undefined, { ...r.node.attrs, rowHeight: h });
+    dispatch?.(tr);
+    return true;
+  });
+  /** 모든 행을 평균 높이로 맞춘다 */
+  const equalRows = () => {
+    const t = findAround(editor.state, 'table');
+    if (!t) return;
+    const hs: number[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    t.node.forEach((_: any, off: number) => {
+      const dom = editor.view.nodeDOM(t.pos + 1 + off) as HTMLElement | null;
+      hs.push(dom?.offsetHeight ?? 0);
+    });
+    const avg = Math.round(hs.reduce((a, b) => a + b, 0) / Math.max(1, hs.length));
+    editor.commands.command(({ state, tr, dispatch }) => {
+      const t2 = findAround(state, 'table');
+      if (!t2) return false;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      t2.node.forEach((row: any, off: number) => {
+        tr.setNodeMarkup(t2.pos + 1 + off, undefined, { ...row.attrs, rowHeight: avg });
+      });
+      dispatch?.(tr);
+      return true;
+    });
+  };
 
   /* 링크 (v2.1) — 선택한 글자에 주소를 건다. 비우고 적용하면 해제 */
   const openLink = () => {
@@ -110,8 +395,30 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           onClick={() => editor.chain().focus().toggleBold().run()} />
         <TBtn title="기울임" label={<i>I</i>} on={editor.isActive('italic')}
           onClick={() => editor.chain().focus().toggleItalic().run()} />
+        <TBtn title="밑줄" label={<u>U</u>} on={editor.isActive('underline')}
+          onClick={() => C().toggleUnderline().run()} />
         <TBtn title="취소선" label={<s>S</s>} on={editor.isActive('strike')}
           onClick={() => editor.chain().focus().toggleStrike().run()} />
+        <span className="re-sep" />
+        {/* 글꼴 — 환경설정에 등록해 둔 폰트를 그대로 (읽는 화면에서도 같은 폰트로 보인다) */}
+        <span className="re-font">
+          <KSelect minWidth={118} maxWidth={150} value={curFontId} onChange={pickFont}
+            options={[{ value: '', label: '기본 글꼴' }, ...fonts.map(f => ({ value: f.id, label: f.name }))]} />
+        </span>
+        <ColorBtn title="글자색" label="A" current={String(editor.getAttributes('textStyle').color ?? '')}
+          onPick={c => C().setColor(c).run()} onClear={() => C().unsetColor().run()} />
+        <ColorBtn title="글자 배경색" label={<span style={{ background: '#ffe066', padding: '0 3px', borderRadius: 2 }}>A</span>}
+          current={String(editor.getAttributes('textStyle').backgroundColor ?? '')}
+          onPick={c => C().setBackgroundColor(c).run()} onClear={() => C().unsetBackgroundColor().run()} />
+        <span className="re-sep" />
+        <TBtn title="왼쪽 정렬" label={<AlignIcon kind="left" />} on={editor.isActive({ textAlign: 'left' })}
+          onClick={() => C().setTextAlign('left').run()} />
+        <TBtn title="가운데 정렬" label={<AlignIcon kind="center" />} on={editor.isActive({ textAlign: 'center' })}
+          onClick={() => C().setTextAlign('center').run()} />
+        <TBtn title="오른쪽 정렬" label={<AlignIcon kind="right" />} on={editor.isActive({ textAlign: 'right' })}
+          onClick={() => C().setTextAlign('right').run()} />
+        <TBtn title="양쪽 정렬" label={<AlignIcon kind="justify" />} on={editor.isActive({ textAlign: 'justify' })}
+          onClick={() => C().setTextAlign('justify').run()} />
         <span className="re-sep" />
         {/* 제목1·2·3 / 본문 — 읽기 화면의 목차가 이 제목들로 만들어진다 */}
         <TBtn title="제목 1" label="H1" on={editor.isActive('heading', { level: 1 })}
@@ -130,6 +437,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
         <TBtn title="인용" label="❝" on={editor.isActive('blockquote')}
           onClick={() => editor.chain().focus().toggleBlockquote().run()} />
         <TBtn title="구분선" label="—" onClick={() => editor.chain().focus().setHorizontalRule().run()} />
+        <TableBtn onInsert={(r, c) => C().insertTable({ rows: r, cols: c, withHeaderRow: false }).run()} />
         <span className="re-sep" />
         {/* 링크 · HTML 코드 (v2.1 사용자 요청 — 「본문 글자에 링크를 걸거나 html 코드를 적용」) */}
         <TBtn title="링크 (선택한 글자에)" label="🔗" on={editor.isActive('link') || linkOpen} onClick={openLink} />
@@ -147,6 +455,39 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <TBtn title="다시 실행" label="↷" onClick={() => editor.chain().focus().redo().run()} />
         </span>
       </div>
+      {inTable && !srcMode && (
+        <div className="re-toolbar re-tt">
+          <span className="re-tt-l">표</span>
+          <TBtn title="위에 행 추가" label="↑행+" onClick={() => { if (tRows < MAX_TABLE) C().addRowBefore().run(); }} />
+          <TBtn title="아래에 행 추가" label="↓행+" onClick={() => { if (tRows < MAX_TABLE) C().addRowAfter().run(); }} />
+          <TBtn title="왼쪽에 열 추가" label="←열+" onClick={() => { if (tCols < MAX_TABLE) C().addColumnBefore().run(); }} />
+          <TBtn title="오른쪽에 열 추가" label="→열+" onClick={() => { if (tCols < MAX_TABLE) C().addColumnAfter().run(); }} />
+          <TBtn title="이 행 삭제" label="행−" onClick={() => C().deleteRow().run()} />
+          <TBtn title="이 열 삭제" label="열−" onClick={() => C().deleteColumn().run()} />
+          <span className="re-sep" />
+          <TBtn title="선택한 칸 합치기 (칸을 끌어서 여러 칸 선택)" label="병합" onClick={() => C().mergeCells().run()} />
+          <TBtn title="합친 칸 나누기" label="분할" onClick={() => C().splitCell().run()} />
+          <span className="re-sep" />
+          <ColorBtn title="칸 배경색" label="▧" current={cellAttr('backgroundColor')}
+            onPick={c => C().setCellAttribute('backgroundColor', c).run()}
+            onClear={() => C().setCellAttribute('backgroundColor', null).run()} />
+          <TBtn title="칸 안 위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
+          <TBtn title="칸 안 가운데 맞춤" label="↕" on={cellAttr('vAlign') === 'middle'} onClick={() => C().setCellAttribute('vAlign', 'middle').run()} />
+          <TBtn title="칸 안 아래쪽 맞춤" label="⤓" on={cellAttr('vAlign') === 'bottom'} onClick={() => C().setCellAttribute('vAlign', 'bottom').run()} />
+          <span className="re-sep" />
+          <TBtn title="열 폭 균등" label="열 균등" onClick={equalCols} />
+          <TBtn title="행 높이 균등" label="행 균등" onClick={equalRows} />
+          <TBtn title="이 행 높이 줄이기" label="행 ▾" onClick={() => setRowHeight(Math.max(20, rowHeightNow() - 10))} />
+          <TBtn title="이 행 높이 늘리기" label="행 ▴" onClick={() => setRowHeight(rowHeightNow() + 10)} />
+          <TBtn title="이 행 높이 자동으로" label="행 자동" onClick={() => setRowHeight(null)} />
+          <span className="re-sep" />
+          <TBtn title="표 왼쪽 놓기" label="표◧" on={(tbl?.node.attrs.tableAlign ?? 'left') === 'left'} onClick={() => setTable({ tableAlign: 'left' })} />
+          <TBtn title="표 가운데 놓기" label="표◫" on={tbl?.node.attrs.tableAlign === 'center'} onClick={() => setTable({ tableAlign: 'center' })} />
+          <TBtn title="표 오른쪽 놓기" label="표◨" on={tbl?.node.attrs.tableAlign === 'right'} onClick={() => setTable({ tableAlign: 'right' })} />
+          <span className="re-sep" />
+          <TBtn title="표 지우기" label="표 삭제" onClick={() => C().deleteTable().run()} />
+        </div>
+      )}
       {linkOpen && !srcMode && (
         <div className="re-linkrow">
           <input className="k-input" placeholder="https://… (비우고 적용하면 링크 해제)" value={linkUrl}
