@@ -267,6 +267,14 @@ function FontBtn({ fonts, curId, onPick }: {
   );
 }
 
+/** 「1pt solid #000」 꼴 값 읽기 (브라우저가 px로 돌려주면 pt로) */
+function parseSpec(s: unknown): { w: number; line: string; color: string } | null {
+  const m = String(s ?? '').match(/^([\d.]+)(pt|px)\s+(\S+)\s+(.+)$/);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  return { w: m[2] === 'px' ? Math.round(n * 75) / 100 : n, line: m[3], color: m[4].trim() };
+}
+
 /** 표 테두리 — 블록(칸 선택)을 잡고 범위·선 모양·굵기·색을 정해 적용한다 (칸마다 네 변이 따로 저장된다) */
 export type Pen = { style: string; width: number; color: string };
 const PEN_STYLES = [
@@ -287,8 +295,23 @@ const penSample = (id: string): React.CSSProperties =>
         : id === 'transparent' ? { borderTop: '2px solid transparent', background: 'repeating-linear-gradient(90deg,#ccc 0 3px,transparent 3px 6px)', height: 1 }
           : { borderTop: '1px solid #333' };
 
+/** 적용 범위 고르기 (테두리 모양·테두리 색 공통) */
+function ScopeGrid({ scope, setScope }: { scope: string; setScope: (s: string) => void }) {
+  return (
+    <>
+      <div className="re-bp-h">적용 범위</div>
+      <div className="re-bp-grid">
+        {SCOPES.map(([id, label]) => (
+          <button key={id} type="button" className={`re-bp-s ${scope === id ? 'on' : ''}`} onClick={() => setScope(id)}>{label}</button>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/** 테두리 모양 — 범위별로 선 모양 + 굵기만 적용 (색은 그대로) */
 function BorderBtn({ pen, setPen, onApply }: {
-  pen: Pen; setPen: (p: Pen) => void; onApply: (scope: string, clear: boolean) => void;
+  pen: Pen; setPen: (p: Pen) => void; onApply: (scope: string, clear: boolean, mode: 'color' | 'shape') => void;
 }) {
   const [open, setOpen] = useState(false);
   const [scope, setScope] = useState('all');
@@ -302,12 +325,7 @@ function BorderBtn({ pen, setPen, onApply }: {
         onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>테두리 ▾</button>
       {open && (
         <Pop anchor={btn.current} onClose={() => setOpen(false)} className="wide">
-          <div className="re-bp-h">적용 범위 <small>(칸을 끌어 선택 · 없으면 커서가 든 칸 · 색은 옆 「테두리 배경색」)</small></div>
-          <div className="re-bp-grid">
-            {SCOPES.map(([id, label]) => (
-              <button key={id} type="button" className={`re-bp-s ${scope === id ? 'on' : ''}`} onClick={() => setScope(id)}>{label}</button>
-            ))}
-          </div>
+          <ScopeGrid scope={scope} setScope={setScope} />
           <div className="re-bp-h">선 모양</div>
           <div className="re-fontlist" style={{ maxHeight: 'none', margin: 0 }}>
             {PEN_STYLES.map(s => (
@@ -323,8 +341,46 @@ function BorderBtn({ pen, setPen, onApply }: {
             <button type="button" className="re-pop-btn" onClick={() => setPen({ ...pen, width: Math.min(8, pen.width + 0.5) })}>＋</button>
           </div>
           <div className="re-pop-row">
-            <button type="button" className="re-pop-btn" onClick={() => onApply(scope, true)}>선택 범위 선 지우기</button>
-            <button type="button" className="re-pop-btn re-pop-go" onClick={() => onApply(scope, false)}>적용</button>
+            <button type="button" className="re-pop-btn" onClick={() => onApply(scope, true, 'shape')}>선택 범위 선 지우기</button>
+            <button type="button" className="re-pop-btn re-pop-go" onClick={() => onApply(scope, false, 'shape')}>적용</button>
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
+/** 테두리 색 — 범위별로 색만 적용 (선 모양·굵기는 그대로) */
+function BorderColorBtn({ pen, setPen, onApply }: {
+  pen: Pen; setPen: (p: Pen) => void; onApply: (scope: string, clear: boolean, mode: 'color' | 'shape') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState('all');
+  const btn = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="테두리 배경색" className={`re-btn re-color ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>
+        <span className="re-color-l"><span className="re-lineicon" /></span>
+        <i className="re-color-bar" style={{ background: pen.color }} />
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)} className="wide">
+          <ScopeGrid scope={scope} setScope={setScope} />
+          <div className="re-bp-h">색</div>
+          <div className="re-sw">
+            {SWATCHES.slice(0, 15).map(c => (
+              <button key={c} type="button" className={`re-sw-i ${pen.color === c ? 'sel' : ''}`} style={{ background: c }} aria-label={c} onClick={() => setPen({ ...pen, color: c })} />
+            ))}
+          </div>
+          <div className="re-pop-row">
+            <label className="re-pop-lbl">직접 고르기
+              <input type="color" value={/^#[0-9a-f]{6}$/i.test(pen.color) ? pen.color : '#000000'} onChange={e => setPen({ ...pen, color: e.target.value })} />
+            </label>
+            <i className="re-pen-now" style={{ background: pen.color }} />
+          </div>
+          <div className="re-pop-row" style={{ justifyContent: 'flex-end' }}>
+            <button type="button" className="re-pop-btn re-pop-go" onClick={() => onApply(scope, false, 'color')}>적용</button>
           </div>
         </Pop>
       )}
@@ -440,7 +496,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
   });
   /** 테두리 적용 — 범위(표 전체/선택 칸 전체/외곽/안쪽/위·아래·왼쪽·오른쪽)에 따라 칸마다 네 변을 쓴다.
    *  맞닿은 이웃 칸의 반대쪽 변도 같이 써서(겹치는 선은 한 장이니) 어느 한쪽 값에 밀리지 않게 한다 */
-  const applyBorder = (scope: string, clear: boolean) => editor.commands.command(({ state, tr, dispatch }) => {
+  const applyBorder = (scope: string, clear: boolean, mode: 'color' | 'shape') => editor.commands.command(({ state, tr, dispatch }) => {
     const t = findAround(state, 'table');
     if (!t) return false;
     const map = TableMap.get(t.node);
@@ -454,20 +510,37 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
       if (!c) return false;
       rect = map.findCell(c.pos - start);
     }
-    const w = pen.style === 'double' ? Math.max(3, pen.width) : pen.width;
-    const line = pen.style === 'dotted' ? 'dotted' : pen.style === 'double' ? 'double' : 'solid';
-    const spec: string | null = clear ? null : `${w}pt ${line} ${pen.style === 'transparent' ? 'transparent' : pen.color}`;
+    /* 색만 / 선 모양+굵기만 따로 적용 — 그 변에 이미 있는 나머지 값(없으면 표 기본)은 그대로 둔다 */
+    const ta = t.node.attrs;
+    const tdef = {
+      w: Number(ta.borderWidth ?? 1) || 1,
+      line: ta.borderStyle === 'dashed' ? 'dashed' : ta.borderStyle === 'double' ? 'double' : ta.borderStyle === 'dotted' ? 'dotted' : 'solid',
+      color: ta.borderStyle === 'transparent' ? 'transparent' : String(ta.borderColor ?? '#000000'),
+    };
+    const specFor = (off: number, side: string): string | null => {
+      if (clear) return null;
+      const cur = parseSpec(t.node.nodeAt(off)?.attrs[side]) ?? tdef;
+      let { w, line, color } = cur;
+      if (mode === 'color') color = pen.color;
+      else {
+        w = pen.style === 'double' ? Math.max(3, pen.width) : pen.width;
+        line = pen.style === 'dotted' ? 'dotted' : pen.style === 'double' ? 'double' : 'solid';
+        if (pen.style === 'transparent') color = 'transparent';
+        else if (color === 'transparent') color = pen.color;   // 투명선이던 변을 다시 보이게 할 때
+      }
+      return `${w}pt ${line} ${color}`;
+    };
     const patches = new Map<number, Record<string, string | null>>();
-    const put = (off: number, side: string) => patches.set(off, { ...(patches.get(off) ?? {}), [side]: spec });
-    const mode = scope === 'table' ? 'all' : scope;
-    const wantOuter = (s: string) => mode === 'all' || mode === 'outer' || mode === s;
+    const put = (off: number, side: string) => patches.set(off, { ...(patches.get(off) ?? {}), [side]: specFor(off, side) });
+    const sc = scope === 'table' ? 'all' : scope;
+    const wantOuter = (s: string) => sc === 'all' || sc === 'outer' || sc === s;
     map.cellsInRect(rect).forEach((off: number) => {
       const cr = map.findCell(off);
       if (wantOuter('top') && cr.top === rect.top) put(off, 'borderTop');
       if (wantOuter('bottom') && cr.bottom === rect.bottom) put(off, 'borderBottom');
       if (wantOuter('left') && cr.left === rect.left) put(off, 'borderLeft');
       if (wantOuter('right') && cr.right === rect.right) put(off, 'borderRight');
-      if (mode === 'all' || mode === 'inner') {
+      if (sc === 'all' || sc === 'inner') {
         if (cr.top > rect.top) put(off, 'borderTop');
         if (cr.bottom < rect.bottom) put(off, 'borderBottom');
         if (cr.left > rect.left) put(off, 'borderLeft');
@@ -684,8 +757,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <ColorBtn title="칸 배경색" label="▧" current={cellAttr('backgroundColor')}
             onPick={c => C().setCellAttribute('backgroundColor', c).run()}
             onClear={() => C().setCellAttribute('backgroundColor', null).run()} />
-          <ColorBtn title="테두리 배경색" label={<span className="re-lineicon" />} current={pen.color}
-            onPick={c => setPen({ ...pen, color: c })} onClear={() => setPen({ ...pen, color: '#000000' })} />
+          <BorderColorBtn pen={pen} setPen={setPen} onApply={applyBorder} />
           <BorderBtn pen={pen} setPen={setPen} onApply={applyBorder} />
           <span className="re-sep" />
           <TBtn title="위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
