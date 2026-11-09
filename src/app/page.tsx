@@ -1,7 +1,7 @@
 'use client';
 // 메인 페이지 (4.0 위젯 시스템) — 고정 요소(배너·회원정보창) + 자유 배치 위젯 + 편집모드
 import React, { useEffect, useState } from 'react';
-import { useMainStore, WidgetConf, WidgetType, WIDGET_META, MULTI_TYPES, widgetLabel } from '@/lib/mainStore';
+import { useMainStore, WidgetConf, WidgetType, WIDGET_META, MULTI_TYPES, widgetLabel, minSizeOf } from '@/lib/mainStore';
 import { WidgetFrame } from '@/components/main/WidgetFrame';
 import { renderWidget } from '@/components/main/widgets';
 import { MemberBox } from '@/components/main/MemberBox';
@@ -9,9 +9,9 @@ import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { KRadio } from '@/components/ui/Kit';
 import { useToast } from '@/components/ui/Toast';
 
-const ADDABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'upcoming', 'freetext', 'deco', 'diary', 'latest', 'banners', 'clicker'];   // banner: 여러 개 추가 (v2.0 사용자 요청)
+const ADDABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'upcoming', 'freetext', 'deco', 'ddaycard', 'diary', 'latest', 'banners', 'clicker'];   // banner: 여러 개 추가 (v2.0 사용자 요청)
 /** 내용 설정 모달이 있는 위젯 — 우클릭 「설정」 노출 대상 (v1.9) */
-const EDITABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'banners', 'clicker'];
+const EDITABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'ddaycard', 'banners', 'clicker'];
 
 export default function MainPage() {
   const { state, editOn, gridOn, updateWidget, addWidget, removeWidget } = useMainStore();
@@ -104,7 +104,7 @@ export default function MainPage() {
         const r = el.getBoundingClientRect();
         updateWidget(w.id, {
           ax: Math.round(r.left - gr.left), ay: Math.round(r.top - gr.top),
-          w: w.w ?? Math.max(160, Math.round(r.width)), h: w.h ?? Math.max(80, Math.round(r.height)),
+          w: w.w ?? Math.max(minSizeOf(w.type).w, Math.round(r.width)), h: w.h ?? Math.max(minSizeOf(w.type).h, Math.round(r.height)),
           tx: 0, ty: 0,
         }, { persist: true });
       });

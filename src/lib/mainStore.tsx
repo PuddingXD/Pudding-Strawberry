@@ -12,6 +12,7 @@ export type WidgetType =
   | 'menu' | 'memo' | 'diary' | 'latest'
   | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
   | 'banners'   // 배너 교환 (아래 주석 참조)
+  | 'ddaycard'  // 디데이 카운트 — 이미지 타일 위에 날짜(작게)·D-000 글자 (리스트형 dday와 별개)
   | 'clicker';  // 키캡 클리커 — 키를 누르면 키캡 이미지가 눌리고 소리가 나는 위젯 (티스토리 클리커 위젯 이식)
   // (B 디자인에서 가져온 위젯)   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · 커미션 신청자(apply)는 v2.1에서 기능째 삭제
 
@@ -59,11 +60,12 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   deco: { title: '이미지', desc: '패널 없이 이미지만' },
   memoboard: { title: 'STICKY', desc: '스티커 메모 미니보드 — 클릭 시 메모장 (4.6)' },
   banners: { title: 'BANNER', desc: '배너 교환 — 친구 홈 배너 + 내 배너 코드 복사' },
+  ddaycard: { title: 'D-DAY 카운트', desc: '이미지 타일 + 날짜·D-000 글자 — 달력 디데이와 연동 가능' },
   clicker: { title: 'CLICKER', desc: '키캡 클리커 — 5×2 키캡 10개, 키보드를 누르면 눌리고 소리가 납니다' },
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */
-export const MULTI_TYPES: WidgetType[] = ['freetext', 'deco', 'banner'];   // banner: v2.0 사용자 요청 — 슬라이드 배너 여러 개
+export const MULTI_TYPES: WidgetType[] = ['freetext', 'deco', 'banner', 'ddaycard'];   // banner: v2.0 사용자 요청 — 슬라이드 배너 여러 개
 
 /** 위젯 표시 이름 — 중복 추가 가능한 위젯이 2개 이상이면 번호를 붙여 구분 (v1.9) */
 export function widgetLabel(widgets: WidgetConf[], w: WidgetConf): string {
@@ -243,6 +245,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
         ax: colX[col], ay: maxY,
         // 클리커는 키보드 위젯이라 폰에서는 기본으로 빼 둔다 (설정 > 위젯에서 켤 수 있음) · 5×2 키캡이 들어갈 기본 크기
         ...(type === 'clicker' ? { w: 360, h: 190, mOff: true } : {}),
+        ...(type === 'ddaycard' ? { w: 200, h: 60 } : {}),
         settings: type === 'freetext' ? { text: '자유 텍스트' } : {},
       };
       return { ...s, widgets: [...s.widgets, w], mobileOrder: [...s.mobileOrder, id] };
@@ -341,6 +344,47 @@ export function clickerSlots(settings: Record<string, unknown>): ClickerSlot[] {
     imgId: list[i]?.imgId || undefined,
     key: (list[i]?.key || CLICKER_KEYS[i]).toLowerCase(),
   }));
+}
+
+/** 위젯 최소 크기 — 이미지형(장식 이미지·디데이 카운트)은 200×40 같은 얇은 띠도 되도록 작게, 패널형은 기존 그대로 */
+export const minSizeOf = (type: WidgetType): { w: number; h: number } =>
+  type === 'deco' || type === 'ddaycard' ? { w: 40, h: 20 } : { w: 160, h: 80 };
+
+/** 디데이 카운트(ddaycard) 위젯이 가리키는 값 — 리스트형 D-DAY 위젯의 항목(달력에서 「D-day로 등록」한 것 포함)을 고르거나 직접 입력 */
+export interface DdayListItem { title: string; date: string; plusOne?: boolean }
+export const ddayKey = (it: DdayListItem) => `${it.title}|${it.date}`;
+/** 리스트형 D-DAY 위젯에 들어 있는 항목들 (달력 연동의 원천) */
+export function ddayListItems(widgets: WidgetConf[]): DdayListItem[] {
+  const w = widgets.find(x => x.type === 'dday');
+  return ((w?.settings.items as DdayListItem[] | undefined) ?? []).filter(it => it?.date);
+}
+
+/** 디데이 카운트 위젯 설정 — 글자 세 가지(카운트 D-000 · 내용 · 시작 날짜)를 각각 색·크기·위치로 */
+export type DdayPos = 'c' | 'tl' | 'bl' | 'tr' | 'br';
+export const DDAY_POS_LABEL: Record<DdayPos, string> = { c: '정중앙', tl: '좌측 상단', bl: '좌측 하단', tr: '우측 상단', br: '우측 하단' };
+export type DdayEl = 'cnt' | 'txt' | 'date';
+export const DDAY_EL_LABEL: Record<DdayEl, string> = { cnt: '카운트 (D-000)', txt: '내용', date: '시작 날짜' };
+/** 글자 크기 기본값 — 카운트 > 내용 > 시작 날짜 */
+export const DDAY_EL_SIZE: Record<DdayEl, number> = { cnt: 26, txt: 13, date: 10 };
+export const DDAY_EL_POS: Record<DdayEl, DdayPos> = { cnt: 'c', txt: 'tl', date: 'br' };
+export interface DdayCardSettings {
+  src?: 'manual' | 'link'; linkKey?: string; date?: string; plusOne?: boolean;
+  label?: string;              // 내용 — 무엇에 대한 디데이인지 (연동이면 비웠을 때 연동한 항목의 제목)
+  showDate?: boolean;          // 시작 날짜 표시 (기본 켬)
+  imgId?: string; crop?: import('@/components/ui/CropEditor').CropValue; dim?: number; rounded?: boolean; noBorder?: boolean;
+  fontId?: string; pad?: boolean; shadow?: boolean;
+  cntColor?: string; txtColor?: string; dateColor?: string;
+  cntSize?: number; txtSize?: number; dateSize?: number;
+  cntPos?: DdayPos; txtPos?: DdayPos; datePos?: DdayPos;
+  cntOrd?: number; txtOrd?: number; dateOrd?: number;   // 같은 위치에 겹쳐 놓았을 때 위→아래 순서
+}
+const DDAY_EL_ORD: Record<DdayEl, number> = { cnt: 0, txt: 1, date: 2 };
+export const ddayElPos = (s: DdayCardSettings, el: DdayEl): DdayPos => s[`${el}Pos` as const] ?? DDAY_EL_POS[el];
+export const ddayElOrd = (s: DdayCardSettings, el: DdayEl): number => s[`${el}Ord` as const] ?? DDAY_EL_ORD[el];
+/** 같은 위치에 놓인 글자들을 위→아래 순서로 (보이는 것만 넘기면 보이는 것끼리) */
+export function ddayGroup(s: DdayCardSettings, pos: DdayPos, els: DdayEl[] = ['cnt', 'txt', 'date']): DdayEl[] {
+  return els.filter(e => ddayElPos(s, e) === pos)
+    .sort((a, b) => ddayElOrd(s, a) - ddayElOrd(s, b) || DDAY_EL_ORD[a] - DDAY_EL_ORD[b]);
 }
 
 export interface DecoSlide {

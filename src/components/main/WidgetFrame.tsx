@@ -2,7 +2,7 @@
 // 위젯 프레임 (4.0 편집모드) — 드래그 이동 · 우하단 리사이즈 · 우클릭 겹침 순서 · 클릭 차단
 // 프로토타입의 편집 모델을 계승: 그리드 배치는 유지하고 transform 오프셋 + 크기 동결(px)로 조작
 import React, { useEffect, useRef, useState } from 'react';
-import { WidgetConf, useMainStore } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, minSizeOf } from '@/lib/mainStore';
 import { ConfirmModal } from '@/components/ui/Modal';
 
 export function WidgetFrame({ conf, mobileOrder, children, className, style, onCtx }: {
@@ -29,8 +29,8 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
       const r = ref.current.getBoundingClientRect();
       if (r.width > 2) {
         updateWidget(conf.id, {
-          w: Math.max(160, Math.round(r.width)),
-          h: Math.max(80, Math.round(r.height)),
+          w: Math.max(minSizeOf(conf.type).w, Math.round(r.width)),
+          h: Math.max(minSizeOf(conf.type).h, Math.round(r.height)),
         });
       }
     }
@@ -115,7 +115,7 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
   };
 
   // 기울기 (v1.9 사용자 요청 — 이미지·자유 텍스트) — 왼쪽 위 핸들 드래그로 위젯 중심 기준 회전
-  const rotatable = conf.type === 'deco' || conf.type === 'freetext';
+  const rotatable = conf.type === 'deco' || conf.type === 'freetext' || conf.type === 'ddaycard';
   const onRotDown = (e: React.PointerEvent) => {
     if (!editOn) return;
     e.stopPropagation(); e.preventDefault();
@@ -154,7 +154,7 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
         w = Math.round((absL + w) / 10) * 10 - absL;
         h = Math.round((absT + h) / 10) * 10 - absT;
       }
-      updateWidget(conf.id, { w: Math.max(160, w), h: Math.max(80, h) });
+      updateWidget(conf.id, { w: Math.max(minSizeOf(conf.type).w, w), h: Math.max(minSizeOf(conf.type).h, h) });
     };
     const up = () => { document.body.classList.remove('drag-rs'); window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
     window.addEventListener('pointermove', mv);
@@ -225,7 +225,7 @@ export function WidgetFrame({ conf, mobileOrder, children, className, style, onC
             label: `가로 −${centerAsk?.shrink ?? 10}px`, kind: 'ghost',
             onClick: () => {
               if (centerAsk) {
-                const w = Math.max(160, centerAsk.w - centerAsk.shrink);
+                const w = Math.max(minSizeOf(conf.type).w, centerAsk.w - centerAsk.shrink);
                 updateWidget(conf.id, { w, ax: (centerAsk.canvasW - w) / 2 }, { persist: true });
               }
               setCenterAsk(null);

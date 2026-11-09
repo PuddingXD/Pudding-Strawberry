@@ -2,7 +2,7 @@
 // 메인 위젯 렌더러 (4.0) — DIARY/LATEST/UPCOMING 등은 해당 기능(2·3차) 전까지 데모 데이터
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WidgetConf, useMainStore, WIDGET_META, decoSlides, clickerSlots, clickerKeyOf, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, WIDGET_META, decoSlides, ddayListItems, ddayKey, ddayGroup, DDAY_EL_SIZE, type DdayCardSettings, type DdayEl, type DdayPos, clickerSlots, clickerKeyOf, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
 import { useAuth } from '@/lib/auth';
 import { boardEntries, useMenuSettings, buildMenu, canViewHref } from '@/lib/menuStore';
 import { sectionHref, MAIN_SEC, useSections, sectionMenuEntries } from '@/lib/sectionStore';
@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { KTextarea, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { useFonts } from '@/lib/fontStore';
-import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem, BannersEditor, ClickerEditor, type XBanner } from '@/components/main/widgetEditors';
+import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DdayCardEditor, DecoEditor, TodoEditor, TodoSetItem, BannersEditor, ClickerEditor, type XBanner } from '@/components/main/widgetEditors';
 import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg, CropValue } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
@@ -266,6 +266,74 @@ function ddayLabel(date: string, plusOne?: boolean): { label: string; passed: bo
   return diff > 0
     ? { label: `D-${diff}`, passed: false, near: diff <= 7 }
     : { label: `D+${-diff}`, passed: true, near: false };
+}
+
+/* ---------- D-DAY 카운트 (이미지 타일형) ----------
+   장식 이미지처럼 이미지 타일 위에 날짜(작게)와 D-000 글자를 얹는다. 리스트형 D-DAY 위젯과는 별개.
+   날짜는 직접 입력하거나, 리스트형 D-DAY(달력에서 「D-day로 등록」한 항목 포함)의 한 항목에 연동한다. */
+export function DdayCardWidget({ conf }: { conf: WidgetConf }) {
+  const { state } = useMainStore();
+  const { familyOf } = useFonts();
+  const [open, setOpen] = useState(false);
+  useEditEvent(conf.id, () => setOpen(true));
+  const s = conf.settings as DdayCardSettings;
+  const rounded = s.rounded ?? true;
+  // 연동이면 리스트형의 그 항목 값을, 못 찾으면(지워짐) 직접 입력값을 쓴다
+  const linked = s.src === 'link' ? ddayListItems(state.widgets).find(it => ddayKey(it) === s.linkKey) : undefined;
+  const date = linked?.date ?? s.date;
+  const plusOne = linked ? linked.plusOne : s.plusOne;
+  const d = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? ddayLabel(date, plusOne) : null;
+  const text: Record<DdayEl, string> = {
+    cnt: d ? (s.pad ? d.label.replace(/(\d+)$/, m => m.padStart(3, '0')) : d.label) : 'D-000',
+    txt: s.label ?? linked?.title ?? '',
+    date: date && (s.showDate ?? true) ? date.replace(/-/g, '.') : '',
+  };
+  const shown = (['cnt', 'txt', 'date'] as DdayEl[]).filter(e => text[e]);
+  const sh = s.shadow ? '0 1px 4px rgba(0,0,0,.55)' : undefined;
+  const wph = conf.w && conf.h ? `${conf.w}/${conf.h}` : '200/60';
+  const POS: DdayPos[] = ['c', 'tl', 'bl', 'tr', 'br'];
+  return (
+    <div className={`deco-wgt ${s.noBorder ? 'no-bd' : ''}`}
+      style={{
+        position: 'relative', overflow: 'hidden', width: '100%', height: '100%',
+        aspectRatio: wph,   // 폰 세로 나열에서는 높이가 비어 있어도 정한 가로세로 비율을 지킨다
+        borderRadius: rounded ? 'var(--radius)' : 0,
+      }}>
+      <div style={{ position: 'absolute', inset: 0 }}>
+        <CroppedBlobImg fileRef={s.imgId} crop={s.crop} ph="" />
+      </div>
+      {!!s.dim && <div style={{ position: 'absolute', inset: 0, background: `rgba(0,0,0,${s.dim / 100})`, pointerEvents: 'none' }} />}
+      {/* 위치(정중앙·네 모서리)마다 한 묶음 — 같은 위치에 겹쳐 둔 글자는 정한 순서대로 위에서 아래로 쌓인다 */}
+      {POS.map(pos => {
+        const els = ddayGroup(s, pos, shown);
+        if (!els.length) return null;
+        const left = pos === 'tl' || pos === 'bl', right = pos === 'tr' || pos === 'br';
+        return (
+          <div key={pos} style={{
+            position: 'absolute', inset: 0, padding: '7px 12px', display: 'flex', flexDirection: 'column', pointerEvents: 'none', overflow: 'hidden',
+            fontFamily: familyOf(s.fontId ?? 'serif'),
+            justifyContent: pos === 'c' ? 'center' : pos === 'tl' || pos === 'tr' ? 'flex-start' : 'flex-end',
+            alignItems: left ? 'flex-start' : right ? 'flex-end' : 'center',
+            textAlign: left ? 'left' : right ? 'right' : 'center',
+          }}>
+            {els.map(el => (
+              <span key={el} style={{
+                fontSize: s[`${el}Size` as const] ?? DDAY_EL_SIZE[el], color: s[`${el}Color` as const] ?? '#ffffff',
+                fontWeight: el === 'cnt' ? 700 : undefined, lineHeight: 1.2, textShadow: sh, whiteSpace: 'nowrap', maxWidth: '100%',
+                overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: el === 'date' ? '.04em' : undefined,
+              }}>{text[el]}</span>
+            ))}
+          </div>
+        );
+      })}
+      <div onClick={e => e.stopPropagation()}>
+        <Modal open={open} onClose={() => setOpen(false)} small title="D-DAY 카운트"
+          desc="이미지 위에 카운트·내용·시작 날짜를 얹습니다 — 달력 디데이와 연동할 수 있어요">
+          {open && <DdayCardEditor conf={conf} onClose={() => setOpen(false)} />}
+        </Modal>
+      </div>
+    </div>
+  );
 }
 
 export function DdayWidget({ conf }: { conf: WidgetConf }) {
@@ -524,7 +592,7 @@ export function DecoWidget({ conf }: { conf: WidgetConf }) {
       style={{
         position: 'relative', overflow: 'hidden',
         width: wPx ? `${wPx}px` : '100%', maxWidth: '100%',
-        height: hPx ? `${hPx}px` : '100%', minHeight: hPx ? undefined : 80,
+        height: hPx ? `${hPx}px` : '100%', minHeight: hPx || conf.h ? undefined : 80,   // 칸 크기를 정했으면(얇은 띠 포함) 그 높이 그대로
         margin: wPx ? '0 auto' : undefined,
         aspectRatio: conf.h == null && !hPx ? '1/1' : undefined, // 크기 동결 전 기본 정사각
         borderRadius: rounded ? 'var(--radius)' : 0,
@@ -797,6 +865,7 @@ export function renderWidget(conf: WidgetConf) {
     case 'upcoming': return <UpcomingWidget />;
     case 'freetext': return <FreeTextWidget conf={conf} />;
     case 'deco': return <DecoWidget conf={conf} />;
+    case 'ddaycard': return <DdayCardWidget conf={conf} />;
     case 'memoboard': return <MemoBoardWidget />;
     case 'banners': return <BannersWidget conf={conf} />;
     case 'clicker': return <ClickerWidget conf={conf} />;

@@ -2,7 +2,7 @@
 // 위젯 설정 공용 에디터 (5장 「위젯」 카테고리 · 메인 위젯 관리 모달 공유)
 // 같은 mainStore를 갱신하므로 메인에서 바꾸든 환경설정에서 바꾸든 즉시 서로 반영됨
 import React, { useEffect, useState } from 'react';
-import { WidgetConf, useMainStore, decoSlides, DecoSlide, clickerSlots, clickerKeyOf, ClickerSlot, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, decoSlides, ddayListItems, ddayKey, ddayElPos, ddayGroup, DDAY_EL_LABEL, DDAY_EL_SIZE, DDAY_POS_LABEL, type DdayCardSettings, type DdayEl, type DdayPos, DecoSlide, clickerSlots, clickerKeyOf, ClickerSlot, CLICKER_COLS, CLICKER_N } from '@/lib/mainStore';
 import { KInput, KTextarea, KCheck, KStep, KDate } from '@/components/ui/Kit';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue, CropImg, CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -294,6 +294,15 @@ export function DecoEditor({ conf, onClose }: { conf: WidgetConf; onClose?: () =
           onChange={e => { const n = parseInt(e.target.value, 10); set({ hPx: Number.isFinite(n) && n > 0 ? Math.min(n, 2000) : undefined }); }}
           style={{ width: 140 }} />
       </div>
+      {/* 자주 쓰는 비율 (사용자 요청 — 200×40 같은 얇은 띠도) — 칸 크기를 바로 맞춘다. 직접 정한 px 크기는 비운다 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">비율</span>
+        {[{ w: 200, h: 40 }, { w: 200, h: 60 }, { w: 200, h: 100 }, { w: 240, h: 240 }].map(z => (
+          <button key={`${z.w}x${z.h}`} className="btn btn-ghost" style={{ padding: '3px 9px', fontSize: 10.5 }}
+            onClick={() => { updateWidget(conf.id, { w: z.w, h: z.h, settings: { ...conf.settings, wPx: undefined, hPx: undefined } }, { persist: true }); toast(`${z.w}×${z.h}로 맞췄습니다 — [✂ 위치]로 이미지를 다시 맞춰 주세요`); }}>{z.w}×{z.h}</button>
+        ))}
+        <span style={{ color: 'var(--faint)', fontSize: 10.5 }}>편집모드에서 모서리를 끌어도 됩니다 (최소 40×20)</span>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
@@ -315,6 +324,158 @@ export function DecoEditor({ conf, onClose }: { conf: WidgetConf; onClose?: () =
           onApply={c => { patchSlide(cropTarget.id, { crop: c }); setCropFor(null); }} />
       )}
       {del.element}
+    </div>
+  );
+}
+
+/* ---------- D-DAY 카운트 — settings: imgId/crop · src(manual|link)/linkKey/date/title/plusOne · 글자 색·크기 · 테두리 ----------
+   이미지 타일형 — 리스트형 D-DAY와 별개. 크기는 위젯 크기(편집모드 드래그)나 아래 프리셋으로 정한다. */
+const DDAY_CARD_SIZES: { w: number; h: number }[] = [
+  { w: 200, h: 40 }, { w: 200, h: 60 }, { w: 200, h: 80 }, { w: 300, h: 60 }, { w: 240, h: 120 }, { w: 160, h: 160 },
+];
+
+export function DdayCardEditor({ conf, onClose }: { conf: WidgetConf; onClose?: () => void }) {
+  const { state, updateWidget } = useMainStore();
+  const toast = useToast();
+  const { fonts, familyOf } = useFonts();
+  const [crop, setCrop] = useState(false);
+  const s = conf.settings as DdayCardSettings;
+  const set = (patch: Record<string, unknown>) =>
+    updateWidget(conf.id, { settings: { ...conf.settings, ...patch } }, { persist: true });
+  const ratio = (conf.w ?? 200) / (conf.h ?? 60);
+  const inputId = `ddcF-${conf.id}`;
+  const src = useBlobUrl(s.imgId);
+  const listItems = ddayListItems(state.widgets);
+  const mode = s.src ?? 'manual';
+  const linked = mode === 'link' ? listItems.find(it => ddayKey(it) === s.linkKey) : undefined;
+  const lbl = (it: { title: string; date: string }) => `${it.title} · ${it.date}`;
+  // 같은 위치에 둔 글자 순서 바꾸기 — 그 위치 묶음 안에서만 위·아래로 한 칸씩 (순서 값을 묶음 번호로 다시 매긴다)
+  const move = (el: DdayEl, dir: -1 | 1) => {
+    const g = ddayGroup(s, ddayElPos(s, el) as DdayPos);
+    const i = g.indexOf(el), k = i + dir;
+    if (k < 0 || k >= g.length) return;
+    [g[i], g[k]] = [g[k], g[i]];
+    set(Object.fromEntries(g.map((e, n) => [`${e}Ord`, n])));
+  };
+  const ELS: DdayEl[] = ['cnt', 'txt', 'date'];
+
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <input id={inputId} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={async e => {
+          const f = e.target.files?.[0]; e.target.value = '';
+          if (!f) return;
+          set({ imgId: await putBlob(f), crop: undefined });
+          setCrop(true);
+          toast('이미지가 저장되었습니다 — 위치를 조정해 주세요');
+        }} />
+
+      {/* 미리보기 겸 이미지 선택 */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="ph" style={{ width: 200, maxWidth: '100%', aspectRatio: String(ratio), borderRadius: 8, overflow: 'hidden', position: 'relative', border: '1.5px dashed var(--line)', cursor: 'var(--cur-pointer,pointer)' }}
+          onClick={() => document.getElementById(inputId)?.click()}>
+          {s.imgId ? <CroppedBlobImg fileRef={s.imgId} crop={s.crop} ph="" /> : <span style={{ fontSize: 9 }}>IMAGE</span>}
+        </div>
+        <div style={{ display: 'grid', gap: 6 }}>
+          <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+            onClick={() => document.getElementById(inputId)?.click()}>{s.imgId ? '이미지 교체' : '＋ 이미지 추가'}</button>
+          {s.imgId && <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }} onClick={() => setCrop(true)}>✂ 위치·확대</button>}
+          {s.imgId && <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }} onClick={() => set({ imgId: undefined, crop: undefined })}>이미지 빼기</button>}
+        </div>
+      </div>
+
+      {/* 위젯 크기 — 200×40 같은 얇은 띠부터. 편집모드에서 모서리를 끌어도 된다 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">크기</span>
+        {DDAY_CARD_SIZES.map(z => (
+          <button key={`${z.w}x${z.h}`} className="btn btn-ghost"
+            style={{ padding: '3px 9px', fontSize: 10.5, ...(conf.w === z.w && conf.h === z.h ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : {}) }}
+            onClick={() => updateWidget(conf.id, { w: z.w, h: z.h }, { persist: true })}>{z.w}×{z.h}</button>
+        ))}
+        <span style={{ color: 'var(--faint)', fontSize: 10.5 }}>현재 {conf.w ?? 200}×{conf.h ?? 60}</span>
+      </div>
+
+      {/* 날짜 — 직접 입력 / 달력(리스트형 D-DAY) 디데이 연동 */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">날짜</span>
+        <div className="mini-seg">
+          <button className={mode === 'manual' ? 'on' : ''} onClick={() => set({ src: undefined })}>직접 입력</button>
+          <button className={mode === 'link' ? 'on' : ''} onClick={() => set({ src: 'link', linkKey: s.linkKey ?? (listItems[0] ? ddayKey(listItems[0]) : undefined) })}>달력 디데이 연동</button>
+        </div>
+      </div>
+      {mode === 'link' ? (
+        listItems.length > 0 ? (
+          <KSelect minWidth={260} value={s.linkKey ?? ''} placeholder="연동할 디데이 선택"
+            onChange={v => set({ linkKey: v })}
+            options={listItems.map(it => ({ value: ddayKey(it), label: lbl(it) }))} />
+        ) : (
+          <p className="hint" style={{ margin: 0 }}>연동할 디데이가 없습니다 — 달력에서 일정을 「D-day로 등록」하거나, 리스트형 D-DAY 위젯에 항목을 추가해 주세요</p>
+        )
+      ) : (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <KDate value={s.date ?? ''} style={{ maxWidth: 122 }} onChange={v => set({ date: v || undefined })} />
+          <span data-tip="시작일을 1일로 세는 기념일 카운트 — 당일이 D+1">
+            <KCheck label="+1D" checked={!!s.plusOne} onChange={v => set({ plusOne: v || undefined })} />
+          </span>
+        </div>
+      )}
+
+      {/* 내용 — 무엇에 대한 디데이인지 */}
+      <KInput placeholder="내용 — 무엇에 대한 디데이인지 (예: 우리 만난 지)" value={s.label ?? linked?.title ?? ''}
+        onChange={e => set({ label: e.target.value })} />
+
+      {/* 글자 세 가지 — 색 · 크기 · 위치 (크기는 카운트 > 내용 > 시작 날짜가 기본) */}
+      <div style={{ display: 'grid', gap: 7, padding: '8px 0', borderTop: '1px dashed var(--line)', borderBottom: '1px dashed var(--line)' }}>
+        {ELS.map(el => {
+          const pos = ddayElPos(s, el);
+          const g = ddayGroup(s, pos);
+          const i = g.indexOf(el);
+          return (
+            <div key={el} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span className="cp-lb" style={{ width: 92 }}>{DDAY_EL_LABEL[el]}</span>
+              <ColorField value={s[`${el}Color` as const] ?? '#ffffff'} onChange={hex => set({ [`${el}Color`]: hex })} />
+              <KStep value={s[`${el}Size` as const] ?? DDAY_EL_SIZE[el]} min={6} max={120} suffix="px" onChange={v => set({ [`${el}Size`]: v })} />
+              <KSelect minWidth={104} value={pos} onChange={v => set({ [`${el}Pos`]: v, [`${el}Ord`]: 99 })}
+                options={(Object.keys(DDAY_POS_LABEL) as DdayPos[]).map(p => ({ value: p, label: DDAY_POS_LABEL[p] }))} />
+              {/* 같은 위치에 다른 글자가 있을 때만 — 위·아래 순서 */}
+              {g.length > 1 && (
+                <span style={{ display: 'inline-flex', gap: 3 }}>
+                  <button className="btn btn-ghost" disabled={i === 0} style={{ height: 24, padding: '0 8px', fontSize: 10.5 }} data-tip="위로" onClick={() => move(el, -1)}>▲</button>
+                  <button className="btn btn-ghost" disabled={i === g.length - 1} style={{ height: 24, padding: '0 8px', fontSize: 10.5 }} data-tip="아래로" onClick={() => move(el, 1)}>▼</button>
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">폰트</span>
+        <KSelect minWidth={150} value={s.fontId ?? 'serif'} onChange={v => set({ fontId: v })}
+          options={fonts.map(f => ({ value: f.id, label: <span style={{ fontFamily: familyOf(f.id) }}>{f.name}</span> }))} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <KCheck label="시작 날짜 표시" checked={s.showDate ?? true} onChange={v => set({ showDate: v ? undefined : false })} />
+        <KCheck label="세 자리 맞춤 (D-007)" checked={!!s.pad} onChange={v => set({ pad: v || undefined })} />
+        <KCheck label="글자 그림자" checked={!!s.shadow} onChange={v => set({ shadow: v || undefined })} />
+      </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span className="cp-lb">이미지 어둡게</span>
+        <KStep value={s.dim ?? 0} min={0} max={80} step={10} suffix="%" onChange={v => set({ dim: v || undefined })} />
+        <KCheck label="둥근 모서리" checked={s.rounded ?? true} onChange={v => set({ rounded: v ? undefined : false })} />
+        {/* 위젯 테두리 — 디자인 탭 「위젯 > 테두리」를 켰을 때 이 타일에도 그릴지 */}
+        <KCheck label="위젯 테두리" checked={!s.noBorder} onChange={v => set({ noBorder: v ? undefined : true })} />
+        {onClose && <button className="btn btn-ghost" style={{ marginLeft: 'auto' }} onClick={onClose}>CLOSE</button>}
+      </div>
+      <p className="hint" style={{ margin: 0 }}>
+        위치를 같게 고른 글자끼리는 ▲▼로 위아래 순서를 바꿀 수 있어요. 위젯 크기를 바꾸면 [✂ 위치·확대]로 이미지를 다시 맞춰 주세요 (원본은 잘리지 않음).
+        연동하면 달력에서 고친 날짜가 그대로 따라옵니다
+      </p>
+
+      {crop && src && (
+        <CropEditor open fit src={src} aspect={ratio} aspectLabel="현재 위젯 비율" initial={s.crop}
+          onClose={() => setCrop(false)} onApply={c => { set({ crop: c }); setCrop(false); }} />
+      )}
     </div>
   );
 }
