@@ -213,9 +213,10 @@ function MiniProf({ member, char, isAdmin, onGo, href, onRemove, auUnregistered,
         <div className="card-thumbs">
           {rest.map((r, i) => (
             <div key={r} className="t" data-nonav=""
-              style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in' }}
+              style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in', background: 'color-mix(in srgb, var(--ink) 6%, transparent)' }}
               onClick={e => { e.stopPropagation(); setLb((rep ? 1 : 0) + i); }}>
-              <BlobImg fileRef={r} ph="" label="" />
+              {/* 칸에 꽉 채워 자르지 않고(cover) 그림 전체가 보이게(contain) — 세로·가로로 긴 그림도 안 잘린다 */}
+              <BlobImg fileRef={r} ph="" label="" imgStyle={{ objectFit: 'contain' }} />
             </div>
           ))}
         </div>
