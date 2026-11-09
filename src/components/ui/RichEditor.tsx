@@ -10,11 +10,11 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { Plugin } from '@tiptap/pm/state';
+import { TableMap } from '@tiptap/pm/tables';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { putBlob } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
 import { useFonts } from '@/lib/fontStore';
-import { KSelect } from '@/components/ui/Kit';
 
 /* ───────── 표 확장 — 셀 배경색·세로 정렬 · 행 높이 · 표 정렬을 저장 가능하게 ───────── */
 const MAX_TABLE = 10;   // 표 최대 10 × 10
@@ -49,10 +49,46 @@ const RRow = TableRow.extend({
     };
   },
 });
+/* 표 테두리 — 표 전체에 하나 (기본: 검정 1pt 실선). CSS 변수로 내보내서 편집·읽기 화면이 같은 규칙(td의 border)을 쓴다 */
+const LINE_STYLES = [
+  { id: 'solid', label: '기본 선' },
+  { id: 'thick', label: '굵은 선' },
+  { id: 'dashed', label: '점선' },
+  { id: 'transparent', label: '투명선' },
+  { id: 'double', label: '겹선' },
+] as const;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tableVars = (a: any): string => {
+  const st = String(a.borderStyle ?? 'solid');
+  const w0 = Number(a.borderWidth ?? 1) || 1;
+  const w = st === 'double' ? Math.max(3, w0) : w0;               // 겹선은 3pt 아래에선 한 줄로 보여서 최소 3pt
+  const line = st === 'dashed' ? 'dashed' : st === 'double' ? 'double' : 'solid';
+  return `--tb-c:${a.borderColor ?? '#000000'};--tb-w:${w}pt;--tb-s:${line}${st === 'transparent' ? ';--tb-c2:transparent' : ''}`;
+};
 const RTable = Table.extend({
   addAttributes() {
     return {
       ...(this.parent?.() ?? {}),
+      borderColor: {
+        default: '#000000',
+        parseHTML: (el: HTMLElement) => el.style.getPropertyValue('--tb-c').trim() || '#000000',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        renderHTML: (a: any) => ({ style: tableVars(a) }),   // 세 속성이 한 번에 나가므로 여기서만 낸다
+      },
+      borderWidth: {
+        default: 1,
+        parseHTML: (el: HTMLElement) => parseFloat(el.style.getPropertyValue('--tb-w')) || 1,
+        renderHTML: () => ({}),
+      },
+      borderStyle: {
+        default: 'solid',
+        parseHTML: (el: HTMLElement) => {
+          if (el.style.getPropertyValue('--tb-c2').trim() === 'transparent') return 'transparent';
+          const s = el.style.getPropertyValue('--tb-s').trim();
+          return s === 'dashed' || s === 'double' ? s : 'solid';
+        },
+        renderHTML: () => ({}),
+      },
       tableAlign: {
         default: 'left',
         parseHTML: (el: HTMLElement) => el.getAttribute('data-talign') || 'left',
@@ -72,6 +108,10 @@ const RTable = Table.extend({
             state.doc.descendants((node, pos) => {
               if (node.type.name === 'table' && node.attrs.tableAlign && node.attrs.tableAlign !== 'left') {
                 decos.push(Decoration.node(pos, pos + node.nodeSize, { 'data-talign': String(node.attrs.tableAlign) }));
+              }
+              // 편집 화면은 표를 감싸는 칸이 있어 그 칸에 테두리 변수를 붙인다 (자식 td가 상속)
+              if (node.type.name === 'table') {
+                decos.push(Decoration.node(pos, pos + node.nodeSize, { style: tableVars(node.attrs) }));
               }
             });
             return DecorationSet.create(state.doc, decos);
@@ -193,6 +233,67 @@ function TableBtn({ onInsert }: { onInsert: (rows: number, cols: number) => void
   );
 }
 
+/** 글꼴 고르기 — 목록의 글꼴을 각자의 모양으로 미리 보여 준다. 누르는 동안 본문 선택이 풀리지 않게(mousedown 막음) 한다 */
+function FontBtn({ fonts, curId, onPick }: {
+  fonts: { id: string; name: string; fam?: string }[]; curId: string; onPick: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const cur = fonts.find(f => f.id === curId);
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="글꼴 (선택한 글자에만 적용)" className={`re-btn re-fontbtn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>
+        <span className="re-fontbtn-t" style={cur?.fam ? { fontFamily: cur.fam } : undefined}>{cur ? cur.name : '기본 글꼴'}</span>
+        <span className="re-fontbtn-c">▾</span>
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
+          <div className="re-fontlist">
+            <button type="button" className={`re-fontitem ${curId === '' ? 'on' : ''}`}
+              onClick={() => { onPick(''); setOpen(false); }}>기본 글꼴</button>
+            {fonts.map(f => (
+              <button key={f.id} type="button" className={`re-fontitem ${curId === f.id ? 'on' : ''}`}
+                style={f.fam ? { fontFamily: f.fam } : undefined}
+                onClick={() => { onPick(f.id); setOpen(false); }}>{f.name}</button>
+            ))}
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
+/** 선 모양 고르기 (표 테두리) */
+function LineBtn({ current, onPick }: { current: string; onPick: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const sample = (id: string): React.CSSProperties =>
+    id === 'dashed' ? { borderTop: '2px dashed #333' }
+      : id === 'double' ? { borderTop: '4px double #333' }
+        : id === 'thick' ? { borderTop: '4px solid #333' }
+          : id === 'transparent' ? { borderTop: '2px solid transparent', background: 'repeating-linear-gradient(90deg,#ccc 0 3px,transparent 3px 6px)', height: 1 }
+            : { borderTop: '1px solid #333' };
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="테두리 선 모양" className={`re-btn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>선 ▾</button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
+          <div className="re-fontlist">
+            {LINE_STYLES.map(s => (
+              <button key={s.id} type="button" className={`re-fontitem re-lineitem ${current === s.id ? 'on' : ''}`}
+                onClick={() => { onPick(s.id); setOpen(false); }}>
+                <span>{s.label}</span><i style={sample(s.id)} />
+              </button>
+            ))}
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
 const AlignIcon = ({ kind }: { kind: 'left' | 'center' | 'right' | 'justify' }) => {
   const w = { left: [12, 8, 12, 8], center: [12, 8, 12, 8], right: [12, 8, 12, 8], justify: [12, 12, 12, 12] }[kind];
   const x = (len: number) => (kind === 'left' || kind === 'justify' ? 2 : kind === 'center' ? (16 - len) / 2 : 14 - len);
@@ -298,19 +399,33 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
     dispatch?.(tr);
     return true;
   });
-  /** 열 폭을 지워 표 폭 안에서 똑같이 나눈다 */
-  const equalCols = () => editor.commands.command(({ state, tr, dispatch }) => {
-    const t = findAround(state, 'table');
-    if (!t) return false;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t.node.descendants((n: any, pos: number) => {
-      if ((n.type.name === 'tableCell' || n.type.name === 'tableHeader') && n.attrs.colwidth) {
-        tr.setNodeMarkup(t.pos + 1 + pos, undefined, { ...n.attrs, colwidth: null });
-      }
+  /** 열 폭 균등 — 지금 표 폭을 열 수로 나눠 **모든 열에 같은 폭을 새로 적어 준다**
+   *  (예전엔 폭 값을 지우기만 해서, 끌어 늘린 열이 남은 폭을 그대로 차지했다) */
+  const equalCols = () => {
+    const t0 = findAround(editor.state, 'table');
+    if (!t0) return;
+    const wrap = editor.view.nodeDOM(t0.pos) as HTMLElement | null;
+    const el = (wrap?.querySelector?.('table') as HTMLElement | null) ?? wrap;
+    const total = Math.round(el?.offsetWidth || 0);
+    const cols = TableMap.get(t0.node).width;
+    if (!total || !cols) return;
+    const w = Math.max(40, Math.floor(total / cols));
+    editor.commands.command(({ state, tr, dispatch }) => {
+      const t = findAround(state, 'table');
+      if (!t) return false;
+      const seen = new Set<number>();
+      TableMap.get(t.node).map.forEach((off: number) => {
+        if (seen.has(off)) return;       // 합친 칸은 여러 번 나온다
+        seen.add(off);
+        const cell = t.node.nodeAt(off);
+        if (!cell) return;
+        const span = (cell.attrs.colspan as number | undefined) ?? 1;
+        tr.setNodeMarkup(t.pos + 1 + off, undefined, { ...cell.attrs, colwidth: Array(span).fill(w) });
+      });
+      dispatch?.(tr);
+      return true;
     });
-    dispatch?.(tr);
-    return true;
-  });
+  };
   /** 현재 행 높이 바꾸기 (null이면 자동) */
   const rowHeightNow = () => {
     const r = findAround(editor.state, 'tableRow');
@@ -401,10 +516,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           onClick={() => editor.chain().focus().toggleStrike().run()} />
         <span className="re-sep" />
         {/* 글꼴 — 환경설정에 등록해 둔 폰트를 그대로 (읽는 화면에서도 같은 폰트로 보인다) */}
-        <span className="re-font">
-          <KSelect minWidth={118} maxWidth={150} value={curFontId} onChange={pickFont}
-            options={[{ value: '', label: '기본 글꼴' }, ...fonts.map(f => ({ value: f.id, label: f.name }))]} />
-        </span>
+        <FontBtn fonts={fonts.map(f => ({ id: f.id, name: f.name, fam: familyOf(f.id) }))} curId={curFontId} onPick={pickFont} />
         <ColorBtn title="글자색" label="A" current={String(editor.getAttributes('textStyle').color ?? '')}
           onPick={c => C().setColor(c).run()} onClear={() => C().unsetColor().run()} />
         <ColorBtn title="글자 배경색" label={<span style={{ background: '#ffe066', padding: '0 3px', borderRadius: 2 }}>A</span>}
@@ -419,7 +531,9 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           onClick={() => C().setTextAlign('right').run()} />
         <TBtn title="양쪽 정렬" label={<AlignIcon kind="justify" />} on={editor.isActive({ textAlign: 'justify' })}
           onClick={() => C().setTextAlign('justify').run()} />
-        <span className="re-sep" />
+        {/* 다음 줄부터 글 구분(제목·본문)으로 시작 — 데스크톱은 줄바꿈, 모바일(한 줄 스크롤)은 구분선 */}
+        <span className="re-br" />
+        <span className="re-sep re-m-only" />
         {/* 제목1·2·3 / 본문 — 읽기 화면의 목차가 이 제목들로 만들어진다 */}
         <TBtn title="제목 1" label="H1" on={editor.isActive('heading', { level: 1 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} />
@@ -471,6 +585,14 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <ColorBtn title="칸 배경색" label="▧" current={cellAttr('backgroundColor')}
             onPick={c => C().setCellAttribute('backgroundColor', c).run()}
             onClear={() => C().setCellAttribute('backgroundColor', null).run()} />
+          <ColorBtn title="표 테두리 색" label="▢" current={String(tbl?.node.attrs.borderColor ?? '#000000')}
+            onPick={c => setTable({ borderColor: c })} onClear={() => setTable({ borderColor: '#000000' })} />
+          <LineBtn current={String(tbl?.node.attrs.borderStyle ?? 'solid')}
+            onPick={id => setTable(id === 'thick' ? { borderStyle: 'solid', borderWidth: 3 } : id === 'solid' ? { borderStyle: 'solid', borderWidth: 1 } : { borderStyle: id })} />
+          <TBtn title="테두리 굵기 줄이기" label="선−" onClick={() => setTable({ borderWidth: Math.max(0.5, Number(tbl?.node.attrs.borderWidth ?? 1) - 0.5) })} />
+          <span className="re-tt-v">{Number(tbl?.node.attrs.borderWidth ?? 1)}pt</span>
+          <TBtn title="테두리 굵기 늘리기" label="선+" onClick={() => setTable({ borderWidth: Math.min(8, Number(tbl?.node.attrs.borderWidth ?? 1) + 0.5) })} />
+          <span className="re-sep" />
           <TBtn title="칸 안 위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
           <TBtn title="칸 안 가운데 맞춤" label="↕" on={cellAttr('vAlign') === 'middle'} onClick={() => C().setCellAttribute('vAlign', 'middle').run()} />
           <TBtn title="칸 안 아래쪽 맞춤" label="⤓" on={cellAttr('vAlign') === 'bottom'} onClick={() => C().setCellAttribute('vAlign', 'bottom').run()} />

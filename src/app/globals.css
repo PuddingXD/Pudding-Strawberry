@@ -850,6 +850,8 @@ a{color:inherit;text-decoration:none}
   .re-toolbar{gap:0;padding:5px 6px;flex-wrap:nowrap;overflow-x:auto}
   .re-btn{min-width:24px;height:26px;padding:0 3px;font-size:calc(12px*var(--fs,1));flex-shrink:0}
   .re-sep{margin:0 2px;flex-shrink:0}
+  .re-br{display:none}
+  .re-m-only{display:block}
 }
 
 /* 설치 초기 화면 (v2.0) — 서버(Supabase) 연결 · 관리자 계정 · 설정 파일 / 백업 복원 */
@@ -2234,14 +2236,29 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .re-tg{width:17px;height:17px;border:1px solid var(--line);border-radius:2px;padding:0;background:#fff}
 .re-tg.on{background:var(--accent,#6c8cff);border-color:var(--accent,#6c8cff);opacity:.75}
 .re-pop-cap{margin-top:7px;text-align:center;font-size:calc(11px*var(--fs,1));color:var(--sub)}
-/* 표 — 편집 화면·읽기 화면 공통 */
+/* 표 — 편집 화면·읽기 화면 공통. 테두리는 표가 가진 변수(--tb-*)를 따른다 (기본 검정 1pt 실선) */
 .re-content table,.doc-body table,.html-body table{border-collapse:collapse;table-layout:fixed;width:100%;max-width:100%;margin:1em 0}
-.re-content td,.re-content th,.doc-body td,.doc-body th,.html-body td,.html-body th{border:1px solid var(--line-dark,var(--line));padding:6px 9px;vertical-align:top;position:relative;word-break:break-word;min-width:1em}
+.re-content td,.re-content th,.doc-body td,.doc-body th,.html-body td,.html-body th{border:var(--tb-w,1pt) var(--tb-s,solid) var(--tb-c2,var(--tb-c,#000));padding:8px;vertical-align:top;position:relative;word-break:break-word;min-width:1em;line-height:1.6}
 .re-content th,.doc-body th,.html-body th{font-weight:700;background:rgba(0,0,0,.045);text-align:left}
-.re-wrap .re-content td p,.re-wrap .re-content th p,.doc-body td p,.doc-body th p,.html-body td p,.html-body th p{margin:0}
+/* 칸 안 문단 — 위아래 여백을 없애 칸 여백(사방 8px)만 남게. 문서 편집 칸(.re-content.doc-body p)보다 세게 걸어야 이긴다 */
+.re-wrap .re-content.doc-body td p,.re-wrap .re-content.doc-body th p,.re-wrap .re-content td p,.re-wrap .re-content th p,.doc-body td p,.doc-body th p,.html-body td p,.html-body th p{margin:0}
 .re-content .tableWrapper{overflow-x:auto;padding-bottom:1px}
 .re-content .selectedCell:after{content:"";position:absolute;inset:0;background:rgba(80,120,255,.2);pointer-events:none;z-index:2}
 .re-content .column-resize-handle{position:absolute;right:-2px;top:0;bottom:-2px;width:4px;background:var(--accent,#6c8cff);pointer-events:none;z-index:3}
 .re-content.resize-cursor,.resize-cursor .re-content{cursor:col-resize}
 table[data-talign="center"],.re-content .tableWrapper[data-talign="center"] > table{margin-left:auto;margin-right:auto}
 table[data-talign="right"],.re-content .tableWrapper[data-talign="right"] > table{margin-left:auto;margin-right:0}
+
+.re-br{flex-basis:100%;height:0}
+@media (min-width:621px){.re-m-only{display:none}}
+.re-fontbtn{min-width:104px;max-width:150px;justify-content:space-between;display:flex;gap:6px;padding:0 8px}
+.re-fontbtn-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12px*var(--fs,1))}
+.re-fontbtn-c{font-size:9px;opacity:.6}
+.re-fontlist{display:grid;max-height:260px;overflow-y:auto;min-width:170px;margin:-4px}
+.re-fontitem{text-align:left;padding:7px 10px;border-radius:6px;font-size:calc(14px*var(--fs,1));white-space:nowrap;color:var(--ink)}
+.re-fontitem:hover{background:#eef0f2}
+.re-fontitem.on{background:var(--ink);color:#fff}
+.re-lineitem{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:calc(12px*var(--fs,1))}
+.re-lineitem i{display:block;width:54px;height:0}
+.re-lineitem.on i{filter:invert(1)}
+.re-tt-v{font-size:calc(11px*var(--fs,1));color:var(--sub);min-width:30px;text-align:center}
