@@ -20,6 +20,7 @@ import {
   readNotifs, markRead, markAllRead, clearReadNotifs, notifSettings, setNotifSetting, syncNotifs, selfTestNotif,
 } from '@/lib/notifStore';
 import { subscribeTable } from '@/lib/db';
+import { NavLink } from '@/components/ui/NavLink';
 import { isMsgSoundOn, setMsgSoundOn, MSG_SOUND_EVT } from '@/lib/msgSound';
 
 const BellIcon = () => (
@@ -121,6 +122,8 @@ export function TopBar() {
     router.push(href);
   };
 
+  // 커스텀 링크에 다른 사이트 풀주소를 건 항목은 새 탭 링크로 (nav()의 외부 주소 처리와 같은 규칙)
+  const extOf = (href: string) => (/^https?:\/\//.test(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {});
   const allHrefs = menu.flatMap(m => (m.children ? m.children.map(c => c.href) : [m.href ?? '']));
   const isHere = (href: string) => {
     if (!href || /^https?:\/\//.test(href)) return false;
@@ -182,39 +185,39 @@ export function TopBar() {
   return (
     <header className="topbar">
       {/* 로고 — 텍스트·서브타이틀·정렬은 환경설정 > 디자인 (5.2) */}
-      <div className="brand" onClick={() => nav('/')}>
+      <NavLink className="brand" href="/" onGo={() => nav('/')}>
         {/* 로고 이미지가 있으면 글자 대신 그림 (사용자 요청 — 환경설정 > 디자인 > 로고 이미지) */}
         {siteLoaded && (site.logoImg && logoUrl
           // eslint-disable-next-line @next/next/no-img-element
           ? <img className="brand-img" src={logoUrl} alt={site.title} style={{ height: site.logoH ?? 40, ['--logo-h' as string]: `${site.logoH ?? 40}px` } as React.CSSProperties} />
           : site.title)}
         {siteLoaded && site.subtitle && <small className={`al-${site.align}`}>{site.subtitle}</small>}
-      </div>
+      </NavLink>
 
       <nav className="gnb" ref={gnbRef}>
         {visMenu.map(item =>
           item.children ? (
             <div className={`grp ${inGroup(item.children) ? 'cur' : ''}`} key={item.label}>
               {/* 상위 클릭 → 첫 하위 페이지 (v1.8) · 안 읽은 알림이 있는 메뉴에 점 (4.13) */}
-              <button onClick={() => nav(item.children![0].href)}>
+              <NavLink className="nl" href={item.children[0].href} onGo={() => nav(item.children![0].href)}>
                 {item.label}{item.children.some(c => dotHrefs.has(c.href)) && <small className="nd">●</small>}
-              </button>
+              </NavLink>
               <div className="sub">
                 {item.children.map(c => (
-                  <button key={c.href} className={isHere(c.href) ? 'on' : ''} onClick={() => nav(c.href)}>
+                  <NavLink key={c.href} className={`nl ${isHere(c.href) ? 'on' : ''}`} href={c.href} onGo={() => nav(c.href)} {...extOf(c.href)}>
                     {c.label}{dotHrefs.has(c.href) && <small className="nd">●</small>}
-                  </button>
+                  </NavLink>
                 ))}
               </div>
             </div>
           ) : (
-            <button
+            <NavLink
               key={item.label}
-              className={isHere(item.href!) ? 'on' : ''}
-              onClick={() => nav(item.href!)}
+              className={`nl ${isHere(item.href!) ? 'on' : ''}`}
+              href={item.href!} onGo={() => nav(item.href!)} {...extOf(item.href!)}
             >
               {item.label}{dotHrefs.has(item.href!) && <small className="nd">●</small>}
-            </button>
+            </NavLink>
           )
         )}
         {/* 넘친 상위 메뉴 — ⋯ 드롭다운 (그룹은 캡션+하위, 단독은 바로 이동) */}
@@ -229,15 +232,15 @@ export function TopBar() {
                   <div className="sub-grp" key={item.label}>
                     <div className="sub-cap">{item.label}</div>
                     {item.children.map(c => (
-                      <button key={c.href} onClick={() => nav(c.href)}>
+                      <NavLink key={c.href} className="nl" href={c.href} onGo={() => nav(c.href)} {...extOf(c.href)}>
                         {c.label}{dotHrefs.has(c.href) && <small className="nd">●</small>}
-                      </button>
+                      </NavLink>
                     ))}
                   </div>
                 ) : (
-                  <button key={item.label} onClick={() => nav(item.href!)}>
+                  <NavLink key={item.label} className="nl" href={item.href!} onGo={() => nav(item.href!)} {...extOf(item.href!)}>
                     {item.label}{dotHrefs.has(item.href!) && <small className="nd">●</small>}
-                  </button>
+                  </NavLink>
                 ))}
             </div>
           </div>

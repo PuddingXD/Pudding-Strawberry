@@ -1,6 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 캐릭터 리스트 (4.4) — 한 줄 5개 · 3:4 썸네일(크롭 반영) · 전용 폰트 · ＋ ADD CHARACTER
+import { NavBox } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -74,9 +75,8 @@ function CharsInner() {
           const priv = c.visibility === 'private';
           const sp = sort(i) as { style?: React.CSSProperties };
           return (
-            <div key={c.id} className="char-card" {...sort(i)}
-              style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
-              onClick={() => { if (!editOn) router.push(charPath(c)); }}>
+            <NavBox key={c.id} className="char-card" {...sort(i)} href={editOn ? undefined : charPath(c)}
+              style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}>
               <div className="thumb" style={{ position: 'relative' }}>
                 <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass}
                   label={priv ? '비공개' : '3:4'} />
@@ -87,7 +87,7 @@ function CharsInner() {
                 <b style={{ minWidth: 0, flex: 1 }}><FitText>{c.name}</FitText></b>
                 <i style={{ background: c.color }} />
               </div>
-            </div>
+            </NavBox>
           );
         })}
         {visible.length === 0 && (

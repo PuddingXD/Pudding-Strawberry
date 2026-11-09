@@ -1,6 +1,7 @@
 'use client';
 // RP LOG (옛 TRPG 로그 백업, 4.3 — 커플홈에서 이름 변경) — 티켓형/기본형 스킨 · 우측 자관 뱃지 필터 · ＋ ADD LOG
 // 본문 입력 3방식: 파일 업로드(.txt/.html 내용 자동 판별) / HTML 붙여넣기 / 직접 작성
+import { NavBox } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -363,9 +364,8 @@ function TrpgPageInner() {
   // 로그 백업 티켓 (사용자 요청 — 참고 이미지: 가로형 · 타공 없음 · 앞면은 그림만, 마우스를 올리면 뒤집혀 뒷면 정보)
   const Ticket = ({ l }: { l: TrpgLog }) => {
     return (
-      <div className={`tix ${editOn ? 'editing' : ''}`}
-        onContextMenu={e => openOrder(e, l.id)}
-        onClick={() => { if (!editOn) router.push(logPath(l)); }}>
+      <NavBox className={`tix ${editOn ? 'editing' : ''}`} href={editOn ? undefined : logPath(l)}
+        onContextMenu={e => openOrder(e, l.id)}>
         <div className="tix-in">
           {/* 앞면 — 대표 그림만 (그림이 없으면 색 위에 제목) */}
           <div className={`tix-face tix-front ${!l.thumbId && !l.thumbColor ? `ph ${l.ph}` : ''}`} style={thumbStyle(l)}>
@@ -395,7 +395,7 @@ function TrpgPageInner() {
             </div>
           </div>
         </div>
-      </div>
+      </NavBox>
     );
   };
 
@@ -441,9 +441,8 @@ function TrpgPageInner() {
               <div className="panel flush trpg-basic">
                 {basicShown.slice(logStart, logStart + PER_LOG).map((l, i) => (
                   // 드래그 위치는 전체 기준으로 넘긴다 — 페이지 안 위치로 넘기면 2페이지에서 어긋난다
-                  <div key={l.id} className="list-item" {...gridDragProps(logStart + i)}
-                    onContextMenu={e => openOrder(e, l.id)}
-                    onClick={() => { if (!editOn) router.push(logPath(l)); }}>
+                  <NavBox key={l.id} className="list-item" {...gridDragProps(logStart + i)} href={editOn ? undefined : logPath(l)}
+                    onContextMenu={e => openOrder(e, l.id)}>
                     {editOn && <span className="drag-h">⠿</span>}
                     <div className={`th ${!l.thumbId && !l.thumbColor ? `ph ${l.ph}` : ''}`} style={{ ...thumbStyle(l), position: 'relative' }}>
                       {l.thumbId && <CroppedBlobImg fileRef={l.thumbId} crop={l.thumbCrop} />}
@@ -456,7 +455,7 @@ function TrpgPageInner() {
                       {!canOpen(l) && <span className="pill" style={{ marginLeft: 6 }}>{l.password ? '비밀번호 필요' : '비공개'}</span>}
                       <small>{[l.writer, l.withText].filter(Boolean).join(' · ')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}{l.tags?.length ? ` · ${l.tags.map(t => '#' + t).join(' ')}` : ''}</small>
                     </div>
-                  </div>
+                  </NavBox>
                 ))}
               </div>
             )}

@@ -1,6 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 자관 리스트 (4.5) — 4:3 가로 썸네일 · 공개범위 3단계 · 멤버 색 점
+import { NavBox } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -50,13 +51,10 @@ export default function RelsPage() {
           const priv = r.visibility === 'private';
           const sp = sort(i) as { style?: React.CSSProperties };
           return (
-            <div key={r.id} className="rel-card" {...sort(i)}
+            <NavBox key={r.id} className="rel-card" {...sort(i)}
+              href={editOn || memberLocked ? undefined : relPath(r)}
               style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
-              onClick={() => {
-                if (editOn) return;
-                if (memberLocked) { toast('멤버공개 — 로그인 후 열람할 수 있습니다'); return; }
-                router.push(relPath(r));
-              }}>
+              onClick={!editOn && memberLocked ? () => toast('멤버공개 — 로그인 후 열람할 수 있습니다') : undefined}>
               <div className="thumb" style={{ position: 'relative' }}>
                 <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph={r.thumbClass}
                   label={priv ? '나만보기' : memberLocked ? '멤버공개' : '4:3'} />
@@ -78,7 +76,7 @@ export default function RelsPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </NavBox>
           );
         })}
       </div>

@@ -82,17 +82,21 @@ a{color:inherit;text-decoration:none}
 .brand small{display:block;font-family:var(--font-logosub,var(--sans));font-weight:var(--fw-logosub,400);font-size:calc(8.5px*var(--fs,1)*var(--fs-logosub,1));letter-spacing:.42em;color:#8d939d;margin-top:-2px}
 .brand small.al-left{text-align:left}.brand small.al-center{text-align:center}.brand small.al-right{text-align:right}
 .gnb{display:flex;gap:2px;flex:1;min-width:0;position:relative;--fs:var(--fs-menu,1)} /* min-width:0 — 가용 폭 그대로 측정 (⋯ 수납 계산, v1.9) */
-.gnb button,.gnb a.gnb-link{
+.gnb button,.gnb a.gnb-link,
+.gnb a.nl {
   display:inline-block;padding:7px 13px;font-size:calc(12.5px*var(--fs,1));color:var(--top-fg);border-radius:8px;white-space:nowrap;
   transition:.18s;letter-spacing:.02em;
   font-family:var(--font-menu,var(--sans)); /* 메뉴 폰트 (환경설정 > 디자인) */
   font-weight:var(--fw-menu,400);
 }
-.gnb button:hover,.gnb a.gnb-link:hover{color:var(--top-hv,#fff);background:rgba(255,255,255,.07)}
-.gnb button.on,.gnb a.gnb-link.on{color:var(--top-hv,#fff);background:rgba(255,255,255,.12)}
+.gnb button:hover,.gnb a.gnb-link:hover,
+.gnb a.nl:hover {color:var(--top-hv,#fff);background:rgba(255,255,255,.07)}
+.gnb button.on,.gnb a.gnb-link.on,
+.gnb a.nl.on {color:var(--top-hv,#fff);background:rgba(255,255,255,.12)}
 /* 계층 메뉴 (상위 → 호버 드롭다운, 3장) */
 .grp{position:relative}
-.grp > button::after{content:" ▾";font-size:calc(8px*var(--fs,1));color:#7a808a}
+.grp > button::after,
+.grp > a.nl::after {content:" ▾";font-size:calc(8px*var(--fs,1));color:#7a808a}
 .grp .sub{
   position:absolute;left:0;top:calc(100% + 4px);min-width:132px;display:none;z-index:75;
   background:var(--dd-bg);border:1px solid var(--line-dark);border-radius:11px;padding:5px;
@@ -101,15 +105,20 @@ a{color:inherit;text-decoration:none}
 .grp:hover .sub,.grp.open .sub{display:block;animation:fade .15s}
 .grp .sub::before{content:"";position:absolute;top:-8px;left:0;right:0;height:8px}
 .grp .sub{--fs:var(--fs-dropdown,1)}
-.grp .sub button,.grp .sub a{display:block;width:100%;text-align:left;padding:8px 12px;font-size:calc(12px*var(--fs,1));border-radius:7px;color:var(--dd-fg);transition:.13s;font-family:var(--font-dropdown,var(--sans));font-weight:var(--fw-dropdown,400)}
-.grp .sub button:hover,.grp .sub a:hover{background:var(--dd-hv)}
+.grp .sub button,.grp .sub a,
+.grp .sub a.nl {display:block;width:100%;text-align:left;padding:8px 12px;font-size:calc(12px*var(--fs,1));border-radius:7px;color:var(--dd-fg);transition:.13s;font-family:var(--font-dropdown,var(--sans));font-weight:var(--fw-dropdown,400)}
+.grp .sub button:hover,.grp .sub a:hover,
+.grp .sub a.nl:hover {background:var(--dd-hv)}
 /* 상위 메뉴 무제한 (v1.9) — 바를 넘치는 항목은 ⋯ 드롭다운으로 (priority+) */
-.grp.more>button::after{content:""}
+.grp.more>button::after,
+.grp.more>a.nl::after {content:""}
 .grp .sub{max-height:72vh;overflow:auto}
 /* 호버 다리 — .sub에 overflow가 생기며 .sub::before(-8px 다리)가 잘리므로 .grp 쪽에 상시 다리 (v1.9) */
 .grp::after{content:"";position:absolute;left:0;top:100%;width:100%;height:9px}
 .grp .sub .sub-cap{padding:8px 12px 3px;font-size:calc(9.5px*var(--fs,1));color:color-mix(in srgb,var(--dd-fg) 55%,transparent);letter-spacing:.14em;font-weight:700}
-.grp .sub .sub-grp+.sub-grp,.grp .sub button+.sub-grp,.grp .sub .sub-grp+button{border-top:1px solid var(--line-dark);margin-top:4px;padding-top:2px;display:block}
+.grp .sub .sub-grp+.sub-grp,.grp .sub button+.sub-grp,.grp .sub .sub-grp+button,
+.grp .sub a.nl+.sub-grp,
+.grp .sub .sub-grp+a.nl {border-top:1px solid var(--line-dark);margin-top:4px;padding-top:2px;display:block}
 .gnb-measure{position:absolute;visibility:hidden;pointer-events:none;height:0;overflow:hidden;left:0;top:0}
 /* 우상단 사용자 영역 */
 .user-wrap{position:relative}
@@ -208,13 +217,18 @@ a{color:inherit;text-decoration:none}
   .mmenu-ov{position:fixed;inset:0;z-index:71;background:rgba(0,0,0,.18)}
   .mmenu-pop{position:fixed;right:8px;bottom:calc(max(var(--bgm-h,0px),36px) + 8px);z-index:72;width:min(260px,calc(100vw - 16px));max-height:70vh;overflow:auto;
     background:var(--panel-solid,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-dd);padding:6px}
-  .mmenu-pop button{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:10px 12px;border-radius:8px;
+  .mmenu-pop button,
+.mmenu-pop a.nl {display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:10px 12px;border-radius:8px;
     font-size:calc(13px*var(--fs,1));color:var(--ink);background:transparent;border:0}
-  .mmenu-pop button.top{font-weight:600;letter-spacing:.04em}
-  .mmenu-pop button:hover,.mmenu-pop button:active{background:#eef0f2}
+  .mmenu-pop button.top,
+.mmenu-pop a.nl.top {font-weight:600;letter-spacing:.04em}
+  .mmenu-pop button:hover,.mmenu-pop button:active,
+.mmenu-pop a.nl:hover,
+.mmenu-pop a.nl:active {background:#eef0f2}
   .mmenu-pop .ar{color:var(--faint);font-size:11px}
   .mmenu-pop .sub{padding:0 0 4px 10px}
-  .mmenu-pop .sub button{font-weight:400;padding:8px 12px;color:var(--sub)}
+  .mmenu-pop .sub button,
+.mmenu-pop .sub a.nl {font-weight:400;padding:8px 12px;color:var(--sub)}
   .mmenu-pop .g.open > .top{color:var(--accent)}
 }
 .bgm-list.on{display:block;animation:fade .18s}

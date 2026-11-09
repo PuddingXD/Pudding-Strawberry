@@ -9,6 +9,7 @@ import { useBoards } from '@/lib/boardStore';
 import { useSections, sectionMenuEntries } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries } from '@/lib/linkStore';
 import { useAuth } from '@/lib/auth';
+import { NavLink } from '@/components/ui/NavLink';
 
 export function MobileMenu() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export function MobileMenu() {
     if (/^https?:\/\//.test(href)) window.open(href, '_blank', 'noopener,noreferrer');   // 커스텀 링크의 외부 주소는 새 창 (상단 메뉴와 같은 규칙)
     else router.push(href);
   };
+  const extOf = (href: string) => (/^https?:\/\//.test(href) ? { target: '_blank', rel: 'noopener noreferrer' } : {});
   return (
     <div className="mmenu">
       {open && <div className="mmenu-ov" onClick={() => setOpen(false)} />}
@@ -42,12 +44,12 @@ export function MobileMenu() {
               </button>
               {grp === m.label && (
                 <div className="sub">
-                  {m.children.map(c => <button key={c.href} onClick={() => go(c.href)}>{c.label}</button>)}
+                  {m.children.map(c => <NavLink key={c.href} className="nl" href={c.href} onGo={() => go(c.href)} {...extOf(c.href)}>{c.label}</NavLink>)}
                 </div>
               )}
             </div>
           ) : (
-            <button key={m.label} className="top" onClick={() => go(m.href!)}>{m.label}</button>
+            <NavLink key={m.label} className="nl top" href={m.href!} onGo={() => go(m.href!)} {...extOf(m.href!)}>{m.label}</NavLink>
           )))}
           {menu.length === 0 && <div className="hint" style={{ padding: 10 }}>메뉴가 없습니다</div>}
         </div>

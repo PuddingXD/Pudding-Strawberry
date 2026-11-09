@@ -1,6 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 그림백업게시판 (4.11) — 갤러리/리스트 토글 · 로그/단일 뱃지 · 접기 썸네일 블러
+import { NavBox } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -117,8 +118,7 @@ function BackupPageInner() {
             const i = start + si;   // 정렬은 전체 기준 위치로
             const folded = p.fold && !unveiled[p.id];
             return (
-              <div key={p.id} className="panel g-item" {...sort(i)}
-                onClick={() => { if (!folded && !editOn) router.push(`/gallery/${p.id}`); }}
+              <NavBox key={p.id} className="panel g-item" {...sort(i)} href={folded || editOn ? undefined : `/gallery/${p.id}`}
                 onContextMenu={e => onCtx(e, p)}>
                 <div className={`thumb ${folded ? 'veil' : ''}`}>
                   <div style={{ position: 'absolute', inset: 0 }}>
@@ -126,7 +126,7 @@ function BackupPageInner() {
                   </div>
                   {/* 유형 뱃지(로그/단일 …)는 리스트에서 뺐다 (v2.0 사용자 요청) — 상세에는 그대로 */}
                   {folded && (
-                    <div className="cover" onClick={e => { e.stopPropagation(); setUnveiled(u => ({ ...u, [p.id]: true })); }}>
+                    <div className="cover" data-nonav onClick={e => { e.stopPropagation(); setUnveiled(u => ({ ...u, [p.id]: true })); }}>
                       <div>
                         <b>{p.fold!.type === 'custom' ? (p.fold!.label || '접힘') : FOLD_LABEL[p.fold!.type]}</b><br />
                         <span>클릭하여 표시</span>
@@ -142,14 +142,14 @@ function BackupPageInner() {
                     {(p.tags ?? []).map(t => <i key={t} className="tag-in">#{t}</i>)}
                   </small>
                 </div>
-              </div>
+              </NavBox>
             );
           })}
         </div>
       {/* 게시물이 없으면 컨테이너 자체를 숨김 — 빈 패널이 안내문 위에 카드처럼 남던 버그 (v1.9 사용자 발견) */}
       <div className="panel flush" style={{ display: view === 'list' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map(p => (
-            <div key={p.id} className="list-item" onClick={() => router.push(`/gallery/${p.id}`)}
+            <NavBox key={p.id} className="list-item" href={`/gallery/${p.id}`}
               onContextMenu={e => onCtx(e, p)}>
               <div className="th" style={{ position: 'relative' }}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -165,7 +165,7 @@ function BackupPageInner() {
                 </small>
               </div>
               <small>{p.author}</small>
-            </div>
+            </NavBox>
           ))}
         </div>
       {visible.length === 0 && (

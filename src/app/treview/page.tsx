@@ -3,6 +3,7 @@
 // 쓰기·수정은 페이지(/treview/write · /treview/[id]/edit). 말머리는 환경설정 > 게시판 관리 「TRPG 리뷰 말머리」,
 // 글쓰기 권한은 환경설정 「권한」(기본: 가입자). 수정은 쓴 사람·관리자·글쓰기 권한이 있는 회원 —
 // 저장할 때 editorIds에 적고, 옛 글은 관리자가 열 때 채운다
+import { NavBox } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -110,7 +111,7 @@ function ReviewPageInner() {
           {paged.map(r => {
             const rs = ratersOf(r);
             return (
-              <article key={r.id} className="panel tc-card rv-card" onClick={() => router.push(`/treview/${r.id}`)}>
+              <NavBox tag="article" key={r.id} className="panel tc-card rv-card" href={`/treview/${r.id}`}>
                 {/* 16:9 타일 — 대표 이미지, 없으면 자리표시자 · 우클릭 = 썸네일 수정 */}
                 <div className="rv-img" onContextMenu={e => onCtx(e, r)}>
                   <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" label={r.thumbId ? undefined : 'REVIEW'} />
@@ -129,7 +130,7 @@ function ReviewPageInner() {
                     </div>
                   )}
                 </div>
-              </article>
+              </NavBox>
             );
           })}
         </div>

@@ -1,5 +1,6 @@
 'use client';
 // 내가 쓴 글/댓글 전체 리스트 (마이페이지, v1.9) — 게시판형 페이지네이션, 클릭 시 해당 글로 이동
+import { NavBox } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -46,12 +47,11 @@ export default function MyPostsPage() {
       </div>
       <div className="panel board-list flush" style={{ maxWidth: 760, margin: '0 auto' }}>
         {pageList.map((it, i) => (
-          <div className="brow" key={i} style={{ gridTemplateColumns: '96px 1fr 60px' }}
-            onClick={() => router.push(it.href)}>
+          <NavBox className="brow" key={i} href={it.href} style={{ gridTemplateColumns: '96px 1fr 60px' }}>
             <span className="cat"><span className="pill">{it.kind}</span></span>
             <b>{it.text}</b>
             <span className="dt">{fmtDate(it.date)}</span>
-          </div>
+          </NavBox>
         ))}
         {items.length === 0 && (
           <div style={{ padding: 36, textAlign: 'center', fontSize: 12.5, color: 'var(--faint)' }}>작성한 글이 없습니다</div>

@@ -1,6 +1,7 @@
 'use client';
 // 마이페이지 (v1.9) — 내 정보 수정(닉네임·프로필 이미지·비밀번호) +
 // 일반 회원: 나에게 연동된 캐릭터 리스트 · 내가 쓴 글/댓글 리스트 (관리자는 기본정보만)
+import { NavBox } from '@/components/ui/NavLink';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -195,9 +196,9 @@ export default function MyPage() {
             {/* 1:1 썸네일 그리드 (v1.9) — 8열 균등(좁으면 자동 감소), 이미지 없으면 캐릭터 테마색, 호버 툴팁 이름 */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: 10 }}>
               {myChars.map(c => (
-                <div key={c.id}
+                <NavBox key={c.id}
                   data-tip={c.name}
-                  onClick={() => router.push(`/chars/${c.id}`)}
+                  href={`/chars/${c.id}`}
                   style={{
                     aspectRatio: '1/1', borderRadius: 12, overflow: 'hidden', position: 'relative',
                     cursor: 'var(--cur-pointer,pointer)', background: c.color, border: '1px solid var(--line)',
@@ -205,7 +206,7 @@ export default function MyPage() {
                   {(c.thumbId ?? c.arts?.[0]) && (
                     <CroppedBlobImg fileRef={c.thumbId ?? c.arts?.[0]} crop={c.thumbCrop} ph={c.thumbClass} />
                   )}
-                </div>
+                </NavBox>
               ))}
             </div>
           </div>
@@ -224,12 +225,11 @@ export default function MyPage() {
             {myItems.length === 0 && <p className="hint" style={{ margin: 0 }}>작성한 글이 없습니다</p>}
             <div style={{ display: 'grid', gap: 2 }}>
               {myItems.slice(0, 6).map((it, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line)', cursor: 'var(--cur-pointer,pointer)' }}
-                  onClick={() => router.push(it.href)}>
+                <NavBox key={i} href={it.href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line)', cursor: 'var(--cur-pointer,pointer)' }}>
                   <span className="pill" style={{ flexShrink: 0 }}>{it.kind}</span>
                   <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.text}</span>
                   <small style={{ color: 'var(--faint)', flexShrink: 0 }}>{fmtDate(it.date)}</small>
-                </div>
+                </NavBox>
               ))}
             </div>
           </div>

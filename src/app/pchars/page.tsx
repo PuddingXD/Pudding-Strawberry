@@ -2,6 +2,7 @@
 // 상대 캐릭터 리스트 (v2.1 사용자 요청) — 내 캐릭터(own) 말고 상대 캐릭터(own=false)만 모아 보는 목록.
 // 자관 상세에서 등록한 상대 캐릭터가 여기 모이고, 여기서 ＋ ADD로 직접 등록할 수도 있다(own=false로 저장).
 // 카드 모양·검색·정렬은 캐릭터 리스트(/chars)와 같다
+import { NavBox } from '@/components/ui/NavLink';
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -55,9 +56,8 @@ function PCharsInner() {
           const priv = c.visibility === 'private';
           const sp = sort(i) as { style?: React.CSSProperties };
           return (
-            <div key={c.id} className="char-card" {...sort(i)}
-              style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
-              onClick={() => { if (!editOn) router.push(charPath(c)); }}>
+            <NavBox key={c.id} className="char-card" {...sort(i)} href={editOn ? undefined : charPath(c)}
+              style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}>
               <div className="thumb" style={{ position: 'relative' }}>
                 <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass || 'cool'}
                   label={priv ? '비공개' : '3:4'} />
@@ -66,7 +66,7 @@ function PCharsInner() {
                 <b style={{ minWidth: 0, flex: 1 }}><FitText>{c.name}</FitText></b>
                 <i style={{ background: c.color }} />
               </div>
-            </div>
+            </NavBox>
           );
         })}
         {visible.length === 0 && (

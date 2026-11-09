@@ -49,27 +49,40 @@
     flex:0 0 auto;flex-direction:column;align-items:flex-start;gap:4px;
     padding:28px 10px 28px calc(var(--rail-x) + 16px);overflow:visible;
   }
-  .gnb > button,.gnb > .grp > button{
+  .gnb > button,.gnb > .grp > button,
+.gnb > a.nl,
+.gnb > .grp > a.nl {
     position:relative;padding:7px 4px;background:transparent !important;border-radius:0;
     font-size:calc(11.5px*var(--fs,1));letter-spacing:.16em;text-transform:uppercase;
     color:var(--top-fg);opacity:.78;transition:color .2s,opacity .2s,font-size .2s,padding .2s;
   }
   /* 선 위의 점 */
-  .gnb > button::before,.gnb > .grp > button::before{
+  .gnb > button::before,.gnb > .grp > button::before,
+.gnb > a.nl::before,
+.gnb > .grp > a.nl::before {
     content:"";position:absolute;top:50%;left:-18.5px;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;
     background:var(--top-fg);box-shadow:0 0 0 2px color-mix(in srgb,var(--top-bg) 80%,transparent);transition:.2s;
   }
-  .gnb > button:hover,.gnb > .grp:hover > button{color:var(--top-hv);opacity:1;padding-left:7px}   /* 글자만 살짝 밀고 점은 선 위에 그대로 */
-  .gnb > button:hover::before,.gnb > .grp:hover > button::before{background:var(--top-hv)}
+  .gnb > button:hover,.gnb > .grp:hover > button,
+.gnb > a.nl:hover,
+.gnb > .grp:hover > a.nl {color:var(--top-hv);opacity:1;padding-left:7px}   /* 글자만 살짝 밀고 점은 선 위에 그대로 */
+  .gnb > button:hover::before,.gnb > .grp:hover > button::before,
+.gnb > a.nl:hover::before,
+.gnb > .grp:hover > a.nl::before {background:var(--top-hv)}
   /* 지금 보고 있는 메뉴 — 크게·진하게, 점에 빛 */
-  .gnb > button.on,.gnb > .grp.cur > button{
+  .gnb > button.on,.gnb > .grp.cur > button,
+.gnb > a.nl.on,
+.gnb > .grp.cur > a.nl {
     color:var(--top-brand);opacity:1;font-size:calc(14.5px*var(--fs,1));letter-spacing:.12em;
   }
-  .gnb > button.on::before,.gnb > .grp.cur > button::before{
+  .gnb > button.on::before,.gnb > .grp.cur > button::before,
+.gnb > a.nl.on::before,
+.gnb > .grp.cur > a.nl::before {
     width:11px;height:11px;margin-top:-5.5px;left:-20.5px;background:var(--top-brand);
     box-shadow:0 0 0 3px color-mix(in srgb,var(--top-brand) 25%,transparent),0 0 12px color-mix(in srgb,var(--top-brand) 55%,transparent);
   }
-  .grp > button::after{content:none}
+  .grp > button::after,
+.grp > a.nl::after {content:none}
   .gnb .nd{margin-left:6px}
 
   /* 하위 메뉴: 평소엔 오른쪽에 펼침, 지금 그룹이면 아래에 펼쳐 둔다 (B의 묶음 메뉴) */
@@ -82,14 +95,19 @@
     background:transparent;border:none;box-shadow:none;padding:2px 0 6px 2px;
   }
   .grp.cur::after{content:none}
-  .grp.cur .sub button{
+  .grp.cur .sub button,
+.grp.cur .sub a.nl {
     position:relative;padding:5px 8px 5px 14px;font-size:calc(11.5px*var(--fs,1));letter-spacing:.06em;
     color:var(--top-fg);opacity:.8;border-radius:6px;
   }
-  .grp.cur .sub button::before{content:"";position:absolute;left:2px;top:50%;width:6px;height:1px;background:currentColor;opacity:.6}
-  .grp.cur .sub button:hover{background:transparent;color:var(--top-hv);opacity:1}
-  .grp .sub button.on{color:var(--top-brand) !important;opacity:1;background:color-mix(in srgb,var(--accent) 14%,transparent)}
-  .grp.cur .sub button.on{background:transparent}
+  .grp.cur .sub button::before,
+.grp.cur .sub a.nl::before {content:"";position:absolute;left:2px;top:50%;width:6px;height:1px;background:currentColor;opacity:.6}
+  .grp.cur .sub button:hover,
+.grp.cur .sub a.nl:hover {background:transparent;color:var(--top-hv);opacity:1}
+  .grp .sub button.on,
+.grp .sub a.nl.on {color:var(--top-brand) !important;opacity:1;background:color-mix(in srgb,var(--accent) 14%,transparent)}
+  .grp.cur .sub button.on,
+.grp.cur .sub a.nl.on {background:transparent}
   .grp.more{display:none}
 
   /* 아래쪽: 편집 표시 · 알림 · 로그인 */
@@ -107,7 +125,9 @@
 @media (min-width:621px) and (max-width:1439px){
   :root{--rail:164px;--rail-x:24px}
   .brand{font-size:calc(15px*var(--fs,1))}
-  .gnb > button,.gnb > .grp > button{letter-spacing:.1em}
+  .gnb > button,.gnb > .grp > button,
+.gnb > a.nl,
+.gnb > .grp > a.nl {letter-spacing:.1em}
 }
 
 /* ---------------------------------------------------------
@@ -121,7 +141,8 @@
   .mmenu-pop{background:var(--mmenu-bg,#fffdf8)}
   .topbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--b-rule)}
   .mmenu-pop{border-color:var(--b-line);border-radius:var(--radius)}
-  .mmenu-pop button.top{letter-spacing:.14em;text-transform:uppercase;font-size:calc(12.5px*var(--fs,1))}
+  .mmenu-pop button.top,
+.mmenu-pop a.nl.top {letter-spacing:.14em;text-transform:uppercase;font-size:calc(12.5px*var(--fs,1))}
   .mmenu-pop .g.open > .top{color:var(--top-brand)}
   .mmenu-pop .sub{position:relative;margin-left:14px;padding-left:12px}
   .mmenu-pop .sub::before{content:"";position:absolute;left:0;top:4px;bottom:8px;width:1.5px;background:linear-gradient(180deg,var(--rail-c1),var(--rail-c3))}
@@ -545,6 +566,10 @@
 .g-item .thumb{border-bottom:1px solid var(--b-line-soft,var(--line))}
 /* 상단바 로고 이미지 (사용자 요청) — 메뉴 폭을 넘지 않게 */
 .brand .brand-img{display:block;max-width:100%;width:auto;object-fit:contain}
+a.brand{display:block}   /* 로고도 진짜 링크 — 모양은 그대로 */
+/* 카드·행 전체를 링크로 만든 것(NavBox) — 기본은 block, 클래스가 display를 정하면 그쪽이 이긴다 (:where = 우선순위 0) */
+:where(a.nlb){display:block}
+a.nlb{color:inherit;text-decoration:none}
 /* 모바일 상단 바(높이 58px)에서는 PC에서 정한 로고 높이를 그대로 쓰면 바 밖으로 넘쳐 잘린다 —
    설정한 높이와 40px 중 작은 쪽으로 줄이고, 가로도 화면의 절반까지만 (비율은 유지) */
 @media (max-width:620px){

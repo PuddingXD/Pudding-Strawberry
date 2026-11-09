@@ -1,5 +1,6 @@
 'use client';
 // TRPG 캐릭터 리스트 (v1.9 신규) — 1:1 대표 인장 카드 · 클릭 시 상세(표정 전환은 상세에서)
+import { NavBox } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -52,9 +53,8 @@ export default function TCharsPage() {
         {shown.map((c, i) => {
           const face = c.faces[0]; // 대표 인장 = 첫 표정
           return (
-            <div key={c.id} className="panel tc-card" {...sort(i)}
-              style={{ cursor: 'var(--cur-pointer,pointer)', ...(sort(i) as { style?: React.CSSProperties }).style }}
-              onClick={() => { if (!editOn) router.push(`/tchars/${c.id}`); }}>
+            <NavBox key={c.id} className="panel tc-card" {...sort(i)} href={editOn ? undefined : `/tchars/${c.id}`}
+              style={{ cursor: 'var(--cur-pointer,pointer)', ...(sort(i) as { style?: React.CSSProperties }).style }}>
               <div className="main" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
                 <CroppedBlobImg fileRef={face?.imgId} crop={faceCrop(c, face)} ph={face?.ph ?? c.ph} />
                 {canEdit(c) && (
@@ -80,7 +80,7 @@ export default function TCharsPage() {
                   </div>
                 )}
               </div>
-            </div>
+            </NavBox>
           );
         })}
       </div>
