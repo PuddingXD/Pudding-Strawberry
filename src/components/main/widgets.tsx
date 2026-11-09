@@ -286,7 +286,7 @@ export function DdayCardWidget({ conf }: { conf: WidgetConf }) {
   const text: Record<DdayEl, string> = {
     cnt: d ? (s.pad ? d.label.replace(/(\d+)$/, m => m.padStart(3, '0')) : d.label) : 'D-000',
     txt: s.label ?? linked?.title ?? '',
-    date: date && (s.showDate ?? true) ? date.replace(/-/g, '.') : '',
+    date: date && (s.showDate ?? true) ? date.replace(/^\d{2}(\d{2})-(\d{2})-(\d{2})$/, '$1$2$3') : '',   // 2025-05-25 → 250525
   };
   const shown = (['cnt', 'txt', 'date'] as DdayEl[]).filter(e => text[e]);
   const sh = s.shadow ? '0 1px 4px rgba(0,0,0,.55)' : undefined;

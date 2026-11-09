@@ -81,7 +81,7 @@ export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt, fitDefa
   return <CropImg src={url} crop={crop} alt={alt} fitDefault={fitDefault} />;
 }
 
-export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, onApply, fit: fitProp }: {
+export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, onApply, fit: fitProp, maxScale = 3 }: {
   open: boolean;
   src: string;
   aspect: CropAspect | number;     // 게시판 규격 프리셋 또는 임의 비율(가로/세로 — 예: 현재 배너 비율)
@@ -92,6 +92,8 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   /** 높이 맞춤 편집 (자캐 상세 아트) — 처음·초기화가 높이 맞춤이고 1보다 작게 줄일 수 있다.
    *  예전에 잡아 둔 크롭(fit 없음)은 그 방식 그대로 열리고, 초기화하면 높이 맞춤으로 */
   fit?: boolean;
+  /** 최대 확대 배율 — 기본 3배, 디데이 카운트처럼 작은 타일은 더 크게 (사용자 요청 5배) */
+  maxScale?: number;
 }) {
   const blank: CropValue = fitProp ? { x: 0, y: 0, scale: 1, fit: true } : { x: 0, y: 0, scale: 1 };
   const [crop, setCrop] = useState<CropValue>(initial ?? blank);
@@ -111,7 +113,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   // 이미지가 항상 프레임을 가득 채우도록 오프셋 클램프 — 빈 공간이 보이는 상태 방지.
   // 커버 크기는 비율만으로 계산 (프레임 픽셀 크기 불필요 — x·y와 같은 fraction 단위)
   const clamp = (c: CropValue): CropValue => {
-    const scale = Math.min(3, Math.max(minS, c.scale));
+    const scale = Math.min(maxScale, Math.max(minS, c.scale));
     if (natR == null) return { ...c, scale };
     const coverW = wide ? natR / frameR : 1;   // 프레임 폭 대비 이미지 표시 폭
     const coverH = wide ? 1 : frameR / natR;   // 프레임 높이 대비 이미지 표시 높이
@@ -146,7 +148,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   const setZoomFromPointer = (clientX: number) => {
     const r = zoomRef.current!.getBoundingClientRect();
     const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-    setCrop(c => clamp({ ...c, scale: minS + t * (3 - minS) })); // 1x ~ 3x (높이 맞춤은 0.5x ~ 3x)
+    setCrop(c => clamp({ ...c, scale: minS + t * (maxScale - minS) })); // 1x ~ 최대 (높이 맞춤은 0.5x ~)
   };
 
   const onZoomDrag = (e: React.PointerEvent) => {
@@ -191,10 +193,10 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
           style={{ flex: 1, maxWidth: 220, height: 4, borderRadius: 4, background: '#d7dae0', position: 'relative', cursor: 'var(--cur-pointer,pointer)' }}>
           <i style={{
             position: 'absolute', left: 0, top: 0, height: '100%', borderRadius: 4,
-            width: `${((crop.scale - minS) / (3 - minS)) * 100}%`, background: 'var(--accent)',
+            width: `${((crop.scale - minS) / (maxScale - minS)) * 100}%`, background: 'var(--accent)',
           }} />
           <i style={{
-            position: 'absolute', top: '50%', left: `${((crop.scale - minS) / (3 - minS)) * 100}%`,
+            position: 'absolute', top: '50%', left: `${((crop.scale - minS) / (maxScale - minS)) * 100}%`,
             width: 14, height: 14, borderRadius: '50%', background: '#fff', transform: 'translate(-50%,-50%)',
             boxShadow: '0 1px 5px rgba(0,0,0,.35)',
           }} />

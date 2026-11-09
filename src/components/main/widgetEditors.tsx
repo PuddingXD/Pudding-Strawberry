@@ -473,7 +473,7 @@ export function DdayCardEditor({ conf, onClose }: { conf: WidgetConf; onClose?: 
       </p>
 
       {crop && src && (
-        <CropEditor open fit src={src} aspect={ratio} aspectLabel="현재 위젯 비율" initial={s.crop}
+        <CropEditor open fit maxScale={5} src={src} aspect={ratio} aspectLabel="현재 위젯 비율" initial={s.crop}
           onClose={() => setCrop(false)} onApply={c => { set({ crop: c }); setCrop(false); }} />
       )}
     </div>
