@@ -8,6 +8,7 @@ import { KInput, KStep } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DocImport } from '@/components/ui/DocImport';
 import { DragList } from '@/components/ui/DragList';
+import { NavLink } from '@/components/ui/NavLink';
 
 export interface DocPatch { title: string; subtitle: string; html: string; size: number }
 
@@ -19,7 +20,8 @@ export function DocBody({ html, size, flat }: { html: string; size?: number; fla
 }
 
 /** 「전체 읽기 >」 — 글자만 (오른쪽 정렬, 이탤릭 볼드, 포인트색) */
-export function ReadMore({ onOpen }: { onOpen: () => void }) {
+export function ReadMore({ onOpen, href }: { onOpen: () => void; href?: string }) {
+  if (href) return <NavLink className="doc-more" href={href} onGo={onOpen}>전체 읽기 &gt;</NavLink>;
   return <button type="button" className="doc-more" onClick={onOpen}>전체 읽기 &gt;</button>;
 }
 

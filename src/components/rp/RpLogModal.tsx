@@ -1,6 +1,7 @@
 'use client';
 // 역극 로그 (커플홈) — 방의 발화를 로그로 만들어 txt/html 파일로 저장하거나 RP LOG 게시판에 올린다.
 // 파일 저장은 방 참여자 누구나, 게시판 올리기는 관리자만 (로그 등록이 원래 관리자 전용이다).
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RpRoom, RpMessage } from '@/lib/rpStore';
@@ -235,7 +236,7 @@ function PostToTrpg({ room, msgs, chars, sub, time, style, rightIds, faces, face
           {busy ? '올리는 중…' : postedId ? '올렸습니다' : !ready ? '불러오는 중…' : '＋ 로그 백업에 올리기'}
         </button>
         {postedId && (
-          <button className="btn btn-ghost" onClick={() => router.push(`/trpg/${postedId}`)}>올린 로그 보기 ›</button>
+          <NavLink className="btn btn-ghost" href={`/trpg/${postedId}`}>올린 로그 보기 ›</NavLink>
         )}
       </div>
     </div>

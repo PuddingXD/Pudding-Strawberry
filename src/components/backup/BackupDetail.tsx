@@ -1,6 +1,7 @@
 'use client';
 // 그림백업 상세 (4.11) — 로그형: 세로 스크롤 뷰어 / 단일형: 큰 이미지 + 썸네일 스트립 + 좌우 넘김
 // v2.1: 큰 그림 게시판(/feed)도 같은 상세를 쓴다 — kind로 저장 자리·돌아갈 곳만 갈린다 (유형 뱃지는 갤러리에만)
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
@@ -139,7 +140,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
           {(p.tags ?? []).map(t => <i key={t} className="tag-in">#{t}</i>)}
         </p>
         <div className="head-actions">
-          {canManage && <button className="btn btn-dark" onClick={() => router.push(`/${kind}/${p.id}/edit`)}>EDIT</button>}
+          {canManage && <NavLink className="btn btn-dark" href={`/${kind}/${p.id}/edit`}>EDIT</NavLink>}
           {canManage && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
       </div>

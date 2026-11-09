@@ -4,6 +4,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createdOf, newestCmp } from '@/lib/order';
+import { NavLink } from '@/components/ui/NavLink';
 
 export interface PnItem { href: string; title: string }
 
@@ -75,7 +76,10 @@ export function PrevNext({ prev, next, ltr }: { prev?: PnItem | null; next?: PnI
   if (!prev && !next) return null;
   /* 왼쪽 ‹ = 다음글, 오른쪽 › = 이전글 (v2.1 사용자 요청 — 최신 글이 위에 오는 목록 기준으로 왼쪽이 더 최신).
      툴팁에는 「이전글/다음글」 말 없이 글 제목만 */
-  const Btn = ({ it, dir, label }: { it?: PnItem | null; dir: 'l' | 'r'; label: string }) => (
+  const Btn = ({ it, dir, label }: { it?: PnItem | null; dir: 'l' | 'r'; label: string }) => it ? (
+    <NavLink className="pn-b" href={it.href}
+      aria-label={`${label}: ${it.title}`} data-tip={it.title}><Chev dir={dir} /></NavLink>
+  ) : (
     <button type="button" className="pn-b" disabled={!it}
       aria-label={it ? `${label}: ${it.title}` : `${label} 없음`} data-tip={it ? it.title : undefined}
       onClick={() => it && router.push(it.href)}><Chev dir={dir} /></button>
