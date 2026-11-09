@@ -10,7 +10,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
 import { Plugin } from '@tiptap/pm/state';
-import { TableMap } from '@tiptap/pm/tables';
+import { TableMap, CellSelection } from '@tiptap/pm/tables';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { putBlob } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
@@ -18,6 +18,9 @@ import { useFonts } from '@/lib/fontStore';
 
 /* ───────── 표 확장 — 셀 배경색·세로 정렬 · 행 높이 · 표 정렬을 저장 가능하게 ───────── */
 const MAX_TABLE = 10;   // 표 최대 10 × 10
+const EDGES: [string, string][] = [
+  ['borderTop', 'border-top'], ['borderRight', 'border-right'], ['borderBottom', 'border-bottom'], ['borderLeft', 'border-left'],
+];
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const cellAttrs = (parent: any) => ({
   ...(parent ?? {}),
@@ -33,6 +36,13 @@ const cellAttrs = (parent: any) => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     renderHTML: (a: any) => (a.vAlign ? { style: `vertical-align:${a.vAlign}` } : {}),
   },
+  // 칸마다 네 변을 따로 — 값은 「1pt solid #000000」 꼴. 비어 있으면 표 전체의 기본 테두리를 따른다
+  ...Object.fromEntries(EDGES.map(([attr, css]) => [attr, {
+    default: null,
+    parseHTML: (el: HTMLElement) => el.style.getPropertyValue(css).trim() || null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    renderHTML: (a: any) => (a[attr] ? { style: `${css}:${a[attr]}` } : {}),
+  }])),
 });
 const RCell = TableCell.extend({ addAttributes() { return cellAttrs(this.parent?.()); } });
 const RHeader = TableHeader.extend({ addAttributes() { return cellAttrs(this.parent?.()); } });
@@ -50,13 +60,6 @@ const RRow = TableRow.extend({
   },
 });
 /* 표 테두리 — 표 전체에 하나 (기본: 검정 1pt 실선). CSS 변수로 내보내서 편집·읽기 화면이 같은 규칙(td의 border)을 쓴다 */
-const LINE_STYLES = [
-  { id: 'solid', label: '기본 선' },
-  { id: 'thick', label: '굵은 선' },
-  { id: 'dashed', label: '점선' },
-  { id: 'transparent', label: '투명선' },
-  { id: 'double', label: '겹선' },
-] as const;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tableVars = (a: any): string => {
   const st = String(a.borderStyle ?? 'solid');
@@ -140,7 +143,7 @@ const SWATCHES = [
 ];
 
 /** 눌러서 여는 작은 팝업 — 화면 맨 위(포털)에 띄워 툴바의 가로 스크롤에 안 잘린다 */
-function Pop({ anchor, onClose, children }: { anchor: HTMLElement | null; onClose: () => void; children: React.ReactNode }) {
+function Pop({ anchor, onClose, children, className }: { anchor: HTMLElement | null; onClose: () => void; children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -161,7 +164,7 @@ function Pop({ anchor, onClose, children }: { anchor: HTMLElement | null; onClos
   const r = anchor.getBoundingClientRect();
   const left = Math.max(8, Math.min(r.left, window.innerWidth - 232));
   return createPortal(
-    <div ref={ref} className="re-pop" style={{ left, top: r.bottom + 6 }} onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault(); }}>{children}</div>,
+    <div ref={ref} className={`re-pop ${className ?? ''}`} style={{ left, top: r.bottom + 6 }} onMouseDown={e => { if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault(); }}>{children}</div>,
     document.body,
   );
 }
@@ -264,29 +267,76 @@ function FontBtn({ fonts, curId, onPick }: {
   );
 }
 
-/** 선 모양 고르기 (표 테두리) */
-function LineBtn({ current, onPick }: { current: string; onPick: (id: string) => void }) {
+/** 표 테두리 — 블록(칸 선택)을 잡고 범위·선 모양·굵기·색을 정해 적용한다 (칸마다 네 변이 따로 저장된다) */
+export type Pen = { style: string; width: number; color: string };
+const PEN_STYLES = [
+  { id: 'solid', label: '기본 선' },
+  { id: 'thick', label: '굵은 선' },
+  { id: 'double', label: '겹선' },
+  { id: 'dotted', label: '점선' },
+  { id: 'transparent', label: '투명' },
+];
+const SCOPES: [string, string][] = [
+  ['table', '표 전체'], ['all', '선택 칸 전체'], ['outer', '외곽'], ['inner', '안쪽'],
+  ['top', '위'], ['bottom', '아래'], ['left', '왼쪽'], ['right', '오른쪽'],
+];
+const penSample = (id: string): React.CSSProperties =>
+  id === 'dotted' ? { borderTop: '2px dotted #333' }
+    : id === 'double' ? { borderTop: '4px double #333' }
+      : id === 'thick' ? { borderTop: '4px solid #333' }
+        : id === 'transparent' ? { borderTop: '2px solid transparent', background: 'repeating-linear-gradient(90deg,#ccc 0 3px,transparent 3px 6px)', height: 1 }
+          : { borderTop: '1px solid #333' };
+
+function BorderBtn({ pen, setPen, onApply }: {
+  pen: Pen; setPen: (p: Pen) => void; onApply: (scope: string, clear: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState('all');
   const btn = useRef<HTMLButtonElement>(null);
-  const sample = (id: string): React.CSSProperties =>
-    id === 'dashed' ? { borderTop: '2px dashed #333' }
-      : id === 'double' ? { borderTop: '4px double #333' }
-        : id === 'thick' ? { borderTop: '4px solid #333' }
-          : id === 'transparent' ? { borderTop: '2px solid transparent', background: 'repeating-linear-gradient(90deg,#ccc 0 3px,transparent 3px 6px)', height: 1 }
-            : { borderTop: '1px solid #333' };
+  const curStyle = pen.style === 'solid' && pen.width >= 3 ? 'thick' : pen.style;
+  const pick = (id: string) => setPen(id === 'thick' ? { ...pen, style: 'solid', width: Math.max(3, pen.width) }
+    : id === 'solid' ? { ...pen, style: 'solid', width: pen.width >= 3 ? 1 : pen.width } : { ...pen, style: id });
   return (
     <>
-      <button ref={btn} type="button" data-tip="테두리 선 모양" className={`re-btn ${open ? 'on' : ''}`}
-        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>선 ▾</button>
+      <button ref={btn} type="button" data-tip="테두리 — 칸을 끌어 선택한 뒤 범위·선·굵기·색을 정해 적용" className={`re-btn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>테두리 ▾</button>
       {open && (
-        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
-          <div className="re-fontlist">
-            {LINE_STYLES.map(s => (
-              <button key={s.id} type="button" className={`re-fontitem re-lineitem ${current === s.id ? 'on' : ''}`}
-                onClick={() => { onPick(s.id); setOpen(false); }}>
-                <span>{s.label}</span><i style={sample(s.id)} />
+        <Pop anchor={btn.current} onClose={() => setOpen(false)} className="wide">
+          <div className="re-bp-h">적용 범위 <small>(칸을 끌어 선택. 선택이 없으면 커서가 든 칸)</small></div>
+          <div className="re-bp-grid">
+            {SCOPES.map(([id, label]) => (
+              <button key={id} type="button" className={`re-bp-s ${scope === id ? 'on' : ''}`} onClick={() => setScope(id)}>{label}</button>
+            ))}
+          </div>
+          <div className="re-bp-h">선 모양</div>
+          <div className="re-fontlist" style={{ maxHeight: 'none', margin: 0 }}>
+            {PEN_STYLES.map(s => (
+              <button key={s.id} type="button" className={`re-fontitem re-lineitem ${curStyle === s.id ? 'on' : ''}`} onClick={() => pick(s.id)}>
+                <span>{s.label}</span><i style={penSample(s.id)} />
               </button>
             ))}
+          </div>
+          <div className="re-bp-h">굵기</div>
+          <div className="re-pop-row" style={{ border: 0, margin: 0, padding: 0, justifyContent: 'flex-start' }}>
+            <button type="button" className="re-pop-btn" onClick={() => setPen({ ...pen, width: Math.max(0.5, pen.width - 0.5) })}>−</button>
+            <span className="re-tt-v">{pen.width}pt</span>
+            <button type="button" className="re-pop-btn" onClick={() => setPen({ ...pen, width: Math.min(8, pen.width + 0.5) })}>＋</button>
+          </div>
+          <div className="re-bp-h">색</div>
+          <div className="re-sw">
+            {SWATCHES.slice(0, 15).map(c => (
+              <button key={c} type="button" className={`re-sw-i ${pen.color === c ? 'sel' : ''}`} style={{ background: c }} aria-label={c} onClick={() => setPen({ ...pen, color: c })} />
+            ))}
+          </div>
+          <div className="re-pop-row">
+            <label className="re-pop-lbl">직접 고르기
+              <input type="color" value={/^#[0-9a-f]{6}$/i.test(pen.color) ? pen.color : '#000000'} onChange={e => setPen({ ...pen, color: e.target.value })} />
+            </label>
+            <i className="re-pen-now" style={{ background: pen.color }} />
+          </div>
+          <div className="re-pop-row">
+            <button type="button" className="re-pop-btn" onClick={() => onApply(scope, true)}>선택 범위 선 지우기</button>
+            <button type="button" className="re-pop-btn re-pop-go" onClick={() => onApply(scope, false)}>적용</button>
           </div>
         </Pop>
       )}
@@ -339,6 +389,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
   // HTML 코드 모드 (v2.1 사용자 요청) — 코드를 그대로 저장한다. 편집기로 돌아가면 지원하지 않는 태그·스타일이 정리될 수 있다
   const [srcMode, setSrcMode] = useState(false);
   const { fonts, familyOf } = useFonts();
+  const [pen, setPen] = useState<Pen>({ style: 'solid', width: 1, color: '#000000' });   // 표 테두리 펜
   const editor = useEditor({
     // StarterKit(v3)에 든 링크는 누르면 바로 열리지 않게 — 편집 중 클릭은 커서 이동 (링크 삽입 v2.1)
     extensions: [
@@ -396,6 +447,58 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
     const t = findAround(state, 'table');
     if (!t) return false;
     tr.setNodeMarkup(t.pos, undefined, { ...t.node.attrs, ...patch });
+    dispatch?.(tr);
+    return true;
+  });
+  /** 테두리 적용 — 범위(표 전체/선택 칸 전체/외곽/안쪽/위·아래·왼쪽·오른쪽)에 따라 칸마다 네 변을 쓴다.
+   *  맞닿은 이웃 칸의 반대쪽 변도 같이 써서(겹치는 선은 한 장이니) 어느 한쪽 값에 밀리지 않게 한다 */
+  const applyBorder = (scope: string, clear: boolean) => editor.commands.command(({ state, tr, dispatch }) => {
+    const t = findAround(state, 'table');
+    if (!t) return false;
+    const map = TableMap.get(t.node);
+    const start = t.pos + 1;
+    let rect: { left: number; top: number; right: number; bottom: number };
+    const sel = state.selection;
+    if (scope === 'table') rect = { left: 0, top: 0, right: map.width, bottom: map.height };
+    else if (sel instanceof CellSelection) rect = map.rectBetween(sel.$anchorCell.pos - start, sel.$headCell.pos - start);
+    else {
+      const c = findAround(state, 'tableCell') ?? findAround(state, 'tableHeader');
+      if (!c) return false;
+      rect = map.findCell(c.pos - start);
+    }
+    const w = pen.style === 'double' ? Math.max(3, pen.width) : pen.width;
+    const line = pen.style === 'dotted' ? 'dotted' : pen.style === 'double' ? 'double' : 'solid';
+    const spec: string | null = clear ? null : `${w}pt ${line} ${pen.style === 'transparent' ? 'transparent' : pen.color}`;
+    const patches = new Map<number, Record<string, string | null>>();
+    const put = (off: number, side: string) => patches.set(off, { ...(patches.get(off) ?? {}), [side]: spec });
+    const mode = scope === 'table' ? 'all' : scope;
+    const wantOuter = (s: string) => mode === 'all' || mode === 'outer' || mode === s;
+    map.cellsInRect(rect).forEach((off: number) => {
+      const cr = map.findCell(off);
+      if (wantOuter('top') && cr.top === rect.top) put(off, 'borderTop');
+      if (wantOuter('bottom') && cr.bottom === rect.bottom) put(off, 'borderBottom');
+      if (wantOuter('left') && cr.left === rect.left) put(off, 'borderLeft');
+      if (wantOuter('right') && cr.right === rect.right) put(off, 'borderRight');
+      if (mode === 'all' || mode === 'inner') {
+        if (cr.top > rect.top) put(off, 'borderTop');
+        if (cr.bottom < rect.bottom) put(off, 'borderBottom');
+        if (cr.left > rect.left) put(off, 'borderLeft');
+        if (cr.right < rect.right) put(off, 'borderRight');
+      }
+    });
+    // 범위 바깥에서 맞닿은 이웃 칸의 반대쪽 변
+    if (wantOuter('top') && rect.top > 0)
+      map.cellsInRect({ left: rect.left, right: rect.right, top: rect.top - 1, bottom: rect.top }).forEach((o: number) => put(o, 'borderBottom'));
+    if (wantOuter('bottom') && rect.bottom < map.height)
+      map.cellsInRect({ left: rect.left, right: rect.right, top: rect.bottom, bottom: rect.bottom + 1 }).forEach((o: number) => put(o, 'borderTop'));
+    if (wantOuter('left') && rect.left > 0)
+      map.cellsInRect({ left: rect.left - 1, right: rect.left, top: rect.top, bottom: rect.bottom }).forEach((o: number) => put(o, 'borderRight'));
+    if (wantOuter('right') && rect.right < map.width)
+      map.cellsInRect({ left: rect.right, right: rect.right + 1, top: rect.top, bottom: rect.bottom }).forEach((o: number) => put(o, 'borderLeft'));
+    patches.forEach((p, off) => {
+      const cell = t.node.nodeAt(off);
+      if (cell) tr.setNodeMarkup(start + off, undefined, { ...cell.attrs, ...p });
+    });
     dispatch?.(tr);
     return true;
   });
@@ -585,13 +688,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <ColorBtn title="칸 배경색" label="▧" current={cellAttr('backgroundColor')}
             onPick={c => C().setCellAttribute('backgroundColor', c).run()}
             onClear={() => C().setCellAttribute('backgroundColor', null).run()} />
-          <ColorBtn title="표 테두리 색" label="▢" current={String(tbl?.node.attrs.borderColor ?? '#000000')}
-            onPick={c => setTable({ borderColor: c })} onClear={() => setTable({ borderColor: '#000000' })} />
-          <LineBtn current={String(tbl?.node.attrs.borderStyle ?? 'solid')}
-            onPick={id => setTable(id === 'thick' ? { borderStyle: 'solid', borderWidth: 3 } : id === 'solid' ? { borderStyle: 'solid', borderWidth: 1 } : { borderStyle: id })} />
-          <TBtn title="테두리 굵기 줄이기" label="선−" onClick={() => setTable({ borderWidth: Math.max(0.5, Number(tbl?.node.attrs.borderWidth ?? 1) - 0.5) })} />
-          <span className="re-tt-v">{Number(tbl?.node.attrs.borderWidth ?? 1)}pt</span>
-          <TBtn title="테두리 굵기 늘리기" label="선+" onClick={() => setTable({ borderWidth: Math.min(8, Number(tbl?.node.attrs.borderWidth ?? 1) + 0.5) })} />
+          <BorderBtn pen={pen} setPen={setPen} onApply={applyBorder} />
           <span className="re-sep" />
           <TBtn title="칸 안 위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
           <TBtn title="칸 안 가운데 맞춤" label="↕" on={cellAttr('vAlign') === 'middle'} onClick={() => C().setCellAttribute('vAlign', 'middle').run()} />
