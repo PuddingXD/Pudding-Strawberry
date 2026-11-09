@@ -1,5 +1,6 @@
 'use client';
 // 자관 문서 읽기 — 문서 탭의 긴 글을 목차(제목1·2·3)와 함께 크게 읽는다. 폭은 갤러리 상세와 같은 672px.
+import { NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -74,7 +75,7 @@ function RelReadInner() {
         <PageTitle href={back}>{rel.name}</PageTitle>
         <p>{rel.catchphrase}</p>
         <div className="head-actions">
-          <button className="btn btn-dark" onClick={() => router.push(back)}>‹ 자관으로</button>
+          <NavLink className="btn btn-dark" href={back}>‹ 자관으로</NavLink>
         </div>
       </div>
       <DocReader docs={docs} activeId={active} bodyFont={familyOf(rel.bodyFontId)} canEdit={isAdmin} onSave={saveDoc} onReorder={reorderDocs} onAdd={addDoc} startEditId={justAdded} onStartedEdit={() => setJustAdded(undefined)}

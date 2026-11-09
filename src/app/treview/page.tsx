@@ -3,7 +3,7 @@
 // 쓰기·수정은 페이지(/treview/write · /treview/[id]/edit). 말머리는 환경설정 > 게시판 관리 「TRPG 리뷰 말머리」,
 // 글쓰기 권한은 환경설정 「권한」(기본: 가입자). 수정은 쓴 사람·관리자·글쓰기 권한이 있는 회원 —
 // 저장할 때 editorIds에 적고, 옛 글은 관리자가 열 때 채운다
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
@@ -101,7 +101,7 @@ function ReviewPageInner() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <SearchBar placeholder="시나리오·룰·말머리·이름·한줄평 검색" onSearch={setQ} />
           {canWrite && (
-            <button className="btn btn-dark" onClick={() => router.push('/treview/write' + secQuery('treview', sec.id))}>✎ WRITE</button>
+            <NavLink className="btn btn-dark" href={'/treview/write' + secQuery('treview', sec.id)}>✎ WRITE</NavLink>
           )}
         </div>
       </div>

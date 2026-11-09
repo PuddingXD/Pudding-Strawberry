@@ -1,7 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 캐릭터 리스트 (4.4) — 한 줄 5개 · 3:4 썸네일(크롭 반영) · 전용 폰트 · ＋ ADD CHARACTER
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -66,7 +66,7 @@ function CharsInner() {
         <div className="head-actions">
           <SearchBar onSearch={setQ} />
           {canWriteAt(menuSet, writeKeyOf('/chars', sec.id), { loggedIn: !!user, isAdmin, id: user?.id }, writeDefaultOf('/chars')) && (
-            <button className="btn btn-dark" onClick={() => router.push('/chars/new' + secQuery('chars', sec.id))}>＋ ADD CHARACTER</button>
+            <NavLink className="btn btn-dark" href={'/chars/new' + secQuery('chars', sec.id)}>＋ ADD CHARACTER</NavLink>
           )}
         </div>
       </div>

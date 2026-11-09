@@ -3,6 +3,7 @@
 // 스크롤: 정보가 길면 페이지가 이어지고 탭·아트는 스티키 (v1.9)
 // AU 선택 시 프로필 전체(이름·스펙·아트·탭·소개)가 그 AU의 값으로 전환 (charWithAu) —
 // 편집은 EDIT → /chars/[id]/edit?au= 전용 페이지에서 새 프로필처럼 작성 (v1.9 사용자 확정)
+import { NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -195,7 +196,7 @@ function CharDetailInner() {
           {/* 관리자 또는 「편집까지」 권한 회원 (3차 회원-캐릭터 연결, v1.9)
               — AU 선택 상태의 EDIT은 그 AU 전용 프로필 편집으로 진입 */}
           {(isAdmin || charGrant(ch, user?.id) === 'edit') && (
-            <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
+            <NavLink className="btn btn-dark" href={editHref}>EDIT</NavLink>
           )}
           {isAdmin && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
@@ -256,7 +257,7 @@ function CharDetailInner() {
             이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다
           </p>
           {(isAdmin || charGrant(ch, user?.id) === 'edit') && (
-            <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>
+            <NavLink className="btn btn-dark" href={editHref}>＋ AU 캐릭터 등록</NavLink>
           )}
         </div>
       ) : (
@@ -398,7 +399,7 @@ function CharDetailInner() {
                 /* 전체 읽기를 쓰는 탭 — 본문은 읽기 화면에서 (미리보기 없음) */
                 curTab.html.trim() && curTab.html.trim() !== '<p></p>' && (
                   /* 아트 전용 프로필의 탭이면 그 아트도 함께 넘긴다 (사용자 제보 — AU 키만 넘겨 「문서가 없다」고 떴다) */
-                  <ReadMore onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}${artKey ? `&art=${encodeURIComponent(artKey.slice(4))}` : ''}`)} />
+                  <ReadMore href={`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}${artKey ? `&art=${encodeURIComponent(artKey.slice(4))}` : ''}`} onOpen={() => router.push(`/chars/${ch.id}/read?tab=${curTab.id}${auKey ? `&au=${encodeURIComponent(auKey)}` : ''}${artKey ? `&art=${encodeURIComponent(artKey.slice(4))}` : ''}`)} />
                 )
               ) : (
                 <DocBody flat html={curTab?.html ?? ''} size={curTab?.size} />

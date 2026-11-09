@@ -1,5 +1,6 @@
 'use client';
 // 게시글 상세 (4.2) — 본문 렌더(격리 새니타이즈) · 접기 · 댓글+대댓글
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useMemo, useState } from 'react';
 import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
@@ -191,7 +192,7 @@ export default function BoardDetailPage() {
         <div className="head-actions">
           {/* 수정은 작성자 본인만 — 관리자도 타인 글은 삭제만 (v1.9) */}
           {isAuthor && (
-            <button className="btn btn-dark" onClick={() => router.push(`/board/write?edit=${post.id}`)}>EDIT</button>
+            <NavLink className="btn btn-dark" href={`/board/write?edit=${post.id}`}>EDIT</NavLink>
           )}
           {canManage && (
             <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>

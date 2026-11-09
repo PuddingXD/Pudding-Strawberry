@@ -1,6 +1,7 @@
 'use client';
 // RP LOG 상세 (옛 TRPG 로그, 4.3) — HTML이면 원본 스타일 그대로 격리 렌더(iframe 샌드박스, 스크립트 실행 안 됨),
 // 일반 텍스트면 로그용 기본 서식으로 표시
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { nowIso } from '@/lib/order';
@@ -576,7 +577,7 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
           {rel && (() => {
             const au = l.auId ? rel.aus.find(a => a.id === l.auId && a.id !== 'base') : undefined;
             const href = au ? `/rels/${rel.id}?au=${encodeURIComponent(au.id)}` : `/rels/${rel.id}`;
-            return <button className="btn btn-dark" onClick={() => router.push(href)}>{au ? `${rel.name} · ${au.label || 'AU'}` : rel.name} ›</button>;
+            return <NavLink className="btn btn-dark" href={href}>{au ? `${rel.name} · ${au.label || 'AU'}` : rel.name} ›</NavLink>;
           })()}
           {/* 편집모드 — 발화 위 호버 도구·우클릭 메뉴로 하나씩 고친다 (원본이 없는 로그는 본문 글 그대로) */}
           {canEdit && <button className={`btn ${editing ? 'btn-dark' : 'btn-ghost'}`} onClick={toggleEdit}>{editing ? '편집 끝' : '편집모드'}</button>}

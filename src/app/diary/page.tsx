@@ -4,6 +4,7 @@
 // v2.1: 구분 탭(환경설정 > 다이어리) — 탭마다 자관이나 AU를 연동한다. 페어 자관을 연동한 탭은 자놀홈처럼
 //   왼쪽·오른쪽 캐릭터 칸으로 나뉘어 두 사람이 같이 쓴다(칸마다 캐릭터 머리 · ＋ WRITE · 5개씩 페이지).
 //   연동하지 않은 탭은 오너의 일기 한 칸(미니 캘린더 포함)
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -251,8 +252,8 @@ function DiaryPageInner() {
             <DiaryBody p={p} onOpen={(ids, idx) => setLb({ srcs: ids, idx })} />
             {canEdit(p) && (
               <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', padding: '0 0 14px' }}>
-                <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
-                  onClick={() => router.push(`/diary/${p.id}/edit`)}>EDIT</button>
+                <NavLink className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
+                  href={`/diary/${p.id}/edit`}>EDIT</NavLink>
                 <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
                   onClick={() => setDelFor(p)}>DELETE</button>
               </div>
@@ -277,10 +278,10 @@ function DiaryPageInner() {
           <div className="dy-col-hd">
             {ch ? (
               /* 얼굴을 누르면 캐릭터 페이지로 — AU 탭이면 그 AU 프로필로 */
-              <span className="dy-cf go" style={{ background: ch.color || 'var(--line)' }} data-tip={`${ch.name} 프로필`}
-                onClick={() => router.push(linkKey ? `${charPath(ch)}?au=${encodeURIComponent(linkKey)}` : charPath(ch))}>
+              <NavLink className="dy-cf go" style={{ background: ch.color || 'var(--line)' }} data-tip={`${ch.name} 프로필`}
+                href={linkKey ? `${charPath(ch)}?au=${encodeURIComponent(linkKey)}` : charPath(ch)}>
                 {ch.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
-              </span>
+              </NavLink>
             ) : (
               /* 오너 탭 — 각자 마이페이지에서 정한 프로필 사진 */
               <OwnerFace url={col.avatar} color={col.color} name={col.name} />
@@ -288,7 +289,7 @@ function DiaryPageInner() {
             <b className="nm" style={ch?.fontId ? { fontFamily: familyOf(ch.fontId) } : undefined}>{col.name}</b>
             <small>{list.length}</small>
             {canWriteCol(col) && (
-              <button className="btn btn-dark" onClick={() => router.push(writeHref(ch?.id))}>＋ WRITE</button>
+              <NavLink className="btn btn-dark" href={writeHref(ch?.id)}>＋ WRITE</NavLink>
             )}
           </div>
         )}
@@ -330,10 +331,10 @@ function DiaryPageInner() {
               {linkRel ? (
                 <>
                   {linkChars.map(c => (
-                    <span key={c.id} className="dy-cf" style={{ background: c.color || 'var(--line)' }} data-tip={`${c.name} 프로필`}
-                      onClick={() => router.push(linkKey ? `${charPath(c)}?au=${encodeURIComponent(linkKey)}` : charPath(c))}>
+                    <NavLink key={c.id} className="dy-cf" style={{ background: c.color || 'var(--line)' }} data-tip={`${c.name} 프로필`}
+                      href={linkKey ? `${charPath(c)}?au=${encodeURIComponent(linkKey)}` : charPath(c)}>
                       {c.thumbId && <CroppedBlobImg fileRef={c.thumbId} crop={c.thumbCrop} />}
-                    </span>
+                    </NavLink>
                   ))}
                   <div className="nm">
                     <b>{linkAu?.name?.trim() || linkRel.name}{linkAu ? ` · ${linkAu.label}` : ''}</b>
@@ -375,7 +376,7 @@ function DiaryPageInner() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="제목 검색" onSearch={v => { setQ(v); resetPages(); }} />
-          {!cols && canWriteHere && <button className="btn btn-dark" onClick={() => router.push(writeHref())}>＋ WRITE</button>}
+          {!cols && canWriteHere && <NavLink className="btn btn-dark" href={writeHref()}>＋ WRITE</NavLink>}
         </div>
       </div>
 

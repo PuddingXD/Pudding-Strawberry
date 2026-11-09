@@ -1,7 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 그림백업게시판 (4.11) — 갤러리/리스트 토글 · 로그/단일 뱃지 · 접기 썸네일 블러
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -106,7 +106,7 @@ function BackupPageInner() {
           <SearchBar onSearch={setQ} />
           {/* 글쓰기 권한 (v2.0 사용자 요청) — 메뉴 관리에서 갤러리별로 · 멤버 선택으로 좁힐 수 있다 */}
           {canGalleryWrite(menuSet, sec.id, { loggedIn: !!user, isAdmin, id: user?.id }) && (
-            <button className="btn btn-dark" onClick={() => router.push('/gallery/write' + secQuery('gallery', sec.id))}>✎ WRITE</button>
+            <NavLink className="btn btn-dark" href={'/gallery/write' + secQuery('gallery', sec.id)}>✎ WRITE</NavLink>
           )}
         </div>
       </div>
@@ -119,7 +119,7 @@ function BackupPageInner() {
             const folded = p.fold && !unveiled[p.id];
             return (
               <NavBox key={p.id} className="panel g-item" {...sort(i)} href={folded || editOn ? undefined : `/gallery/${p.id}`}
-                onContextMenu={e => onCtx(e, p)}>
+                onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
                 <div className={`thumb ${folded ? 'veil' : ''}`}>
                   <div style={{ position: 'absolute', inset: 0 }}>
                     <CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} />
@@ -150,7 +150,7 @@ function BackupPageInner() {
       <div className="panel flush" style={{ display: view === 'list' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map(p => (
             <NavBox key={p.id} className="list-item" href={`/gallery/${p.id}`}
-              onContextMenu={e => onCtx(e, p)}>
+              onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
               <div className="th" style={{ position: 'relative' }}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <b>

@@ -26,6 +26,7 @@ import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { pushNotif, notifyAdmins } from '@/lib/notifStore';
+import { NavLink } from '@/components/ui/NavLink';
 
 // 접기 문구 (게시판 6.2와 동일)
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
@@ -301,8 +302,7 @@ function ThreadsPageInner() {
           </div>
           <SearchBar onSearch={setQ} />
           {canWrite && (
-            <button className="btn btn-dark" style={{ whiteSpace: 'nowrap' }}
-              onClick={() => router.push('/threads/new' + secQuery('threads', sec.id))}>＋ NEW THREAD</button>
+            <NavLink className="btn btn-dark" style={{ whiteSpace: 'nowrap' }} href={'/threads/new' + secQuery('threads', sec.id)}>＋ NEW THREAD</NavLink>
           )}
         </div>
       </div>
@@ -363,8 +363,8 @@ function ThreadsPageInner() {
                     </small>
                     {canManage(sel) && (
                       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-                        <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
-                          onClick={() => router.push(`/threads/${sel.id}/edit`)}>EDIT</button>
+                        <NavLink className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
+                          href={`/threads/${sel.id}/edit`}>EDIT</NavLink>
                         <button className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 10.5 }}
                           onClick={() => removeWork(sel)}>DELETE</button>
                       </div>

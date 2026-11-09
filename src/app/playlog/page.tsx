@@ -1,6 +1,7 @@
 'use client';
 // TRPG 플레이기록 (4.16) — 표 형식 · Date 정렬 · 검색 · 페이지네이션 ·
 // Url 열은 클립 픽토그램(새 탭) · 로그 연결 시 Playtime 클릭으로 로그 이동
+import { NavLink } from '@/components/ui/NavLink';
 import { safeHref } from '@/lib/link';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -151,7 +152,7 @@ function PlaylogPageInner() {
         {/* 오른쪽: 검색 · 추가 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="시나리오·라이터·With 검색" onSearch={v => { setQ(v); setPage(1); }} />
-          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/playlog/new' + secQuery('playlog', sec.id))}>＋ ADD RECORD</button>}
+          {canAdd && <NavLink className="btn btn-dark" href={'/playlog/new' + secQuery('playlog', sec.id)}>＋ ADD RECORD</NavLink>}
         </div>
       </div>
 
@@ -203,8 +204,8 @@ function PlaylogPageInner() {
                     {r.url ? (
                       <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" data-tip="링크 열기 (새 탭)"><ClipIcon /></a>
                     ) : r.logId ? (
-                      <a data-tip="백업 로그 보기" style={{ cursor: 'var(--cur-pointer,pointer)' }}
-                        onClick={() => router.push(`/trpg/${r.logId}`)}><ClipIcon /></a>
+                      <NavLink data-tip="백업 로그 보기" style={{ cursor: 'var(--cur-pointer,pointer)' }}
+                        href={`/trpg/${r.logId}`}><ClipIcon /></NavLink>
                     ) : null}
                   </td>
                 )}

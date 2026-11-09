@@ -1,6 +1,6 @@
 'use client';
 // TRPG 캐릭터 리스트 (v1.9 신규) — 1:1 대표 인장 카드 · 클릭 시 상세(표정 전환은 상세에서)
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -45,7 +45,7 @@ export default function TCharsPage() {
         <EditableDesc k="tchars-desc" def="1:1 인장 카드 — 클릭하면 표정과 소개를 볼 수 있습니다" />
         <div className="head-actions">
           <SearchBar placeholder="이름·시나리오·룰·역할 검색" onSearch={setQ} />
-          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/tchars/new')}>＋ ADD</button>}
+          {canAdd && <NavLink className="btn btn-dark" href={'/tchars/new'}>＋ ADD</NavLink>}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 // 일반 게시판 목록 (4.2 / 5.2 다중 게시판) — 말머리 필터 · 검색 · 비밀글 마스킹 · 접기 표시 · 페이지네이션
 // ?b=<게시판 id> 로 게시판 구분 (없으면 기본 게시판) · 리스트 스킨: 기본형 / 티켓형 (5.2 v1.9)
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -126,7 +126,7 @@ function BoardInner() {
           <SearchBar onSearch={v => { setQ(v); setPage(1); }} />
           {/* 글쓰기 권한 — 게시판 설정의 permWrite + 「글쓰기 멤버」로 좁히기 (v2.1) */}
           {canWriteAt(menuSet, boardHref(board.id), { loggedIn: !!user, isAdmin, id: user?.id }, 'member', board.permWrite) && (
-            <button className="btn btn-dark" onClick={() => router.push(`/board/write?b=${board.id}`)}>✎ WRITE</button>
+            <NavLink className="btn btn-dark" href={`/board/write?b=${board.id}`}>✎ WRITE</NavLink>
           )}
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 // TRPG 리뷰 상세 (v2.1 사용자 요청) — 왼쪽에 대표 이미지, 오른쪽에 시나리오 정보와 GM 평점 · PC 평점을 나눠서.
 // 사람마다 「이름 ★★★★☆」 아래 한줄평. EDIT(페이지)은 쓴 사람·관리자·글쓰기 권한이 있는 회원(editorIds), DELETE는 쓴 사람·관리자
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter } from 'next/navigation';
@@ -54,7 +55,7 @@ function ReviewDetailInner() {
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <div className="head-actions">
-          {canManage && <button className="btn btn-dark" onClick={() => router.push(`/treview/${r.id}/edit`)}>EDIT</button>}
+          {canManage && <NavLink className="btn btn-dark" href={`/treview/${r.id}/edit`}>EDIT</NavLink>}
           {canDelete && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
       </div>

@@ -2,7 +2,7 @@
 // 상대 캐릭터 리스트 (v2.1 사용자 요청) — 내 캐릭터(own) 말고 상대 캐릭터(own=false)만 모아 보는 목록.
 // 자관 상세에서 등록한 상대 캐릭터가 여기 모이고, 여기서 ＋ ADD로 직접 등록할 수도 있다(own=false로 저장).
 // 카드 모양·검색·정렬은 캐릭터 리스트(/chars)와 같다
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -46,8 +46,8 @@ function PCharsInner() {
         <div className="head-actions">
           <SearchBar onSearch={setQ} />
           {canWriteAt(menuSet, writeKeyOf('/pchars', sec.id), { loggedIn: !!user, isAdmin, id: user?.id }, writeDefaultOf('/pchars')) && (
-            <button className="btn btn-dark"
-              onClick={() => router.push('/chars/new' + (secQuery('pchars', sec.id) ? `${secQuery('pchars', sec.id)}&partner=1` : '?partner=1'))}>＋ ADD CHARACTER</button>
+            <NavLink className="btn btn-dark"
+              href={'/chars/new' + (secQuery('pchars', sec.id) ? `${secQuery('pchars', sec.id)}&partner=1` : '?partner=1')}>＋ ADD CHARACTER</NavLink>
           )}
         </div>
       </div>

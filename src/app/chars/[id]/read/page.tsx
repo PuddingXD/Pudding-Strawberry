@@ -1,5 +1,6 @@
 'use client';
 // 캐릭터 문서 읽기 — 추가 탭의 긴 글을 목차(제목1·2·3)와 함께 크게 읽는다. 폭은 갤러리 상세와 같은 672px.
+import { NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -80,7 +81,7 @@ function CharReadInner() {
         <PageTitle href={back}>{eff.name}</PageTitle>
         <p>{eff.sub}</p>
         <div className="head-actions">
-          <button className="btn btn-dark" onClick={() => router.push(back)}>‹ 프로필로</button>
+          <NavLink className="btn btn-dark" href={back}>‹ 프로필로</NavLink>
         </div>
       </div>
       <DocReader docs={docs} activeId={active} bodyFont={familyOf(eff.bodyFontId)} canEdit={canEdit} onSave={saveDoc} onReorder={reorderDocs}

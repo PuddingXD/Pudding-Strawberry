@@ -1,5 +1,6 @@
 'use client';
 // TRPG 캐릭터 상세 (v1.9) — 좌 큰 이미지(원본/스탠딩, 표정 전환은 여기서) + 우 정보·설명
+import { NavLink } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter } from 'next/navigation';
@@ -53,7 +54,7 @@ function TCharDetailInner() {
         <PageTitle>TRPG CHARACTERS</PageTitle>
         <EditableDesc k="tchars-detail-desc" def="표정 썸네일을 누르면 이미지가 전환됩니다" />
         <div className="head-actions">
-          {canEdit && <button className="btn btn-dark" onClick={() => router.push(`/tchars/${c.id}/edit`)}>EDIT</button>}
+          {canEdit && <NavLink className="btn btn-dark" href={`/tchars/${c.id}/edit`}>EDIT</NavLink>}
           {canEdit && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
       </div>

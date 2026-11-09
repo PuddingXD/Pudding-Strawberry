@@ -2,6 +2,7 @@
 // 시트 게시판 — 구글 스프레드시트 링크 모음 (표 형식)
 // With(말머리) · Name(시트 이름) · Check(관리자/회원 2칸) · Url · 말머리 탭으로 모아보기 · With/Name 정렬(기본: 등록 순) · 검색 · 페이지
 // 말머리는 환경설정 > 게시판 관리에서 정한다. 항목은 같은 목록(playlog)에 `sheet:` 소속으로 저장된다 (lib/sheetStore.ts)
+import { NavLink } from '@/components/ui/NavLink';
 import { safeHref } from '@/lib/link';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -121,7 +122,7 @@ function SheetPageInner() {
         {/* 오른쪽: 검색 · 추가 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="시트 이름·말머리 검색" onSearch={v => { setQ(v); setPage(1); }} />
-          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/sheet/new' + secQuery('sheet', sec.id))}>＋ ADD SHEET</button>}
+          {canAdd && <NavLink className="btn btn-dark" href={'/sheet/new' + secQuery('sheet', sec.id)}>＋ ADD SHEET</NavLink>}
         </div>
       </div>
 

@@ -1,5 +1,6 @@
 'use client';
 // TRPG 도토리 (4.15) — 시나리오 위시리스트 · 4열 카드 그리드 · 상태 필터 탭 · 카드에서 상태 전환
+import { NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -99,7 +100,7 @@ function DotoriPageInner() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="시나리오·라이터 검색" onSearch={setQ} />
-          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/dotori/new' + secQuery('dotori', sec.id))}>＋ ADD</button>}
+          {canAdd && <NavLink className="btn btn-dark" href={'/dotori/new' + secQuery('dotori', sec.id)}>＋ ADD</NavLink>}
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 자관 리스트 (4.5) — 4:3 가로 썸네일 · 공개범위 3단계 · 멤버 색 점
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -42,7 +42,7 @@ export default function RelsPage() {
         <EditableDesc k="rels-desc" def="자관 목록 · 4:3 가로 썸네일 · 공개범위: 전체공개/멤버공개/나만보기" />
         <div className="head-actions">
           <SearchBar onSearch={setQ} />
-          {canAdd && <button className="btn btn-dark" onClick={() => router.push('/rels/new')}>＋ ADD RELATION</button>}
+          {canAdd && <NavLink className="btn btn-dark" href={'/rels/new'}>＋ ADD RELATION</NavLink>}
         </div>
       </div>
       <div className="g3 rels-grid">

@@ -1,7 +1,7 @@
 'use client';
 // 마이페이지 (v1.9) — 내 정보 수정(닉네임·프로필 이미지·비밀번호) +
 // 일반 회원: 나에게 연동된 캐릭터 리스트 · 내가 쓴 글/댓글 리스트 (관리자는 기본정보만)
-import { NavBox } from '@/components/ui/NavLink';
+import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -218,8 +218,8 @@ export default function MyPage() {
             <h4 style={{ fontSize: 11.5, letterSpacing: '.12em', color: 'var(--faint)', marginBottom: 14 }}>
               MY POSTS {myItems.length > 0 && <span style={{ color: 'var(--accent)' }}>{myItems.length}</span>}
               {myItems.length > 6 && (
-                <span style={{ float: 'right', fontSize: 11, color: 'var(--accent)', cursor: 'var(--cur-pointer,pointer)', letterSpacing: 0 }}
-                  onClick={() => router.push('/mypage/posts')}>더보기 ›</span>
+                <NavLink style={{ float: 'right', fontSize: 11, color: 'var(--accent)', cursor: 'var(--cur-pointer,pointer)', letterSpacing: 0 }}
+                  href="/mypage/posts">더보기 ›</NavLink>
               )}
             </h4>
             {myItems.length === 0 && <p className="hint" style={{ margin: 0 }}>작성한 글이 없습니다</p>}

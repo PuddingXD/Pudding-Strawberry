@@ -37,6 +37,7 @@ import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/Crop
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
+import { NavLink, NavBox } from '@/components/ui/NavLink';
 
 /** 전신 이미지 — 비율 유지, 하단 정렬, 크기 %는 자관 수정 미리보기에서 지정 (v1.9) */
 // 전신 그림자는 「그림자 직접 지정」의 색·강도를 따른다 (v2.0 사용자 요청) — 자관명 그림자와 같은 설정
@@ -957,10 +958,10 @@ function RelDetailInner() {
       {isAdmin && (
         <div className="rel-admin-actions">
           {/* AU 선택 중이면 그 AU의 일러·캐치프레이즈를 편집 (v1.9) */}
-          <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
-            onClick={() => router.push(`/rels/${rel.id}/edit${isBaseAu ? '' : `?au=${au!.id}`}`)}>
+          <NavLink className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
+            href={`/rels/${rel.id}/edit${isBaseAu ? '' : `?au=${au!.id}`}`}>
             {isBaseAu ? 'EDIT' : `EDIT ${au!.label}`}
-          </button>
+          </NavLink>
           {/* AU를 보는 중이면 지워지는 것도 그 AU다 (v2.0 사용자 발견 — 자관이 통째로 지워졌다).
               EDIT은 AU를 따라가는데 DELETE만 안 따라가서, AU 화면에서 누르면 자관 전체가 날아갔다.
               버튼 글씨에도 무엇이 지워지는지 그대로 쓴다 */}
@@ -1489,14 +1490,14 @@ function RelDetailInner() {
       <div className="g2" style={{ marginTop: 16 }}>
         {!au?.hideRp && (
         <div className="panel widget" style={{ margin: 0, ...(au?.hideLog ? { gridColumn: '1/-1' } : null) }}>
-          <h4>역극 <span className="more" onClick={() => router.push('/rp')}>더보기 ›</span></h4>
+          <h4>역극 <NavLink className="more" href="/rp">더보기 ›</NavLink></h4>
           {relRooms.length > 0 ? relRooms.map(rm => (
-            <div key={rm.id} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }} onClick={() => router.push('/rp')}>
+            <NavBox key={rm.id} tag="div" href="/rp" className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
               <span>{rm.title}</span>
               <b style={{ fontSize: 11, color: 'var(--faint)' }}>
                 {rm.status === 'done' ? (rm.isPublic ? '완결 · 공개' : '완결') : '진행중'}
               </b>
-            </div>
+            </NavBox>
           )) : (
             <p className="hint" style={{ margin: 0 }}>이 자관 기반으로 진행된 역극이 여기에 표시됩니다</p>
           )}
@@ -1504,13 +1505,13 @@ function RelDetailInner() {
         )}
         {!au?.hideLog && (
         <div className="panel widget" style={{ margin: 0, ...(au?.hideRp ? { gridColumn: '1/-1' } : null) }}>
-          <h4>로그 <span className="more" onClick={() => router.push(`/trpg?rel=${rel.id}&au=${auId}`)}>더보기 ›</span></h4>
+          <h4>로그 <NavLink className="more" href={`/trpg?rel=${rel.id}&au=${auId}`}>더보기 ›</NavLink></h4>
           {relLogs.length > 0 ? relLogs.map(l => (
-            <div key={l.id} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }} onClick={() => router.push(logPath(l))}>
+            <NavBox key={l.id} tag="div" href={logPath(l)} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
               {/* 번호 없이 제목만 — 연동 리스트에서는 순번이 의미가 없다 (사용자 확정) */}
               <span>{l.title}</span>
               <b style={{ fontSize: 11, color: 'var(--faint)' }}>{l.date?.replace(/-/g, '.') ?? ''}</b>
-            </div>
+            </NavBox>
           )) : <p className="hint" style={{ margin: 0 }}>연동된 로그가 없습니다 — 로그 등록 시 자관을 선택하면 여기에 표시</p>}
         </div>
         )}
