@@ -80,9 +80,7 @@ export function PrevNext({ prev, next, ltr }: { prev?: PnItem | null; next?: PnI
     <NavLink className="pn-b" href={it.href}
       aria-label={`${label}: ${it.title}`} data-tip={it.title}><Chev dir={dir} /></NavLink>
   ) : (
-    <button type="button" className="pn-b" disabled={!it}
-      aria-label={it ? `${label}: ${it.title}` : `${label} 없음`} data-tip={it ? it.title : undefined}
-      onClick={() => it && router.push(it.href)}><Chev dir={dir} /></button>
+  <button type="button" className="pn-b" disabled aria-label={`${label} 없음`}><Chev dir={dir} /></button>
   );
   return (
     <nav className="pn" aria-label="이전글 다음글">
