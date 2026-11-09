@@ -118,9 +118,8 @@ function BackupPageInner() {
             const i = start + si;   // 정렬은 전체 기준 위치로
             const folded = p.fold && !unveiled[p.id];
             return (
-              <NavBox key={p.id} className="panel g-item" {...sort(i)} href={folded || editOn ? undefined : `/gallery/${p.id}`}
-                onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
-                <div className={`thumb ${folded ? 'veil' : ''}`}>
+              <NavBox key={p.id} className="panel g-item" {...sort(i)} href={folded || editOn ? undefined : `/gallery/${p.id}`}>
+                <div className={`thumb ${folded ? 'veil' : ''}`} onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
                   <div style={{ position: 'absolute', inset: 0 }}>
                     <CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} />
                   </div>
@@ -149,9 +148,8 @@ function BackupPageInner() {
       {/* 게시물이 없으면 컨테이너 자체를 숨김 — 빈 패널이 안내문 위에 카드처럼 남던 버그 (v1.9 사용자 발견) */}
       <div className="panel flush" style={{ display: view === 'list' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map(p => (
-            <NavBox key={p.id} className="list-item" href={`/gallery/${p.id}`}
-              onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
-              <div className="th" style={{ position: 'relative' }}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} /></div>
+            <NavBox key={p.id} className="list-item" href={`/gallery/${p.id}`}>
+              <div className="th" style={{ position: 'relative' }} onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <b>
                   {p.title}

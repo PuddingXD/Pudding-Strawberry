@@ -364,8 +364,7 @@ function TrpgPageInner() {
   // 로그 백업 티켓 (사용자 요청 — 참고 이미지: 가로형 · 타공 없음 · 앞면은 그림만, 마우스를 올리면 뒤집혀 뒷면 정보)
   const Ticket = ({ l }: { l: TrpgLog }) => {
     return (
-      <NavBox className={`tix ${editOn ? 'editing' : ''}`} href={editOn ? undefined : logPath(l)}
-        onContextMenu={(e: React.MouseEvent) => openOrder(e, l.id)}>
+      <NavBox className={`tix ${editOn ? 'editing' : ''}`} href={editOn ? undefined : logPath(l)}>
         <div className="tix-in">
           {/* 앞면 — 대표 그림만 (그림이 없으면 색 위에 제목) */}
           <div className={`tix-face tix-front ${!l.thumbId && !l.thumbColor ? `ph ${l.ph}` : ''}`} style={thumbStyle(l)}>
@@ -441,8 +440,7 @@ function TrpgPageInner() {
               <div className="panel flush trpg-basic">
                 {basicShown.slice(logStart, logStart + PER_LOG).map((l, i) => (
                   // 드래그 위치는 전체 기준으로 넘긴다 — 페이지 안 위치로 넘기면 2페이지에서 어긋난다
-                  <NavBox key={l.id} className="list-item" {...gridDragProps(logStart + i)} href={editOn ? undefined : logPath(l)}
-                    onContextMenu={(e: React.MouseEvent) => openOrder(e, l.id)}>
+                  <NavBox key={l.id} className="list-item" {...gridDragProps(logStart + i)} href={editOn ? undefined : logPath(l)}>
                     {editOn && <span className="drag-h">⠿</span>}
                     <div className={`th ${!l.thumbId && !l.thumbColor ? `ph ${l.ph}` : ''}`} style={{ ...thumbStyle(l), position: 'relative' }}>
                       {l.thumbId && <CroppedBlobImg fileRef={l.thumbId} crop={l.thumbCrop} />}

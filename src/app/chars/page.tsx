@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useMainStore } from '@/lib/mainStore';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
+import { useThumbEdit } from '@/components/ui/ThumbEdit';
 
 function CharsInner() {
   const router = useRouter();
@@ -57,6 +58,15 @@ function CharsInner() {
 
   // 편집모드 카드 드래그 정렬 (v1.9)
   const sort = useCardSort(visible, next => setChars(mergeOrder(chars, next)), editOn && isAdmin);
+  // 이미지 우클릭 → 썸네일 수정 (관리자·편집 권한 회원) — 이름 쪽 우클릭은 브라우저 기본 메뉴
+  const thumb = useThumbEdit<Character>({
+    aspect: '3:4',
+    refOf: c => c.arts?.[0] ?? c.thumbId,
+    cropOf: c => c.thumbCrop,
+    titleOf: c => c.name,
+    canEdit: c => isAdmin || (!!user && charGrant(c, user.id) === 'edit'),
+    onApply: (c, crop) => setChars(chars.map(x => (x.id === c.id ? { ...x, thumbCrop: crop } : x))),
+  });
 
   return (
     <section className="page">
@@ -77,7 +87,7 @@ function CharsInner() {
           return (
             <NavBox key={c.id} className="char-card" {...sort(i)} href={editOn ? undefined : charPath(c)}
               style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}>
-              <div className="thumb" style={{ position: 'relative' }}>
+              <div className="thumb" style={{ position: 'relative' }} onContextMenu={(e: React.MouseEvent) => thumb.open(e, c)}>
                 <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass}
                   label={priv ? '비공개' : '3:4'} />
               </div>
@@ -96,6 +106,7 @@ function CharsInner() {
           </p>
         )}
       </div>
+      {thumb.node}
     </section>
   );
 }

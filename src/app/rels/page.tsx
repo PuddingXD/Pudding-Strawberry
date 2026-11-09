@@ -14,6 +14,7 @@ import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useMainStore } from '@/lib/mainStore';
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
+import { useThumbEdit } from '@/components/ui/ThumbEdit';
 
 export default function RelsPage() {
   const router = useRouter();
@@ -34,6 +35,15 @@ export default function RelsPage() {
 
   // 편집모드 카드 드래그 정렬 (v1.9)
   const sort = useCardSort(visible, next => setRels(mergeOrder(rels, next)), editOn && isAdmin);
+  // 이미지 우클릭 → 썸네일 수정 (관리자) — 이름 쪽 우클릭은 브라우저 기본 메뉴
+  const thumb = useThumbEdit<Relation>({
+    aspect: '4:3',
+    refOf: r => r.thumbId,
+    cropOf: r => r.thumbCrop,
+    titleOf: r => r.name,
+    canEdit: () => isAdmin,
+    onApply: (r, crop) => setRels(rels.map(x => (x.id === r.id ? { ...x, thumbCrop: crop } : x))),
+  });
 
   return (
     <section className="page">
@@ -55,7 +65,7 @@ export default function RelsPage() {
               href={editOn || memberLocked ? undefined : relPath(r)}
               style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
               onClick={!editOn && memberLocked ? () => toast('멤버공개 — 로그인 후 열람할 수 있습니다') : undefined}>
-              <div className="thumb" style={{ position: 'relative' }}>
+              <div className="thumb" style={{ position: 'relative' }} onContextMenu={(e: React.MouseEvent) => thumb.open(e, r)}>
                 <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph={r.thumbClass}
                   label={priv ? '나만보기' : memberLocked ? '멤버공개' : '4:3'} />
               </div>
@@ -80,6 +90,7 @@ export default function RelsPage() {
           );
         })}
       </div>
+      {thumb.node}
     </section>
   );
 }

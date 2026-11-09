@@ -26,7 +26,7 @@ import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { pushNotif, notifyAdmins } from '@/lib/notifStore';
-import { NavLink } from '@/components/ui/NavLink';
+import { NavLink, NavBox } from '@/components/ui/NavLink';
 
 // 접기 문구 (게시판 6.2와 동일)
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
@@ -111,6 +111,16 @@ function ThreadsPageInner() {
   useEffect(() => {
     if (setLoaded && !viewInit) { setView(settings.defaultView); setViewInit(true); }
   }, [setLoaded, viewInit, settings.defaultView]);
+
+  /* 새 탭·새 창으로 연 타래 — 리스트 카드가 진짜 링크(?w=타래id)라서, 그 주소로 열리면 그 타래를 바로 보여 준다 */
+  const wOpened = useRef(false);
+  useEffect(() => {
+    if (wOpened.current || !viewInit || !loaded) return;
+    wOpened.current = true;
+    const id = new URLSearchParams(window.location.search).get('w');
+    if (id && works.some(x => x.id === id)) { setSelId(id); setView('thread'); }
+  }, [viewInit, loaded, works]);
+  const workHref = (id: string) => { const qs = secQuery('threads', sec.id); return '/threads' + (qs ? `${qs}&w=${id}` : `?w=${id}`); };
 
   // 공개범위 → 분류 필터 → 검색, 최근 글 순
   const visible = useMemo(() => works
@@ -315,11 +325,11 @@ function ThreadsPageInner() {
         /* 리스트 보기 — 포스터 카드 그리드 (한 줄 5개, 3:4) */
         <div className="g5">
           {visible.map(w => (
-            <div key={w.id} className="panel thr-card"
-              onClick={() => { setSelId(w.id); setView('thread'); }}
-              /* 우클릭 → 메뉴 → 삭제 확인 모달 (v2.0 사용자 요청) — 리스트 보기에는 삭제 버튼이 없었다 */
-              onContextMenu={e => { if (!canManage(w)) return; e.preventDefault(); setWCtx({ x: e.clientX, y: e.clientY, id: w.id }); }}>
-              <div className="th">
+            <NavBox key={w.id} tag="div" href={workHref(w.id)} className="panel thr-card"
+              onGo={() => { setSelId(w.id); setView('thread'); }}>
+              {/* 이미지 우클릭 → 관리자 메뉴 → 삭제 확인 모달 (v2.0 사용자 요청) — 제목·글 수 쪽은 브라우저 기본 메뉴(새 탭 열기 등) */}
+              <div className="th"
+                onContextMenu={(e: React.MouseEvent) => { if (!canManage(w)) return; e.preventDefault(); e.stopPropagation(); setWCtx({ x: e.clientX, y: e.clientY, id: w.id }); }}>
                 <CroppedBlobImg fileRef={w.posterId} crop={w.posterCrop} ph={w.ph} />
                 <span className="pill dark" style={threadBadgeStyle(cats.find(c => c.id === w.catId))}>
                   {catLabel(cats, w.catId)}
@@ -337,7 +347,7 @@ function ThreadsPageInner() {
                 <div className="row"><b>글</b> {w.posts.length}</div>
                 <div className="row"><b>최근</b> {fmtMD(lastDate(w))}</div>
               </div>
-            </div>
+            </NavBox>
           ))}
         </div>
       ) : (
@@ -500,17 +510,17 @@ function ThreadsPageInner() {
           {/* 우측 작품 리스트 */}
           <div className="panel in-card side" style={{ padding: 10 }}>
             {visible.map(w => (
-              <div key={w.id} className={`thr-item ${sel?.id === w.id ? 'on' : ''}`} onClick={() => setSelId(w.id)}
-                /* 우클릭 → 메뉴 → 삭제 확인 모달 (v2.0 사용자 요청) — 타래 보기의 오른쪽 카드에서도 */
-                onContextMenu={e => { if (!canManage(w)) return; e.preventDefault(); setWCtx({ x: e.clientX, y: e.clientY, id: w.id }); }}>
-                <div className="th">
+              <NavBox key={w.id} tag="div" href={workHref(w.id)} className={`thr-item ${sel?.id === w.id ? 'on' : ''}`} onGo={() => setSelId(w.id)}>
+                {/* 썸네일 우클릭 → 관리자 메뉴 → 삭제 확인 모달 (v2.0 사용자 요청) — 제목·글 수 쪽은 브라우저 기본 메뉴(새 탭 열기 등) */}
+                <div className="th"
+                  onContextMenu={(e: React.MouseEvent) => { if (!canManage(w)) return; e.preventDefault(); e.stopPropagation(); setWCtx({ x: e.clientX, y: e.clientY, id: w.id }); }}>
                   <CroppedBlobImg fileRef={w.posterId} crop={w.posterCrop} ph={w.ph} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <b>{w.title}</b>
                   <small>{catLabel(cats, w.catId)} · 글 {w.posts.length} · {fmtMD(lastDate(w))}</small>
                 </div>
-              </div>
+              </NavBox>
             ))}
           </div>
         </div>

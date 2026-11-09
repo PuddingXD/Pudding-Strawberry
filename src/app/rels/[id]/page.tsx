@@ -107,8 +107,8 @@ const hex6 = (h: string) => {
 
 const noteOf = (m: RelMember) => (m.linkedNote === '상대 캐릭터' ? '' : m.linkedNote ?? '');
 
-function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side, onMoveSide, onFaceCrop }: {
-  member: RelMember; char?: Character; isAdmin: boolean; onGo: () => void; onRemove: () => void;
+function MiniProf({ member, char, isAdmin, onGo, href, onRemove, auUnregistered, side, onMoveSide, onFaceCrop }: {
+  member: RelMember; char?: Character; isAdmin: boolean; onGo: () => void; href?: string; onRemove: () => void;
   auUnregistered?: boolean;   // AU 선택 중인데 이 캐릭터의 AU 프로필이 미등록 (v1.9)
   side?: 'l' | 'r';           // 페어에서 지금 어느 자리인지 (좌우 옮기기 메뉴용, v2.0)
   onMoveSide?: () => void;
@@ -139,26 +139,28 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
   if (!char) return null;
   if (auUnregistered) {
     return (
-      <div className="panel mini-prof" onClick={onGo} style={{ cursor: 'var(--cur-pointer,pointer)', textAlign: 'center', padding: '44px 20px' }}>
+      <NavBox tag="div" href={href} className="panel mini-prof" onGo={onGo} onClick={href ? undefined : onGo} style={{ cursor: 'var(--cur-pointer,pointer)', textAlign: 'center', padding: '44px 20px' }}>
         <b style={{ fontSize: 15, letterSpacing: '.08em', fontFamily: familyOf(char.fontId) }}>{char.name}</b>
         <p className="hint" style={{ marginTop: 10 }}>이 AU의 프로필이 아직 등록되지 않았습니다<br />카드를 누르면 캐릭터 페이지에서 등록할 수 있습니다</p>
-      </div>
+      </NavBox>
     );
   }
   return (
-    <div className="panel mini-prof" onClick={onGo} style={{ cursor: 'var(--cur-pointer,pointer)' }}
-      onContextMenu={e => { if (!isAdmin) return; e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY }); }}>
+    <NavBox tag="div" href={href} className="panel mini-prof" onGo={onGo} onClick={href ? undefined : onGo} style={{ cursor: 'var(--cur-pointer,pointer)' }}>
       <div className="hd">
+        {/* 얼굴 사진 우클릭 = 관리자 메뉴(위치 조정·옮기기·제거) — 이름·카드 다른 자리는 브라우저 기본 메뉴(새 탭 열기) */}
         {rep ? (
-          <div className="face"
+          <div className="face" data-nonav=""
             style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in' }}
+            onContextMenu={e => { if (!isAdmin) return; e.preventDefault(); e.stopPropagation(); setCtx({ x: e.clientX, y: e.clientY }); }}
             onClick={e => { e.stopPropagation(); setLb(0); }}>
             {/* 얼굴칸은 1:1 — 캐릭터의 3:4 썸네일 크롭을 그대로 쓰면 어긋나므로
                 자관에서 따로 잡아 둔 값이 있으면 그것을 쓴다 (우클릭 > 썸네일 위치) */}
             <CroppedBlobImg fileRef={rep} crop={member.faceCrop ?? char.thumbCrop} />
           </div>
         ) : (
-          <div className={`face ph ${char.thumbClass}`} />
+          <div className={`face ph ${char.thumbClass}`}
+            onContextMenu={e => { if (!isAdmin) return; e.preventDefault(); e.stopPropagation(); setCtx({ x: e.clientX, y: e.clientY }); }} />
         )}
         <div>
           {/* 이름 폰트는 캐릭터 프로필에서 지정한 것을 그대로 쓰고,
@@ -210,7 +212,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
       {rest.length > 0 && (
         <div className="card-thumbs">
           {rest.map((r, i) => (
-            <div key={r} className="t"
+            <div key={r} className="t" data-nonav=""
               style={{ position: 'relative', overflow: 'hidden', cursor: 'zoom-in' }}
               onClick={e => { e.stopPropagation(); setLb((rep ? 1 : 0) + i); }}>
               <BlobImg fileRef={r} ph="" label="" />
@@ -218,7 +220,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
           ))}
         </div>
       )}
-      {lb !== null && <Lightbox srcs={gallery} index={lb} onClose={() => setLb(null)} />}
+      {lb !== null && <div onClick={e => e.stopPropagation()}><Lightbox srcs={gallery} index={lb} onClose={() => setLb(null)} /></div>}
 
       {/* 우클릭 메뉴 — 관리자만 (멤버 제거) */}
       {ctx && createPortal(
@@ -236,7 +238,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         </div>,
         document.body,
       )}
-    </div>
+    </NavBox>
   );
 }
 
@@ -1051,7 +1053,7 @@ function RelDetailInner() {
                 auUnregistered={auUnregOf(pairSlots[0].charId)}
                 side="l" onMoveSide={() => moveSide(pairSlots[0]!.charId)}
                 onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
-                onGo={() => router.push(charHref(pairSlots[0]!.charId))}
+                onGo={() => router.push(charHref(pairSlots[0]!.charId))} href={charHref(pairSlots[0]!.charId)}
                 onRemove={() => removeMember(pairSlots[0]!.charId)} />
             : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
           <div className={`rel-center ${single ? 'one-mode' : ''}`}
@@ -1113,7 +1115,7 @@ function RelDetailInner() {
                 auUnregistered={auUnregOf(pairSlots[1].charId)}
                 side="r" onMoveSide={() => moveSide(pairSlots[1]!.charId)}
                 onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
-                onGo={() => router.push(charHref(pairSlots[1]!.charId))}
+                onGo={() => router.push(charHref(pairSlots[1]!.charId))} href={charHref(pairSlots[1]!.charId)}
                 onRemove={() => removeMember(pairSlots[1]!.charId)} />
             : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
         </div>
@@ -1128,16 +1130,16 @@ function RelDetailInner() {
               const mm = asAu(m) ?? m;
               const rep = c.thumbId ?? c.arts?.[0];
               return (
-                <div key={m.charId} className="mrow" style={{ ['--cc' as string]: rgbTriple(c.color) }}
-                  onClick={() => router.push(charHref(m.charId))}
-                  onContextMenu={e => {
-                    if (!isAdmin || !rep) return;
-                    e.preventDefault();
-                    setMrowCtx({ x: e.clientX, y: e.clientY, charId: m.charId, ref: rep, crop: mm.faceCrop });
-                  }}>
+                <NavBox key={m.charId} tag="div" href={charHref(m.charId)} className="mrow" style={{ ['--cc' as string]: rgbTriple(c.color) }}>
                   {/* 이미지가 있으면 어두운 자리표시 배경(ph)을 깔지 않는다 — 투명 PNG가 검게 보이던 것.
                       2인 자관 카드와 같이 밝은 바탕에 얹고, 위치는 1:1 얼굴칸 크롭(우클릭 > 썸네일 위치 조정) */}
-                  <div className={`face ${rep && !unreg ? 'has-img' : `ph ${c.thumbClass}`}`}>
+                  <div className={`face ${rep && !unreg ? 'has-img' : `ph ${c.thumbClass}`}`}
+                    onContextMenu={e => {
+                      if (!isAdmin || !rep) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMrowCtx({ x: e.clientX, y: e.clientY, charId: m.charId, ref: rep, crop: mm.faceCrop });
+                    }}>
                     {!unreg && rep && (
                       <CroppedBlobImg fileRef={rep} crop={mm.faceCrop ?? c.thumbCrop} ph={c.thumbClass} />
                     )}
@@ -1163,9 +1165,9 @@ function RelDetailInner() {
                     {(c.colors ?? []).slice(0, 3).map(p => <i key={p.hex + p.label} style={{ background: p.hex }} />)}
                   </div>
                   {isAdmin && (
-                    <span className="rm" onClick={e => { e.stopPropagation(); removeMember(m.charId); }}>제거</span>
+                    <span className="rm" data-nonav="" onClick={e => { e.stopPropagation(); removeMember(m.charId); }}>제거</span>
                   )}
-                </div>
+                </NavBox>
               );
             })}
             {isAdmin && rel.members.length < 6 && (
@@ -1208,13 +1210,15 @@ function RelDetailInner() {
         return (
           <div className="rel-doc-icons">
             {shown.map(d => (
-              <button key={d.id} data-tip={(isLinkDoc(d) ? d.linkTip?.trim() : '') || d.title || '문서'}
-                onClick={() => {
-                  if (isLinkDoc(d)) {
-                    const href = safeHref(normalizeInternalLink(d.linkUrl ?? ''));
-                    if (href !== '#') window.open(href, '_blank', 'noopener,noreferrer');
-                  } else router.push(`/rels/${rel.id}/read?doc=${d.id}`);
-                }}>{d.icon}</button>
+              isLinkDoc(d) ? (
+                // 「링크」 문서 — 걸어 둔 주소를 새 탭으로 (진짜 링크라 우클릭 > 새 창 열기도 된다)
+                safeHref(normalizeInternalLink(d.linkUrl ?? '')) === '#'
+                  ? <button key={d.id} data-tip={d.linkTip?.trim() || d.title || '문서'}>{d.icon}</button>
+                  : <NavLink key={d.id} href={safeHref(normalizeInternalLink(d.linkUrl ?? ''))} target="_blank" rel="noopener noreferrer"
+                      data-tip={d.linkTip?.trim() || d.title || '문서'}>{d.icon}</NavLink>
+              ) : (
+                <NavLink key={d.id} href={`/rels/${rel.id}/read?doc=${d.id}`} data-tip={d.title || '문서'}>{d.icon}</NavLink>
+              )
             ))}
           </div>
         );

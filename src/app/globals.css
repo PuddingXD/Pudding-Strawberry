@@ -2192,6 +2192,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rel-doc-icons{display:flex;flex-wrap:wrap;gap:9px;margin:30px auto 0;max-width:1010px}   /* 위 블록과의 간격은 타임라인·역극 사이(30px)와 같게 */
 .rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.15s;cursor:var(--cur-pointer,pointer)}
 .rel-doc-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
+.rel-doc-icons a{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons a:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
 
 /* 글머리·번호 목록 — 표시는 본문 왼쪽 끝에 맞추고, 줄이 넘어가면 글자 시작 위치에 맞춰 들여쓴다 (모든 에디터·본문 공통) */
 :is(.re-content,.prose,.post-body,.html-body,.doc-body) :is(ul,ol){list-style:none;margin:0 0 1.1em;padding:0}
