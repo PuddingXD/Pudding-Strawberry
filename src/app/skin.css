@@ -545,6 +545,11 @@
 .g-item .thumb{border-bottom:1px solid var(--b-line-soft,var(--line))}
 /* 상단바 로고 이미지 (사용자 요청) — 메뉴 폭을 넘지 않게 */
 .brand .brand-img{display:block;max-width:100%;width:auto;object-fit:contain}
+/* 모바일 상단 바(높이 58px)에서는 PC에서 정한 로고 높이를 그대로 쓰면 바 밖으로 넘쳐 잘린다 —
+   설정한 높이와 40px 중 작은 쪽으로 줄이고, 가로도 화면의 절반까지만 (비율은 유지) */
+@media (max-width:620px){
+  .brand .brand-img{height:min(var(--logo-h,40px),40px) !important;max-width:55vw}
+}
 
 /* ─── 달력 (사용자 요청) — 날짜 칸이 조약돌처럼 따로 놀지 않게 한 판으로, 칸 사이는 가는 선 ───
    판 배경을 선 색으로 깔고 칸 사이를 1px 띄워 안쪽 선을 만든다 (바깥은 테두리 한 줄) */

@@ -186,7 +186,7 @@ export function TopBar() {
         {/* 로고 이미지가 있으면 글자 대신 그림 (사용자 요청 — 환경설정 > 디자인 > 로고 이미지) */}
         {siteLoaded && (site.logoImg && logoUrl
           // eslint-disable-next-line @next/next/no-img-element
-          ? <img className="brand-img" src={logoUrl} alt={site.title} style={{ height: site.logoH ?? 40 }} />
+          ? <img className="brand-img" src={logoUrl} alt={site.title} style={{ height: site.logoH ?? 40, ['--logo-h' as string]: `${site.logoH ?? 40}px` } as React.CSSProperties} />
           : site.title)}
         {siteLoaded && site.subtitle && <small className={`al-${site.align}`}>{site.subtitle}</small>}
       </div>

@@ -158,8 +158,8 @@ export default function MemoPage() {
               className={`postit ${focusId === m.id ? 'hl' : ''} ${canTouch(m) ? '' : 'ro'}`}
               style={{
                 left: `${m.x}%`, top: `${m.y}%`, zIndex: m.z,
-                transform: `rotate(${m.rot}deg)`, background: m.color, width: MEMO_SIZE_W[m.size],
-              }}
+                transform: `rotate(${m.rot}deg)`, background: m.color, width: MEMO_SIZE_W[m.size], ['--mw' as string]: `${MEMO_SIZE_W[m.size]}px`,
+              } as React.CSSProperties}
               onPointerDown={e => onDown(e, m)}
               onContextMenu={e => onCtx(e, m)}>
               {settings.showAuthor && <b>{m.author}</b>}

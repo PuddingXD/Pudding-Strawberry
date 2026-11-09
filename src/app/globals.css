@@ -1487,7 +1487,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* ---------- TRPG 도토리 (4.15) — 4열 카드 그리드 ---------- */
 .dt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 @media (max-width:960px){.dt-grid{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:620px){.dt-grid{grid-template-columns:1fr}}
+@media (max-width:620px){.dt-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}   /* 모바일도 한 줄에 2개 */
 .dt-card{padding:0;overflow:hidden;transition:.2s}
 .dt-card:hover{transform:translateY(-3px);box-shadow:var(--sh-md)}
 .dt-card .th{position:relative;aspect-ratio:16/9;overflow:hidden}
@@ -2067,7 +2067,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .tc-grid{grid-template-columns:repeat(2,1fr);gap:10px}
   /* 스티커 메모장 — 리스트를 보드 아래로 (v1.9 사용자 확정) */
   .memo-layout{grid-template-columns:1fr}
-  .memoboard{height:440px}
+  .memoboard{height:480px;container-type:inline-size}
+  /* 모바일 메모: 판이 좁아 PC 크기 그대로면 다닥다닥 붙는다 — 메모를 판 폭에 비례해 줄이되 글자는 읽을 수 있게 (PC는 그대로) */
+  .memoboard .postit{width:calc(var(--mw,158px)*.68) !important;padding:9px 9px 12px;font-size:calc(10.5px*var(--fs,1));line-height:1.55;box-shadow:0 5px 12px rgba(0,0,0,.28)}
+  .memoboard .postit b{font-size:calc(8.5px*var(--fs,1));margin-bottom:4px}
   /* 스케줄러 — 달력 대신 단순 일정 나열 (v1.9 사용자 확정, cal-mlist는 page.tsx 렌더) */
   .cal-layout > .panel.cal{display:none}
   /* TRPG 로그 — 필터 사이드는 리스트 아래로 (모바일은 티켓 스킨 대신 기본형, v1.9) */
