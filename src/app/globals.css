@@ -2275,3 +2275,5 @@ table[data-talign="right"],.re-content .tableWrapper[data-talign="right"] > tabl
 .re-pen-now{display:block;width:44px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.2)}
 .re-pop-go{background:var(--ink);color:#fff;border-color:var(--ink)}
 .re-pop-go:hover{background:var(--ink);color:#fff;opacity:.88}
+
+.re-lineicon{display:block;width:14px;height:0;border-top:2.5px solid currentColor;margin:5px 0 3px}

@@ -298,11 +298,11 @@ function BorderBtn({ pen, setPen, onApply }: {
     : id === 'solid' ? { ...pen, style: 'solid', width: pen.width >= 3 ? 1 : pen.width } : { ...pen, style: id });
   return (
     <>
-      <button ref={btn} type="button" data-tip="테두리 — 칸을 끌어 선택한 뒤 범위·선·굵기·색을 정해 적용" className={`re-btn ${open ? 'on' : ''}`}
+      <button ref={btn} type="button" data-tip="테두리 모양" className={`re-btn ${open ? 'on' : ''}`}
         onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>테두리 ▾</button>
       {open && (
         <Pop anchor={btn.current} onClose={() => setOpen(false)} className="wide">
-          <div className="re-bp-h">적용 범위 <small>(칸을 끌어 선택. 선택이 없으면 커서가 든 칸)</small></div>
+          <div className="re-bp-h">적용 범위 <small>(칸을 끌어 선택 · 없으면 커서가 든 칸 · 색은 옆 「테두리 배경색」)</small></div>
           <div className="re-bp-grid">
             {SCOPES.map(([id, label]) => (
               <button key={id} type="button" className={`re-bp-s ${scope === id ? 'on' : ''}`} onClick={() => setScope(id)}>{label}</button>
@@ -321,18 +321,6 @@ function BorderBtn({ pen, setPen, onApply }: {
             <button type="button" className="re-pop-btn" onClick={() => setPen({ ...pen, width: Math.max(0.5, pen.width - 0.5) })}>−</button>
             <span className="re-tt-v">{pen.width}pt</span>
             <button type="button" className="re-pop-btn" onClick={() => setPen({ ...pen, width: Math.min(8, pen.width + 0.5) })}>＋</button>
-          </div>
-          <div className="re-bp-h">색</div>
-          <div className="re-sw">
-            {SWATCHES.slice(0, 15).map(c => (
-              <button key={c} type="button" className={`re-sw-i ${pen.color === c ? 'sel' : ''}`} style={{ background: c }} aria-label={c} onClick={() => setPen({ ...pen, color: c })} />
-            ))}
-          </div>
-          <div className="re-pop-row">
-            <label className="re-pop-lbl">직접 고르기
-              <input type="color" value={/^#[0-9a-f]{6}$/i.test(pen.color) ? pen.color : '#000000'} onChange={e => setPen({ ...pen, color: e.target.value })} />
-            </label>
-            <i className="re-pen-now" style={{ background: pen.color }} />
           </div>
           <div className="re-pop-row">
             <button type="button" className="re-pop-btn" onClick={() => onApply(scope, true)}>선택 범위 선 지우기</button>
@@ -679,32 +667,37 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <TBtn title="아래에 행 추가" label="↓행+" onClick={() => { if (tRows < MAX_TABLE) C().addRowAfter().run(); }} />
           <TBtn title="왼쪽에 열 추가" label="←열+" onClick={() => { if (tCols < MAX_TABLE) C().addColumnBefore().run(); }} />
           <TBtn title="오른쪽에 열 추가" label="→열+" onClick={() => { if (tCols < MAX_TABLE) C().addColumnAfter().run(); }} />
-          <TBtn title="이 행 삭제" label="행−" onClick={() => C().deleteRow().run()} />
-          <TBtn title="이 열 삭제" label="열−" onClick={() => C().deleteColumn().run()} />
+          <TBtn title="행 삭제" label="행−" onClick={() => C().deleteRow().run()} />
+          <TBtn title="열 삭제" label="열−" onClick={() => C().deleteColumn().run()} />
           <span className="re-sep" />
-          <TBtn title="선택한 칸 합치기 (칸을 끌어서 여러 칸 선택)" label="병합" onClick={() => C().mergeCells().run()} />
-          <TBtn title="합친 칸 나누기" label="분할" onClick={() => C().splitCell().run()} />
+          <TBtn title="셀 병합" label="병합" onClick={() => C().mergeCells().run()} />
+          <TBtn title="셀 분할" label="분할" onClick={() => C().splitCell().run()} />
           <span className="re-sep" />
+          <TBtn title="행 높이 줄이기" label="행 ▾" onClick={() => setRowHeight(Math.max(20, rowHeightNow() - 10))} />
+          <TBtn title="행 높이 늘리기" label="행 ▴" onClick={() => setRowHeight(rowHeightNow() + 10)} />
+          <span className="re-sep" />
+          <button type="button" className="re-btn" onMouseDown={e => e.preventDefault()} onClick={equalCols}>열 균등</button>
+          <button type="button" className="re-btn" onMouseDown={e => e.preventDefault()} onClick={equalRows}>행 균등</button>
+          {/* 다음 줄 — 색·테두리·맞춤·표 놓기 (모바일은 한 줄 스크롤이라 구분선만) */}
+          <span className="re-br" />
+          <span className="re-sep re-m-only" />
           <ColorBtn title="칸 배경색" label="▧" current={cellAttr('backgroundColor')}
             onPick={c => C().setCellAttribute('backgroundColor', c).run()}
             onClear={() => C().setCellAttribute('backgroundColor', null).run()} />
+          <ColorBtn title="테두리 배경색" label={<span className="re-lineicon" />} current={pen.color}
+            onPick={c => setPen({ ...pen, color: c })} onClear={() => setPen({ ...pen, color: '#000000' })} />
           <BorderBtn pen={pen} setPen={setPen} onApply={applyBorder} />
           <span className="re-sep" />
-          <TBtn title="칸 안 위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
-          <TBtn title="칸 안 가운데 맞춤" label="↕" on={cellAttr('vAlign') === 'middle'} onClick={() => C().setCellAttribute('vAlign', 'middle').run()} />
-          <TBtn title="칸 안 아래쪽 맞춤" label="⤓" on={cellAttr('vAlign') === 'bottom'} onClick={() => C().setCellAttribute('vAlign', 'bottom').run()} />
+          <TBtn title="위쪽 맞춤" label="⤒" on={cellAttr('vAlign') === 'top'} onClick={() => C().setCellAttribute('vAlign', 'top').run()} />
+          <TBtn title="가운데 맞춤" label="↕" on={cellAttr('vAlign') === 'middle'} onClick={() => C().setCellAttribute('vAlign', 'middle').run()} />
+          <TBtn title="아래쪽 맞춤" label="⤓" on={cellAttr('vAlign') === 'bottom'} onClick={() => C().setCellAttribute('vAlign', 'bottom').run()} />
+          <TBtn title="높이 자동" label="행 자동" onClick={() => setRowHeight(null)} />
           <span className="re-sep" />
-          <TBtn title="열 폭 균등" label="열 균등" onClick={equalCols} />
-          <TBtn title="행 높이 균등" label="행 균등" onClick={equalRows} />
-          <TBtn title="이 행 높이 줄이기" label="행 ▾" onClick={() => setRowHeight(Math.max(20, rowHeightNow() - 10))} />
-          <TBtn title="이 행 높이 늘리기" label="행 ▴" onClick={() => setRowHeight(rowHeightNow() + 10)} />
-          <TBtn title="이 행 높이 자동으로" label="행 자동" onClick={() => setRowHeight(null)} />
+          <TBtn title="좌측 정렬" label="표◧" on={(tbl?.node.attrs.tableAlign ?? 'left') === 'left'} onClick={() => setTable({ tableAlign: 'left' })} />
+          <TBtn title="가운데 정렬" label="표◫" on={tbl?.node.attrs.tableAlign === 'center'} onClick={() => setTable({ tableAlign: 'center' })} />
+          <TBtn title="우측 정렬" label="표◨" on={tbl?.node.attrs.tableAlign === 'right'} onClick={() => setTable({ tableAlign: 'right' })} />
           <span className="re-sep" />
-          <TBtn title="표 왼쪽 놓기" label="표◧" on={(tbl?.node.attrs.tableAlign ?? 'left') === 'left'} onClick={() => setTable({ tableAlign: 'left' })} />
-          <TBtn title="표 가운데 놓기" label="표◫" on={tbl?.node.attrs.tableAlign === 'center'} onClick={() => setTable({ tableAlign: 'center' })} />
-          <TBtn title="표 오른쪽 놓기" label="표◨" on={tbl?.node.attrs.tableAlign === 'right'} onClick={() => setTable({ tableAlign: 'right' })} />
-          <span className="re-sep" />
-          <TBtn title="표 지우기" label="표 삭제" onClick={() => C().deleteTable().run()} />
+          <TBtn title="표 삭제" label="표 삭제" onClick={() => C().deleteTable().run()} />
         </div>
       )}
       {linkOpen && !srcMode && (
