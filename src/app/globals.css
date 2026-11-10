@@ -2302,3 +2302,15 @@ button.re-sp-i:hover{background:rgba(0,0,0,.05)}
 
 /* 문서 탭 옆 끌기 표시(⠿) — 메뉴 글씨색을 따라 배경에 묻히지 않게 */
 .doc-side .drag-h{color:var(--top-fg,var(--faint))}
+
+/* 라이트박스 확대·축소 */
+.lightbox img{touch-action:none;user-select:none;-webkit-user-drag:none;cursor:zoom-in;will-change:transform}
+.lightbox img.zoomed{cursor:grab}
+.lightbox img.zoomed:active{cursor:grabbing}
+.lightbox .zm{position:fixed;bottom:16px;right:22px;display:flex;gap:2px;align-items:center;background:rgba(255,255,255,.12);border-radius:20px;padding:2px;z-index:1}
+.lightbox .zm button{min-width:32px;height:30px;border-radius:16px;color:#fff;font-size:16px;display:grid;place-items:center;padding:0 6px}
+.lightbox .zm button:hover{background:rgba(255,255,255,.2)}
+.lightbox .zm .pc{font-size:11.5px;min-width:52px;letter-spacing:.04em}
+@media(max-width:620px){.lightbox .zm{right:12px;bottom:12px}.lightbox .cnt{bottom:70px}}
+
+.lightbox{overflow:hidden}
