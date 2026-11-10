@@ -1,6 +1,7 @@
 'use client';
 // 감상타래 (4.17) — 본 것·읽은 것의 감상을 트위터식 타래로.
 // 보기 2종(타래/리스트, 기본 보기는 환경설정) · 분류 필터 · 작품명 검색 · 이어쓰기 컴포저
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { nowIso } from '@/lib/order';
 import { createPortal } from 'react-dom';
@@ -122,12 +123,13 @@ function ThreadsPageInner() {
   }, [viewInit, loaded, works]);
   const workHref = (id: string) => { const qs = secQuery('threads', sec.id); return '/threads' + (qs ? `${qs}&w=${id}` : `?w=${id}`); };
 
+  const noCat = works.filter(w => (isAdmin || w.visibility === 'public' || (w.visibility === 'member' && !!user)) && lacksCat(w.catId, cats.map(c => c.id))).length;   // 분류 없는 작품 수
   // 공개범위 → 분류 필터 → 검색, 최근 글 순
   const visible = useMemo(() => works
     .filter(w => isAdmin || w.visibility === 'public' || (w.visibility === 'member' && user))
-    .filter(w => cat === 'all' || w.catId === cat)
+    .filter(w => cat === 'all' || (cat === NOCAT ? lacksCat(w.catId, cats.map(c => c.id)) : w.catId === cat))
     .filter(w => !q || w.title.includes(q))
-    .sort((a, b) => lastDate(b).localeCompare(lastDate(a))), [works, isAdmin, user, cat, q]);
+    .sort((a, b) => lastDate(b).localeCompare(lastDate(a))), [works, isAdmin, user, cat, q, cats]);
 
   const sel = visible.find(w => w.id === selId) ?? visible[0];
   /* 긴 타래는 최신 글만 (루넬갠홈에서 이식 — 「20개 이상 길어지면 윗부분을 더보기로 줄이고 최신만, 전체보기 버튼도」).
@@ -304,6 +306,7 @@ function ThreadsPageInner() {
           {cats.map(c => (
             <button key={c.id} className={cat === c.id ? 'on' : ''} onClick={() => setCat(c.id)}>{c.label}</button>
           ))}
+          {noCat > 0 && <button className={cat === NOCAT ? 'on' : ''} onClick={() => setCat(NOCAT)}>{NOCAT_LABEL} {noCat}</button>}
         </div>
         <div className="thr-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div className="seg">

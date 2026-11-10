@@ -2,6 +2,7 @@
 // 큰 그림 게시판 (v2.1 사용자 요청 — 「이미지를 좀 더 크게 볼 수 있는 게시판」).
 // 한 줄에 글 하나 — 첫 이미지를 원본 크기(폭이 모자라면 축소만)로 크게, 아래에 말머리·제목·날짜.
 // 글은 갤러리 글과 같은 모양(BackupPost)이고 작성·상세도 갤러리 것을 같이 쓴다. 말머리 탭 · 검색 · 6개씩 페이지
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -43,9 +44,11 @@ function FeedPageInner() {
   const [q, setQ] = useState('');
   const [unveiled, setUnveiled] = useState<Record<string, boolean>>({});
 
+  const catLabels = cats.map(c => c.label);
+  const noCat = posts.filter(p => (isAdmin || p.visibility === 'public' || (p.visibility === 'member' && !!user)) && lacksCat(p.category, catLabels)).length;   // 말머리 없는 글 수
   const visible = posts
     .filter(p => isAdmin || p.visibility === 'public' || (p.visibility === 'member' && user))
-    .filter(p => !cat || p.category === cat)
+    .filter(p => !cat || (cat === NOCAT ? lacksCat(p.category, catLabels) : p.category === cat))
     .filter(p => !q || p.title.includes(q) || p.category.includes(q)
       || (p.tags ?? []).some(t => t.toLowerCase().includes(q.toLowerCase())))
     .sort((a, b) => b.date.localeCompare(a.date));   // 최신 글이 위
@@ -73,6 +76,7 @@ function FeedPageInner() {
           {cats.map(c => (
             <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
           ))}
+          {noCat > 0 && <button className={cat === NOCAT ? 'on' : ''} onClick={() => setCat(NOCAT)}>{NOCAT_LABEL} {noCat}</button>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <SearchBar onSearch={setQ} />

@@ -16,7 +16,8 @@ import { KInput, KSelect, KRadio, KCheck, KDate } from '@/components/ui/Kit';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue } from '@/components/ui/CropEditor';
-import { putBlob, useBlobUrl, isVideoRef } from '@/lib/blobStore';
+import { putBlob, useBlobUrl, isVideoRef, MAX_UPLOAD, oversizeMessage } from '@/lib/blobStore';
+import { isServerMode } from '@/lib/backend';
 import { useToast } from '@/components/ui/Toast';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
@@ -91,10 +92,17 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
   const parseTags = (v: string) =>
     [...new Set(v.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean))];
   // 목록이 로드되면 첫 말머리를 기본값으로 (등록 화면)
+  /* homemade 갤러리는 쓴 사람에 따라 말머리를 미리 골라 둔다 — 관리자 = Pudding · 회원 = Gomju (v2.1 사용자 요청).
+     갤러리 이름·별명이 homemade(홈메이드)인 곳만, 새 글일 때만. 고른 뒤 바꾸는 것은 자유 */
+  const secItem = sec.items.find(x => x.id === secId);
+  const isHomemade = /homemade|홈메이드/i.test(`${secItem?.name ?? ''} ${secItem?.slug ?? ''}`);
+  const autoCat = isNew && isHomemade
+    ? galleryCats.find(c => c.label.toLowerCase().includes(isAdmin ? 'pudding' : 'gomju'))?.label
+    : undefined;
   useEffect(() => {
-    if (!category && galleryCats[0]) setCategory(galleryCats[0].label);
+    if (!category && galleryCats[0]) setCategory(autoCat ?? galleryCats[0].label);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galleryCats.length]);
+  }, [galleryCats.length, autoCat]);
   const [madeDate, setMadeDate] = useState(initial?.madeDate ?? '');
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
   const [foldType, setFoldType] = useState<FoldType | 'none'>(initial?.fold?.type ?? 'none');
@@ -124,13 +132,23 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
     );
   }
 
-  const addFiles = (list: FileList | null) => {
-    if (!list || list.length === 0) return;
+  const addFiles = (fl: FileList | null) => {
+    if (!fl || fl.length === 0) return;
     // input.files는 라이브 FileList — 핸들러가 끝나며 value가 초기화되면 비워지므로
     // 상태 업데이터(나중에 실행) 안이 아니라 지금 즉시 복사해야 함 (업로드가 번갈아 씹히던 버그)
-    const big = Array.from(list).find(x => x.type.startsWith('video/') && x.size > 50 * 1048576);
+    let list = Array.from(fl);
+    // 서버 저장소는 20MB 초과를 받지 않는다 — 고르는 자리에서 걸러 알린다
+    if (isServerMode()) {
+      const over = list.filter(x => x.size >= MAX_UPLOAD);
+      if (over.length) {
+        toast(oversizeMessage(over[0].size, over[0].name) + (over.length > 1 ? ` 외 ${over.length - 1}개` : ''));
+        list = list.filter(x => x.size < MAX_UPLOAD);
+        if (list.length === 0) return;
+      }
+    }
+    const big = list.find(x => x.type.startsWith('video/') && x.size > 50 * 1048576);
     if (big) toast('영상이 50MB를 넘으면 서버 저장소 한도에 걸려 업로드가 실패할 수 있습니다');
-    const items: UpFile[] = Array.from(list).filter(x => x.type.startsWith('image/') || x.type.startsWith('video/')).map(x => ({
+    const items: UpFile[] = list.filter(x => x.type.startsWith('image/') || x.type.startsWith('video/')).map(x => ({
       id: newId(), name: x.name, size: x.size, url: URL.createObjectURL(x), file: x, original: true,
     }));
     setFiles(f => [...f, ...items]);

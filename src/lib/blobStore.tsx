@@ -77,8 +77,22 @@ async function hashOf(blob: Blob): Promise<string | null> {
   }
 }
 
+/* 서버 저장소(Storage 보안 규칙)가 한 번에 20MB 초과 업로드를 막는다 — 올려 보기 전에 알린다 */
+export const MAX_UPLOAD = 20 * 1048576;
+export const OVERSIZE_EVT = 'ohome-oversize';
+export function oversizeMessage(size: number, name?: string): string {
+  return `20MB를 넘는 파일은 올릴 수 없습니다 — ${name ? `${name} ` : ''}(${(size / 1048576).toFixed(1)}MB)`;
+}
+
 /** Blob 저장 → 참조 문자열 반환 (서버 모드: 공개 URL · 로컬 모드: 파일 id) */
 export async function putBlob(blob: Blob): Promise<string> {
+  if (isServerMode() && blob.size >= MAX_UPLOAD) {
+    const name = (blob as File).name;
+    window.dispatchEvent(new CustomEvent(OVERSIZE_EVT, { detail: { size: blob.size, name } }));
+    const err = new Error(oversizeMessage(blob.size, name));
+    err.name = 'OversizeError';
+    throw err;
+  }
   // 큰 영상은 중복 검사를 건너뛴다 — 해시를 구하려면 파일 전체를 메모리에 올려야 해서 부담이 크다
   const key = blob.size > 30 * 1048576 ? null : await hashOf(blob);
   const hit = key ? sent.get(key) : undefined;

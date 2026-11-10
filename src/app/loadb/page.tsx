@@ -1,5 +1,6 @@
 'use client';
 // 그림게시판 로드뷰 (4.10) — 목록 없이 최신순 즉시 표시 · 좌 그림/우 댓글 · 즉시 업로드 · 접기
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { nowIso } from '@/lib/order';
 import { useAuth } from '@/lib/auth';
@@ -292,8 +293,10 @@ function RoadviewPageInner() {
   const editLevel = (c: Comment): 'free' | null => (user && c.authorId === user.id ? 'free' : null);
   const delLevel = (c: Comment): 'free' | null => (isAdmin || (user && c.authorId === user.id) ? 'free' : null);
 
+  const catLabels = cats.map(c => c.label);
+  const noCat = items.filter(it => lacksCat(it.category, catLabels)).length;   // 말머리 없는 글 수
   const visible = items
-    .filter(it => !cat || it.category === cat)   // 말머리 탭 (v2.1) — ALL이면 전부
+    .filter(it => !cat || (cat === NOCAT ? lacksCat(it.category, catLabels) : it.category === cat))   // 말머리 탭 (v2.1) — ALL이면 전부
     .filter(it => !q || it.author.includes(q)
       || padNo(it.no).includes(q) || String(it.no ?? '').includes(q));
 
@@ -329,6 +332,7 @@ function RoadviewPageInner() {
             {cats.map(c => (
               <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
             ))}
+            {noCat > 0 && <button className={cat === NOCAT ? 'on' : ''} onClick={() => setCat(NOCAT)}>{NOCAT_LABEL} {noCat}</button>}
           </div>
         </div>
       )}

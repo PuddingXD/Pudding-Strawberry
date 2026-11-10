@@ -3,6 +3,7 @@
 // 쓰기·수정은 페이지(/treview/write · /treview/[id]/edit). 말머리는 환경설정 > 게시판 관리 「TRPG 리뷰 말머리」,
 // 글쓰기 권한은 환경설정 「권한」(기본: 가입자). 수정은 쓴 사람·관리자·글쓰기 권한이 있는 회원 —
 // 저장할 때 editorIds에 적고, 옛 글은 관리자가 열 때 채운다
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -71,9 +72,12 @@ function ReviewPageInner() {
 
   const canWrite = !!user && canWriteReview(menuSet, sec.id, { loggedIn: !!user, isAdmin, id: user?.id });
   const query = q.trim().toLowerCase();
+  const catLabels = cats.map(c => c.label);
+  const canSee = (r: (typeof rows)[number]) => isAdmin || r.visibility === 'public' || (r.visibility === 'member' && !!user) || (!!user && r.authorId === user.id);
+  const noCat = rows.filter(r => canSee(r) && lacksCat(r.category, catLabels)).length;   // 말머리 없는 글 수
   const visible = rows
-    .filter(r => isAdmin || r.visibility === 'public' || (r.visibility === 'member' && !!user) || (!!user && r.authorId === user.id))
-    .filter(r => !cat || r.category === cat)
+    .filter(r => canSee(r))
+    .filter(r => !cat || (cat === NOCAT ? lacksCat(r.category, catLabels) : r.category === cat))
     .filter(r => !query || r.title.toLowerCase().includes(query) || r.rule.toLowerCase().includes(query)
       || r.category.toLowerCase().includes(query) || reviewSearchText(r).toLowerCase().includes(query))
     .sort((a, b) => (b.playDate ?? b.date.slice(0, 10)).localeCompare(a.playDate ?? a.date.slice(0, 10)) || b.date.localeCompare(a.date));
@@ -97,6 +101,7 @@ function ReviewPageInner() {
           {cats.map(c => (
             <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
           ))}
+          {noCat > 0 && <button className={cat === NOCAT ? 'on' : ''} onClick={() => setCat(NOCAT)}>{NOCAT_LABEL} {noCat}</button>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <SearchBar placeholder="시나리오·룰·말머리·이름·한줄평 검색" onSearch={setQ} />

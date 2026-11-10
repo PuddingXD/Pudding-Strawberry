@@ -1,6 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 그림백업게시판 (4.11) — 갤러리/리스트 토글 · 로그/단일 뱃지 · 접기 썸네일 블러
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -60,9 +61,11 @@ function BackupPageInner() {
     setCtx({ x: e.clientX, y: e.clientY, post: p });
   };
 
+  const catLabels = cats.map(c => c.label);
+  const noCat = posts.filter(p => (isAdmin || p.visibility === 'public' || (p.visibility === 'member' && !!user)) && lacksCat(p.category, catLabels)).length;   // 말머리 없는 글 수
   const visible = sortBackup(posts)   // 올린 시각 순 (관리자 글·회원 글 섞임 방지) — 수동 순서(ord)가 있으면 그 자리 유지
     .filter(p => isAdmin || p.visibility === 'public' || (p.visibility === 'member' && user))
-    .filter(p => !cat || p.category === cat)   // 말머리 탭 — ALL이면 전부
+    .filter(p => !cat || (cat === NOCAT ? lacksCat(p.category, catLabels) : p.category === cat))   // 말머리 탭 — ALL이면 전부
     .filter(p => !q || p.title.includes(q) || p.category.includes(q)
       || (p.tags ?? []).some(t => t.toLowerCase().includes(q.toLowerCase())));   // 태그 검색 (v2.0)
 
@@ -96,6 +99,7 @@ function BackupPageInner() {
           {cats.map(c => (
             <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
           ))}
+          {noCat > 0 && <button className={cat === NOCAT ? 'on' : ''} onClick={() => setCat(NOCAT)}>{NOCAT_LABEL} {noCat}</button>}
         </div>
         {/* 오른쪽: 갤러리/리스트 보기 전환 · 검색 · 글쓰기 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

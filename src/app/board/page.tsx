@@ -1,6 +1,7 @@
 'use client';
 // 일반 게시판 목록 (4.2 / 5.2 다중 게시판) — 말머리 필터 · 검색 · 비밀글 마스킹 · 접기 표시 · 페이지네이션
 // ?b=<게시판 id> 로 게시판 구분 (없으면 기본 게시판) · 리스트 스킨: 기본형 / 티켓형 (5.2 v1.9)
+import { NOCAT, NOCAT_LABEL, lacksCat } from '@/lib/noCat';
 import { NavBox, NavLink } from '@/components/ui/NavLink';
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -50,12 +51,14 @@ function BoardInner() {
   const [prevBid, setPrevBid] = useState(bid);
   if (prevBid !== bid) { setPrevBid(bid); setCat('전체'); setQ(''); setPage(1); }
 
+  const noCat = board.skin === 'running' ? 0 : posts.filter(p => (p.boardId ?? MAIN_BOARD_ID) === board.id && !p.notice && (isPublished(p) || isAdmin || (!!p.authorId && p.authorId === user?.id)) && lacksCat(p.category, board.cats.map(x => x.label))).length;   // 말머리 없는 글 수
   const visible = useMemo(() => {
     let list = posts.filter(p => (p.boardId ?? MAIN_BOARD_ID) === board.id);
     // 예약 공개·임시 저장 (B 디자인) — 공개 전 글은 작성자·관리자만 본다
     list = list.filter(p => isPublished(p) || isAdmin || (!!p.authorId && p.authorId === user?.id));
     if (board.skin === 'running' && runCat) list = list.filter(p => p.category === runCat);
     if (cat === '공지') list = list.filter(p => p.notice);
+    else if (cat === NOCAT) list = list.filter(p => lacksCat(p.category, board.cats.map(x => x.label)));
     else if (cat !== '전체') list = list.filter(p => p.category === cat);
     if (q) {
       const k = q.toLowerCase();
@@ -117,8 +120,8 @@ function BoardInner() {
         ) : (
         <div className="seg cat-tabs">
           {/* 「공지」는 설정 말머리가 아니라 공지 고정 글 모아보기 — 이 게시판에 공지 글이 있을 때만 (사용자 요청) */}
-          {['전체', ...(posts.some(p => (p.boardId ?? MAIN_BOARD_ID) === board.id && p.notice) ? ['공지'] : []), ...board.cats.map(x => x.label)].map(c => (
-            <button key={c} className={cat === c ? 'on' : ''} onClick={() => { setCat(c); setPage(1); }}>{c}</button>
+          {['전체', ...(posts.some(p => (p.boardId ?? MAIN_BOARD_ID) === board.id && p.notice) ? ['공지'] : []), ...board.cats.map(x => x.label), ...(noCat > 0 ? [NOCAT] : [])].map(c => (
+            <button key={c} className={cat === c ? 'on' : ''} onClick={() => { setCat(c); setPage(1); }}>{c === NOCAT ? `${NOCAT_LABEL} ${noCat}` : c}</button>
           ))}
         </div>
         )}

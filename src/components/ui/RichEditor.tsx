@@ -746,7 +746,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
       editor.chain().focus().setImage({ src }).run();
     } catch (e) {
       // 조용히 실패하면 「올렸는데 왜 안 들어가지」가 된다 — 사유를 그대로 보여 준다
-      toast(`이미지를 올리지 못했습니다 — ${e instanceof Error ? e.message : String(e)}`);
+      if (!(e instanceof Error && e.name === 'OversizeError')) toast(`이미지를 올리지 못했습니다 — ${e instanceof Error ? e.message : String(e)}`);   // 20MB 초과는 전역 알림이 따로 띄운다
     }
     setBusy(false);
   };
