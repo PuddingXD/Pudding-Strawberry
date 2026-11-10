@@ -1,7 +1,8 @@
 'use client';
 // 게시글 상세 (4.2) — 본문 렌더(격리 새니타이즈) · 접기 · 댓글+대댓글
 import { NavLink } from '@/components/ui/NavLink';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
@@ -22,7 +23,9 @@ import { PageTitle } from '@/components/ui/PageText';
 import { pushNotif } from '@/lib/notifStore';
 import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
 import { unlockText, rememberUnlocked, unlockedOf } from '@/lib/pwLock';
-import { TalkView } from '@/components/board/TalkView';
+import { TalkView, parseTalk } from '@/components/board/TalkView';
+import { talkSlots, insertTalkImage, removeTalkImage, fileToDataUrl } from '@/lib/talkInsert';
+import { putBlob } from '@/lib/blobStore';
 
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
 
@@ -41,6 +44,17 @@ export default function BoardDetailPage() {
   const [cmt, setCmt] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [delAsk, setDelAsk] = useState(false);
+  // 썰 말풍선 우클릭 → 그림 넣기·빼기 (작성자·관리자)
+  const [talkMenu, setTalkMenu] = useState<{ x: number; y: number; line: number; img: number | null } | null>(null);
+  const [talkBusy, setTalkBusy] = useState(false);
+  const talkFile = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!talkMenu) return;
+    const close = () => setTalkMenu(null);
+    document.addEventListener('mousedown', close);
+    window.addEventListener('scroll', close, true);
+    return () => { document.removeEventListener('mousedown', close); window.removeEventListener('scroll', close, true); };
+  }, [talkMenu]);
   const [gName, setGName] = useState('');                       // 게스트 닉네임 (방문자 댓글 허용 시)
   // 비밀번호 비밀글 (B 디자인) — 푼 본문은 이 창 안에서만 기억한다
   const [unlocked, setUnlocked] = useState<string | undefined>(() => unlockedOf(id));
@@ -112,6 +126,43 @@ export default function BoardDetailPage() {
   const pnOf = (x: Post | null) => (x ? { href: `/board/${x.id}`, title: x.title } : null);
   const update = (patch: Partial<Post>) =>
     setPosts(posts.map(p => (p.id === post.id ? { ...p, ...patch } : p)));
+
+  /* 썰 말풍선에 그림 — 본문(HTML)을 직접 고친다. 마크다운으로 쓴 글·비밀번호 글은 본문 위치를 믿을 수 없어 뺀다.
+     줄 번호가 화면의 말풍선과 어긋나면(새니타이즈가 구조를 바꾼 글) 엉뚱한 곳에 들어가지 않게 멈춘다 */
+  const talkEditable = board.skin === 'talk' && canManage && post.mode !== 'md' && !post.pwLock;
+  const slotOf = (line: number) => {
+    const slots = talkSlots(post.body);
+    if (slots.length !== parseTalk(html).length) return null;
+    return { slots, slot: slots[line] };
+  };
+  const onTalkContext = talkEditable
+    ? (e: React.MouseEvent, line: number, img: number | null) => {
+        e.preventDefault(); e.stopPropagation();
+        setTalkMenu({ x: Math.min(e.clientX, window.innerWidth - 170), y: Math.min(e.clientY, window.innerHeight - 110), line, img });
+      }
+    : undefined;
+  const addTalkImage = async (f?: File) => {
+    const at = talkMenu; setTalkMenu(null);
+    if (!f || !at) return;
+    const hit = slotOf(at.line);
+    if (!hit?.slot) { toast('삽입 위치를 찾지 못했습니다 — 수정 화면에서 넣어 주세요'); return; }
+    setTalkBusy(true);
+    try {
+      const ref = await putBlob(f);
+      const src = /^https?:/.test(ref) ? ref : await fileToDataUrl(f);   // 서버가 없는 로컬 모드는 본문에 그대로 심는다
+      update({ body: insertTalkImage(post.body, hit.slot, src) });
+    } catch (err) {
+      if (!(err instanceof Error && err.name === 'OversizeError')) toast(`그림을 올리지 못했습니다 — ${err instanceof Error ? err.message : String(err)}`);
+    }
+    setTalkBusy(false);
+  };
+  const delTalkImage = () => {
+    const at = talkMenu; setTalkMenu(null);
+    if (!at || at.img === null) return;
+    const hit = slotOf(at.line);
+    if (!hit?.slot) { toast('그림 위치를 찾지 못했습니다 — 수정 화면에서 지워 주세요'); return; }
+    update({ body: removeTalkImage(post.body, hit.slot, at.img) });
+  };
 
   // 이 글의 댓글 — 분리 저장분 + 옛 글 안에 남아 있던 것 (v2.0)
   const comments = commentsFor(cmtRows, 'post', post.id, post.comments);
@@ -251,7 +302,26 @@ export default function BoardDetailPage() {
             </form>
           ) : board.skin === 'talk' ? (
             <div style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}>
-              <TalkView html={html} people={talkPeople(post.talk)} />
+              <TalkView html={html} people={talkPeople(post.talk)} onContext={onTalkContext} />
+              {talkEditable && (
+                <input ref={talkFile} type="file" accept="image/*" hidden
+                  onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; void addTalkImage(f); }} />
+              )}
+              {talkBusy && <p className="hint" style={{ textAlign: 'center' }}>그림을 올리는 중…</p>}
+              {talkMenu && typeof document !== 'undefined' && createPortal(
+                <div style={{
+                  position: 'fixed', left: talkMenu.x, top: talkMenu.y, zIndex: 130, background: 'var(--panel-solid,#fff)',
+                  border: '1px solid var(--line)', borderRadius: 9, boxShadow: 'var(--sh-dd)', padding: 4, display: 'grid', minWidth: 150,
+                }} onMouseDown={e => e.stopPropagation()} onContextMenu={e => e.preventDefault()}>
+                  <button style={{ padding: '7px 12px', fontSize: 12, borderRadius: 6, textAlign: 'left' }}
+                    onClick={() => talkFile.current?.click()}>그림 삽입</button>
+                  {talkMenu.img !== null && (
+                    <button style={{ padding: '7px 12px', fontSize: 12, borderRadius: 6, textAlign: 'left', color: 'var(--danger,#d4506a)' }}
+                      onClick={delTalkImage}>이 그림 삭제</button>
+                  )}
+                </div>,
+                document.body,
+              )}
             </div>
           ) : (
           <div className="post-body" style={post.fold && !open ? { minHeight: 120, filter: 'blur(6px)' } : undefined}

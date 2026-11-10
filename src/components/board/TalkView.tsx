@@ -49,7 +49,10 @@ export function parseTalk(safeHtml: string): Line[] {
   return out;
 }
 
-export function TalkView({ html, people }: { html: string; people: TalkPerson[] }) {
+/** 말풍선·그림 우클릭 — line = 줄 번호, img = 그림이면 그 줄에서 몇 번째 그림인지 */
+export type TalkCtx = (e: React.MouseEvent, line: number, img: number | null) => void;
+
+export function TalkView({ html, people, onContext }: { html: string; people: TalkPerson[]; onContext?: TalkCtx }) {
   const lines = useMemo(() => parseTalk(html), [html]);
   // 이 글에서 색을 안 정한 사람은 「자주 나오는 사람」 기본색 (사용자 요청)
   const [groups] = useTalkColors();
@@ -59,10 +62,10 @@ export function TalkView({ html, people }: { html: string; people: TalkPerson[] 
         if (l.k === 'head') return <div key={i} className="talk-head"><span>{l.text}</span></div>;
         if (l.k === 'note') {
           return (
-            <div key={i} className="talk-note">
+            <div key={i} className="talk-note" onContextMenu={onContext ? e => onContext(e, i, null) : undefined}>
               {l.text && <p>{l.text}</p>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {l.imgs.map(src => <img key={src} src={src} alt="" />)}
+              {l.imgs.map((src, j) => <img key={src + j} src={src} alt="" onContextMenu={onContext ? e => onContext(e, i, j) : undefined} />)}
             </div>
           );
         }
@@ -70,12 +73,12 @@ export function TalkView({ html, people }: { html: string; people: TalkPerson[] 
         const prev = lines[i - 1];
         const first = !(prev && prev.k === 'say' && prev.who === l.who);   // 같은 사람이 이어 말하면 이름은 처음에만
         return (
-          <div key={i} className={`talk-row ${who.side} p${l.who + 1} ${first ? 'first' : ''}`}>
+          <div key={i} className={`talk-row ${who.side} p${l.who + 1} ${first ? 'first' : ''}`} onContextMenu={onContext ? e => onContext(e, i, null) : undefined}>
             {first && who.name && <b className="talk-name">{who.name}</b>}
             <div className="talk-bub" style={(who.color || talkColorOf(groups, who.name)) ? { background: who.color || talkColorOf(groups, who.name) } : undefined}>
               {l.text && <span>{l.text}</span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {l.imgs.map(src => <img key={src} src={src} alt="" />)}
+              {l.imgs.map((src, j) => <img key={src + j} src={src} alt="" onContextMenu={onContext ? e => onContext(e, i, j) : undefined} />)}
             </div>
           </div>
         );
