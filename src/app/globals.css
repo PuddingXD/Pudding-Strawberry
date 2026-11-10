@@ -2154,7 +2154,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-main{padding:30px 34px;min-width:0;overflow:visible}   /* .panel과 함께 — 테마색을 따르고, 안의 에디터 툴바가 따라다닐 수 있게 overflow 해제 */
 .doc-title{font-size:calc(21px*var(--fs,1));margin:0 0 4px}
 .doc-sub{font-size:calc(12px*var(--fs,1));color:var(--faint);margin-bottom:18px}
-.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:1.15;color:var(--ink);word-break:break-word}
+.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:2;color:var(--ink);word-break:break-word}
 .doc-body p{margin:0 0 1.1em}
 .doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
 .doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
@@ -2179,7 +2179,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 
 /* 문서 본문 공통 모양 — 읽기 화면 · 탭 본문 · 편집기가 똑같이 보이도록 (엔터로 만든 빈 줄도 그대로) */
 .doc-body p:empty::after,.re-content.doc-body p:empty::after{content:"\00a0"}
-.re-wrap .re-content.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:1.15}
+.re-wrap .re-content.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:2}
 .re-wrap .re-content.doc-body p{margin:0 0 1.1em}
 .re-wrap .re-content.doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
 .re-wrap .re-content.doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
@@ -2192,10 +2192,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-more:hover{opacity:.7}
 /* 자관 문서 아이콘 — 자캐 왼쪽 아이콘 탭과 같은 네모 */
 .rel-doc-icons{display:flex;flex-wrap:wrap;gap:9px;margin:30px auto 0;max-width:1010px}   /* 위 블록과의 간격은 타임라인·역극 사이(30px)와 같게 */
-.rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--top-brand,#888) 14%,transparent);color:var(--top-fg,var(--tab-fg,#aab0ba));font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid color-mix(in srgb,var(--top-fg,#888) 40%,transparent);transition:.15s;cursor:var(--cur-pointer,pointer)}
-.rel-doc-icons button:hover{color:var(--top-hv,#fff);background:color-mix(in srgb,var(--top-hv,#888) 24%,transparent)}
-.rel-doc-icons a{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--top-brand,#888) 14%,transparent);color:var(--top-fg,var(--tab-fg,#aab0ba));font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid color-mix(in srgb,var(--top-fg,#888) 40%,transparent);transition:.15s;cursor:var(--cur-pointer,pointer)}
-.rel-doc-icons a:hover{color:var(--top-hv,#fff);background:color-mix(in srgb,var(--top-hv,#888) 24%,transparent)}
+.rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:var(--panel);color:var(--ink);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark,var(--line));box-shadow:var(--sh-sm);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons button:hover{background:var(--panel-solid);color:var(--accent);transform:translateY(-2px)}
+.rel-doc-icons a{width:46px;height:46px;border-radius:12px;background:var(--panel);color:var(--ink);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark,var(--line));box-shadow:var(--sh-sm);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons a:hover{background:var(--panel-solid);color:var(--accent);transform:translateY(-2px)}
 
 /* 글머리·번호 목록 — 표시는 본문 왼쪽 끝에 맞추고, 줄이 넘어가면 글자 시작 위치에 맞춰 들여쓴다 (모든 에디터·본문 공통) */
 :is(.re-content,.prose,.post-body,.html-body,.doc-body) :is(ul,ol){list-style:none;margin:0 0 1.1em;padding:0}

@@ -394,10 +394,10 @@ function SpacingBtn({ cur, onSet }: { cur: SpaceAttrs; onSet: (a: Partial<SpaceA
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState('');
   const btn = useRef<HTMLButtonElement>(null);
-  const lh = cur.lineHeight ?? '1.15';
+  const lh = cur.lineHeight ?? '2';   // 기본 = 두 줄 간격
   const presets: [string, string][] = [['1', '한 줄 간격'], ['1.15', '1.15'], ['1.5', '1.5'], ['2', '두 줄 간격']];
   const isPreset = presets.some(([v]) => Number(v) === Number(lh));
-  const pick = (v: string | null) => { onSet({ lineHeight: v === '1.15' ? null : v }); setOpen(false); };
+  const pick = (v: string | null) => { onSet({ lineHeight: v === '2' ? null : v }); setOpen(false); };
   const applyCustom = () => {
     const n = parseFloat(custom);
     if (!Number.isFinite(n) || n < 0.5 || n > 5) return;
