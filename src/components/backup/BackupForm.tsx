@@ -92,17 +92,26 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
   const parseTags = (v: string) =>
     [...new Set(v.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean))];
   // 목록이 로드되면 첫 말머리를 기본값으로 (등록 화면)
-  /* homemade 갤러리는 쓴 사람에 따라 말머리를 미리 골라 둔다 — 관리자 = Pudding · 회원 = Gomju (v2.1 사용자 요청).
-     갤러리 이름·별명이 homemade(홈메이드)인 곳만, 새 글일 때만. 고른 뒤 바꾸는 것은 자유 */
+  /* homemade(집밥) 갤러리는 쓴 사람에 따라 말머리를 미리 골라 둔다 — 관리자 = Pudding · 회원 = Gomju (v2.1 사용자 요청).
+     갤러리 이름·별명이 homemade·홈메이드·집밥인 곳만, 새 글일 때만. 사용자가 직접 고르면 그 뒤로는 건드리지 않는다.
+     **설정·갤러리 목록·로그인 정보가 나중에 도착해도 따라가야 한다** — 처음 한 번만 정하면 그때는 아직 기본 말머리
+     목록이라 첫 항목이 먼저 잡히고, 진짜 목록이 온 뒤에는 이미 값이 있어 바뀌지 않았다 (사용자 제보) */
+  const [catTouched, setCatTouched] = useState(false);
   const secItem = sec.items.find(x => x.id === secId);
-  const isHomemade = /homemade|홈메이드/i.test(`${secItem?.name ?? ''} ${secItem?.slug ?? ''}`);
+  const isHomemade = /homemade|홈메이드|집밥/i.test(`${secItem?.name ?? ''} ${secItem?.slug ?? ''}`);
   const autoCat = isNew && isHomemade
-    ? galleryCats.find(c => c.label.toLowerCase().includes(isAdmin ? 'pudding' : 'gomju'))?.label
+    ? galleryCats.find(c => {
+        const l = c.label.toLowerCase();
+        return isAdmin ? (l.includes('pudding') || l.includes('푸딩')) : (l.includes('gomju') || l.includes('곰주'));
+      })?.label
     : undefined;
+  const catKey = galleryCats.map(c => c.label).join('|');
   useEffect(() => {
-    if (!category && galleryCats[0]) setCategory(autoCat ?? galleryCats[0].label);
+    if (!isNew || catTouched) return;
+    const want = autoCat ?? galleryCats[0]?.label;
+    if (want && category !== want) setCategory(want);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [galleryCats.length, autoCat]);
+  }, [catKey, autoCat, catTouched]);
   const [madeDate, setMadeDate] = useState(initial?.madeDate ?? '');
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
   const [foldType, setFoldType] = useState<FoldType | 'none'>(initial?.fold?.type ?? 'none');
@@ -304,7 +313,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
             <div className="form-row">
               <label className="k-label" style={{ width: 70 }}>말머리</label>
               {/* 말머리 목록은 환경설정 > 게시판 관리에서 관리 (v2.0 — 예전에는 코드에 박혀 있었다) */}
-              <KSelect minWidth={120} value={category} onChange={setCategory}
+              <KSelect minWidth={120} value={category} onChange={v => { setCatTouched(true); setCategory(v); }}
                 options={galleryCats.map(c => ({ value: c.label, label: c.label }))} />
             </div>
             {/* 태그 (v2.0 사용자 요청) — 목록·카드에 나열되고 검색에 걸린다 */}
