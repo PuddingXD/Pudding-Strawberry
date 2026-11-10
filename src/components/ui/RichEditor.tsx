@@ -5,7 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
+import { ResizableImage, BlockSpacing } from '@/components/ui/editorExtras';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyleKit } from '@tiptap/extension-text-style';
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table';
@@ -388,6 +388,59 @@ function BorderColorBtn({ pen, setPen, onApply }: {
   );
 }
 
+/** 줄 및 단락 간격 (구글 문서 모양) — 줄 간격 · 단락 앞/뒤 공백 · 맞춤 간격 */
+type SpaceAttrs = { lineHeight: string | null; spaceBefore: string | null; spaceAfter: string | null };
+function SpacingBtn({ cur, onSet }: { cur: SpaceAttrs; onSet: (a: Partial<SpaceAttrs>) => void }) {
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState('');
+  const btn = useRef<HTMLButtonElement>(null);
+  const lh = cur.lineHeight ?? '1.15';
+  const presets: [string, string][] = [['1', '한 줄 간격'], ['1.15', '1.15'], ['1.5', '1.5'], ['2', '두 줄 간격']];
+  const isPreset = presets.some(([v]) => Number(v) === Number(lh));
+  const pick = (v: string | null) => { onSet({ lineHeight: v === '1.15' ? null : v }); setOpen(false); };
+  const applyCustom = () => {
+    const n = parseFloat(custom);
+    if (!Number.isFinite(n) || n < 0.5 || n > 5) return;
+    pick(String(Math.round(n * 100) / 100));
+    setCustom('');
+  };
+  const before = !!cur.spaceBefore, after = cur.spaceAfter !== 'none';
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="줄 및 단락 간격" className={`re-btn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 3v10M3 5l2-2 2 2M3 11l2 2 2-2M10 4h4M10 8h4M10 12h4" />
+        </svg>
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)} className="re-sp">
+          {presets.map(([v, name]) => (
+            <button key={v} type="button" className="re-sp-i" onClick={() => pick(v)}>
+              <span className="re-sp-ck">{Number(lh) === Number(v) ? '✓' : ''}</span>{name}
+            </button>
+          ))}
+          <div className="re-sp-sep" />
+          <button type="button" className="re-sp-i" onClick={() => { onSet({ spaceBefore: before ? null : 'add' }); setOpen(false); }}>
+            <span className="re-sp-ck" />{before ? '단락 앞 공백 삭제' : '단락 앞에 공백 추가'}
+          </button>
+          <button type="button" className="re-sp-i" onClick={() => { onSet({ spaceAfter: after ? 'none' : null }); setOpen(false); }}>
+            <span className="re-sp-ck" />{after ? '단락 뒤 공백 삭제' : '단락 뒤에 공백 추가'}
+          </button>
+          <div className="re-sp-sep" />
+          <div className="re-sp-i re-sp-c">
+            <span className="re-sp-ck">{!isPreset ? '✓' : ''}</span>맞춤 간격
+            <input className="k-input" inputMode="decimal" placeholder={isPreset ? '예: 1.3' : lh} value={custom}
+              onChange={e => setCustom(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyCustom(); } }} />
+            <button type="button" className="re-sp-ok" onClick={applyCustom}>적용</button>
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
 const AlignIcon = ({ kind }: { kind: 'left' | 'center' | 'right' | 'justify' }) => {
   const w = { left: [12, 8, 12, 8], center: [12, 8, 12, 8], right: [12, 8, 12, 8], justify: [12, 12, 12, 12] }[kind];
   const x = (len: number) => (kind === 'left' || kind === 'justify' ? 2 : kind === 'center' ? (16 - len) / 2 : 14 - len);
@@ -438,7 +491,8 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
     // StarterKit(v3)에 든 링크는 누르면 바로 열리지 않게 — 편집 중 클릭은 커서 이동 (링크 삽입 v2.1)
     extensions: [
       StarterKit.configure({ link: { openOnClick: false, autolink: true, defaultProtocol: 'https' } }),
-      Image,
+      ResizableImage,                                      // 글자처럼 놓이고 크기를 바꿀 수 있는 이미지
+      BlockSpacing,                                        // 줄 간격 · 단락 앞뒤 공백
       TextStyleKit,                                        // 글꼴 · 글자색 · 글자 배경색
       TextAlign.configure({ types: ['heading', 'paragraph'] }),   // 왼쪽·가운데·오른쪽·양쪽 정렬
       RTable, RRow, RCell, RHeader,                        // 표
@@ -465,6 +519,36 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
   // 명령 이름이 많아서(글꼴·색·표) 한 곳에서 느슨하게 부른다 — 확장이 등록한 명령이라 타입이 따로 안 잡힌다
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const C = () => editor.chain().focus() as any;
+
+  /* 줄 · 단락 간격 — 선택에 걸친 문단·제목마다 속성을 적는다 */
+  const blockNow = editor.state.selection.$from.parent.attrs as Partial<SpaceAttrs>;
+  const spaceNow: SpaceAttrs = { lineHeight: blockNow.lineHeight ?? null, spaceBefore: blockNow.spaceBefore ?? null, spaceAfter: blockNow.spaceAfter ?? null };
+  const setSpacing = (a: Partial<SpaceAttrs>) => {
+    editor.chain().focus().command(({ tr, state }) => {
+      state.doc.nodesBetween(state.selection.from, state.selection.to, (n, pos) => {
+        if (n.type.name === 'paragraph' || n.type.name === 'heading') tr.setNodeMarkup(pos, undefined, { ...n.attrs, ...a });
+      });
+      return true;
+    }).run();
+  };
+  /* 이미지 — 골라 둔 이미지의 가로·세로(px)를 숫자로 */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selAny = editor.state.selection as any;
+  const imgNode = selAny.node && selAny.node.type.name === 'image' ? selAny.node : null;
+  const imgSize = () => {
+    const el = imgNode ? (editor.view.nodeDOM(selAny.from) as HTMLElement | null)?.querySelector?.('img') : null;
+    const r = el?.getBoundingClientRect();
+    return { w: Math.round(imgNode?.attrs.width ?? r?.width ?? 0), h: Math.round(imgNode?.attrs.height ?? r?.height ?? 0) };
+  };
+  const setImgSize = (k: 'width' | 'height', v: string) => {
+    const n = parseInt(v, 10);
+    if (!imgNode || !Number.isFinite(n) || n < 8 || n > 4000) return;
+    const cur = imgSize();
+    editor.commands.command(({ tr }) => {
+      tr.setNodeMarkup(selAny.from, undefined, { ...imgNode.attrs, width: cur.w, height: cur.h, [k]: n });
+      return true;
+    });
+  };
 
   /* 글꼴 — 지금 커서 글자의 font-family가 어느 폰트인지 거꾸로 찾아 드롭다운에 보여 준다 */
   const curFam = String(editor.getAttributes('textStyle').fontFamily ?? '').replace(/["']/g, '').replace(/\s+/g, ' ').trim();
@@ -695,6 +779,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           onClick={() => C().setTextAlign('right').run()} />
         <TBtn title="양쪽 정렬" label={<AlignIcon kind="justify" />} on={editor.isActive({ textAlign: 'justify' })}
           onClick={() => C().setTextAlign('justify').run()} />
+        <SpacingBtn cur={spaceNow} onSet={setSpacing} />
         {/* 다음 줄부터 글 구분(제목·본문)으로 시작 — 데스크톱은 줄바꿈, 모바일(한 줄 스크롤)은 구분선 */}
         <span className="re-br" />
         <span className="re-sep re-m-only" />
@@ -772,6 +857,31 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
           <TBtn title="표 삭제" label="표 삭제" onClick={() => C().deleteTable().run()} />
         </div>
       )}
+      {imgNode && !srcMode && (() => {
+        const sz = imgSize();
+        return (
+          <div className="re-toolbar re-tt">
+            <span className="re-tt-l">이미지</span>
+            <label className="re-sz">가로
+              <input key={`w${sz.w}`} className="k-input" inputMode="numeric" defaultValue={sz.w}
+                onBlur={e => setImgSize('width', e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); setImgSize('width', (e.target as HTMLInputElement).value); } }} />px
+            </label>
+            <label className="re-sz">세로
+              <input key={`h${sz.h}`} className="k-input" inputMode="numeric" defaultValue={sz.h}
+                onBlur={e => setImgSize('height', e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); setImgSize('height', (e.target as HTMLInputElement).value); } }} />px
+            </label>
+            <TBtn title="원래 비율로 (세로 자동)" label="비율 맞춤" onClick={() => {
+              editor.commands.command(({ tr }) => { tr.setNodeMarkup(selAny.from, undefined, { ...imgNode.attrs, height: null }); return true; });
+            }} />
+            <TBtn title="원래 크기로" label="원래 크기" onClick={() => {
+              editor.commands.command(({ tr }) => { tr.setNodeMarkup(selAny.from, undefined, { ...imgNode.attrs, width: null, height: null }); return true; });
+            }} />
+            <span className="re-tt-h">모서리·가장자리를 끌어도 됩니다 · 정렬 버튼으로 위치</span>
+          </div>
+        );
+      })()}
       {linkOpen && !srcMode && (
         <div className="re-linkrow">
           <input className="k-input" placeholder="https://… (비우고 적용하면 링크 해제)" value={linkUrl}

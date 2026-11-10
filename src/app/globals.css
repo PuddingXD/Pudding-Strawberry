@@ -2154,7 +2154,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-main{padding:30px 34px;min-width:0;overflow:visible}   /* .panel과 함께 — 테마색을 따르고, 안의 에디터 툴바가 따라다닐 수 있게 overflow 해제 */
 .doc-title{font-size:calc(21px*var(--fs,1));margin:0 0 4px}
 .doc-sub{font-size:calc(12px*var(--fs,1));color:var(--faint);margin-bottom:18px}
-.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:2;color:var(--ink);word-break:break-word}
+.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:1.15;color:var(--ink);word-break:break-word}
 .doc-body p{margin:0 0 1.1em}
 .doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
 .doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
@@ -2179,7 +2179,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 
 /* 문서 본문 공통 모양 — 읽기 화면 · 탭 본문 · 편집기가 똑같이 보이도록 (엔터로 만든 빈 줄도 그대로) */
 .doc-body p:empty::after,.re-content.doc-body p:empty::after{content:"\00a0"}
-.re-wrap .re-content.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:2}
+.re-wrap .re-content.doc-body{font-size:calc(var(--doc-fs,13px)*var(--fs,1));line-height:1.15}
 .re-wrap .re-content.doc-body p{margin:0 0 1.1em}
 .re-wrap .re-content.doc-body h1{font-size:1.5em;margin:1.8em 0 .6em;line-height:1.4}
 .re-wrap .re-content.doc-body h2{font-size:1.28em;margin:1.6em 0 .5em;line-height:1.4}
@@ -2277,3 +2277,25 @@ table[data-talign="right"],.re-content .tableWrapper[data-talign="right"] > tabl
 .re-pop-go:hover{background:var(--ink);color:#fff;opacity:.88}
 
 .re-lineicon{display:block;width:14px;height:0;border-top:2.5px solid currentColor;margin:5px 0 3px}
+
+/* 이미지 — 글자처럼 줄에 놓임(정렬·여러 장 한 줄) · 끌어서 크기 조절 */
+.doc-body img,.re-content img{vertical-align:bottom}
+.re-img{display:inline-block;position:relative;max-width:100%;line-height:0;vertical-align:bottom}
+.re-img img{display:block;max-width:100%}
+.re-img.sel img{outline:2px solid var(--accent,#e0607e);outline-offset:0}
+.re-img-h{display:none;position:absolute;background:var(--accent,#e0607e);border:2px solid #fff;border-radius:3px;z-index:2}
+.re-img.sel .re-img-h{display:block}
+.re-img-h-se{right:-6px;bottom:-6px;width:12px;height:12px;cursor:nwse-resize}
+.re-img-h-e{right:-5px;top:50%;margin-top:-9px;width:9px;height:18px;cursor:ew-resize}
+.re-img-h-s{bottom:-5px;left:50%;margin-left:-9px;width:18px;height:9px;cursor:ns-resize}
+.re-sz{display:inline-flex;align-items:center;gap:4px;font-size:calc(11.5px*var(--fs,1));color:var(--sub);padding:0 6px}
+.re-sz .k-input{width:62px;height:26px;padding:0 6px;font-size:12px}
+.re-tt-h{font-size:calc(10.5px*var(--fs,1));color:var(--sub);padding:0 8px;white-space:nowrap}
+/* 줄 및 단락 간격 메뉴 */
+.re-sp{min-width:210px;padding:6px 0}
+.re-sp-i{display:flex;align-items:center;gap:6px;width:100%;padding:7px 12px 7px 6px;font-size:12.5px;text-align:left;background:none;border:0;color:var(--ink);cursor:pointer;white-space:nowrap}
+button.re-sp-i:hover{background:rgba(0,0,0,.05)}
+.re-sp-ck{display:inline-block;width:16px;text-align:center;font-size:12px}
+.re-sp-sep{height:1px;background:var(--line);margin:5px 0}
+.re-sp-c .k-input{width:62px;height:26px;padding:0 6px;font-size:12px;margin-left:auto}
+.re-sp-ok{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;color:var(--ink)}
