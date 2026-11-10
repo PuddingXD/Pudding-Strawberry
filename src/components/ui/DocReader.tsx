@@ -124,7 +124,7 @@ export function DocReader({ docs, activeId, onPick, bodyFont, canEdit, onSave, o
             );
           }} />
         {canEdit && onAdd && (
-          <button type="button" className="doc-tab" style={{ color: 'var(--faint)', marginTop: 6 }} onClick={onAdd}>
+          <button type="button" className="doc-tab" style={{ color: 'var(--top-fg, var(--faint))', marginTop: 6 }} onClick={onAdd}>
             <span className="ic">＋</span><span className="tt">문서 추가</span>
           </button>
         )}

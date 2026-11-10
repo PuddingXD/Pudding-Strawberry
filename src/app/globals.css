@@ -2139,14 +2139,14 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* ---------- 문서 읽기 (자캐 추가 탭 · 자관 문서 탭) ---------- */
 .doc-read{display:grid;grid-template-columns:200px minmax(0,672px);gap:28px;justify-content:center;align-items:start}
 .doc-side{position:sticky;top:16px;max-height:calc(100dvh - 32px);overflow:auto;padding:4px 0}
-.doc-side-h{font-size:calc(10px*var(--fs,1));letter-spacing:.14em;color:var(--faint);margin:0 0 6px 8px}
-.doc-tab{display:flex;gap:7px;align-items:center;width:100%;text-align:left;padding:7px 8px;border-radius:7px;font-size:calc(12.5px*var(--fs,1));font-weight:600;color:var(--ink);cursor:var(--cur-pointer,pointer)}
-.doc-tab:hover{background:rgba(127,127,127,.12)}
-.doc-tab.on{background:rgba(127,127,127,.16)}
+.doc-side-h{font-size:calc(10px*var(--fs,1));letter-spacing:.14em;color:var(--top-fg,var(--faint));margin:0 0 6px 8px}
+.doc-tab{display:flex;gap:7px;align-items:center;width:100%;text-align:left;padding:7px 8px;border-radius:7px;font-size:calc(12.5px*var(--fs,1));font-weight:600;color:var(--top-fg,var(--ink));cursor:var(--cur-pointer,pointer)}
+.doc-tab:hover{background:color-mix(in srgb,var(--top-hv,#888) 12%,transparent);color:var(--top-hv,var(--ink))}
+.doc-tab.on{background:color-mix(in srgb,var(--top-brand,#888) 16%,transparent);color:var(--top-brand,var(--ink))}
 .doc-tab .ic{flex-shrink:0}
 .doc-tab .tt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.doc-toc{display:block;width:100%;text-align:left;padding:4px 8px;border-radius:6px;font-size:calc(11.5px*var(--fs,1));color:var(--sub);line-height:1.45;cursor:var(--cur-pointer,pointer)}
-.doc-toc:hover{color:var(--accent);background:rgba(127,127,127,.08)}
+.doc-toc{display:block;width:100%;text-align:left;padding:4px 8px;border-radius:6px;font-size:calc(11.5px*var(--fs,1));color:var(--top-fg,var(--sub));line-height:1.45;cursor:var(--cur-pointer,pointer)}
+.doc-toc:hover{color:var(--top-hv,var(--accent));background:color-mix(in srgb,var(--top-hv,#888) 10%,transparent)}
 .doc-toc.l1{padding-left:18px;font-weight:600}
 .doc-toc.l2{padding-left:30px}
 .doc-toc.l3{padding-left:42px;font-size:calc(11px*var(--fs,1))}
@@ -2165,8 +2165,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-body hr{border:none;border-top:1px solid var(--line);margin:2em 0}
 @media (max-width:900px){
   .doc-read{grid-template-columns:minmax(0,1fr);gap:10px}
-  .doc-toc-btn{display:block;justify-self:start;padding:7px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;background:transparent;color:var(--ink)}
-  .doc-side{display:none;position:static;max-height:46dvh;border:1.5px solid var(--line);border-radius:10px;padding:6px}
+  .doc-toc-btn{display:block;justify-self:start;padding:7px 12px;border:1.5px solid color-mix(in srgb,var(--top-fg,#888) 45%,transparent);border-radius:8px;font-size:12px;background:transparent;color:var(--top-fg,var(--ink))}
+  .doc-side{display:none;position:static;max-height:46dvh;border:1.5px solid color-mix(in srgb,var(--top-fg,#888) 45%,transparent);border-radius:10px;padding:6px}
   .doc-side.open{display:block}
   .doc-main{padding:22px 18px}
 }
@@ -2192,10 +2192,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .doc-more:hover{opacity:.7}
 /* 자관 문서 아이콘 — 자캐 왼쪽 아이콘 탭과 같은 네모 */
 .rel-doc-icons{display:flex;flex-wrap:wrap;gap:9px;margin:30px auto 0;max-width:1010px}   /* 위 블록과의 간격은 타임라인·역극 사이(30px)와 같게 */
-.rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.15s;cursor:var(--cur-pointer,pointer)}
-.rel-doc-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
-.rel-doc-icons a{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.15s;cursor:var(--cur-pointer,pointer)}
-.rel-doc-icons a:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
+.rel-doc-icons button{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--top-brand,#888) 14%,transparent);color:var(--top-fg,var(--tab-fg,#aab0ba));font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid color-mix(in srgb,var(--top-fg,#888) 40%,transparent);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons button:hover{color:var(--top-hv,#fff);background:color-mix(in srgb,var(--top-hv,#888) 24%,transparent)}
+.rel-doc-icons a{width:46px;height:46px;border-radius:12px;background:color-mix(in srgb,var(--top-brand,#888) 14%,transparent);color:var(--top-fg,var(--tab-fg,#aab0ba));font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid color-mix(in srgb,var(--top-fg,#888) 40%,transparent);transition:.15s;cursor:var(--cur-pointer,pointer)}
+.rel-doc-icons a:hover{color:var(--top-hv,#fff);background:color-mix(in srgb,var(--top-hv,#888) 24%,transparent)}
 
 /* 글머리·번호 목록 — 표시는 본문 왼쪽 끝에 맞추고, 줄이 넘어가면 글자 시작 위치에 맞춰 들여쓴다 (모든 에디터·본문 공통) */
 :is(.re-content,.prose,.post-body,.html-body,.doc-body) :is(ul,ol){list-style:none;margin:0 0 1.1em;padding:0}
@@ -2299,3 +2299,6 @@ button.re-sp-i:hover{background:rgba(0,0,0,.05)}
 .re-sp-sep{height:1px;background:var(--line);margin:5px 0}
 .re-sp-c .k-input{width:62px;height:26px;padding:0 6px;font-size:12px;margin-left:auto}
 .re-sp-ok{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;color:var(--ink)}
+
+/* 문서 탭 옆 끌기 표시(⠿) — 메뉴 글씨색을 따라 배경에 묻히지 않게 */
+.doc-side .drag-h{color:var(--top-fg,var(--faint))}
