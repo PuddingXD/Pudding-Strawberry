@@ -2279,7 +2279,7 @@ table[data-talign="right"],.re-content .tableWrapper[data-talign="right"] > tabl
 .re-lineicon{display:block;width:14px;height:0;border-top:2.5px solid currentColor;margin:5px 0 3px}
 
 /* 이미지 — 글자처럼 줄에 놓임(정렬·여러 장 한 줄) · 끌어서 크기 조절 */
-.doc-body img,.re-content img{vertical-align:bottom}
+.doc-body img,.html-body img,.post-body img,.re-content img{display:inline-block;vertical-align:bottom}   /* 전역 img{display:block}을 덮어 글자처럼 — 문단 정렬이 먹도록 */
 .re-img{display:inline-block;position:relative;max-width:100%;line-height:0;vertical-align:bottom}
 .re-img img{display:block;max-width:100%}
 .re-img.sel img{outline:2px solid var(--accent,#e0607e);outline-offset:0}
