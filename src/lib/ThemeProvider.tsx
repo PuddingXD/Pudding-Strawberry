@@ -12,6 +12,7 @@ import {
 import { newId } from './postStore';
 import { getBlob } from './blobStore';
 import { getRawSetting, setSetting } from './settingStore';
+import { parseHex, ensureContrast } from './menuContrast';
 
 /** 페이지 배경 그라데이션 (자관별 지정, v2.0) — 색 2개 + 각도 */
 export interface PageBg { g1: string; g2: string; angle: number }
@@ -123,6 +124,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.style.setProperty('--bg-g2', pageBg.g2);
       root.style.setProperty('--bg-angle', `${pageBg.angle}deg`);
       root.style.setProperty('--bg-image', 'none');   // 사이트 배경 이미지가 덮지 않게
+      // 메뉴 글씨 자동 대비 — 정한 배경(두 색) 위에서 안 묻히게 글씨 밝기만 조정
+      const bgs = [parseHex(pageBg.g1), parseHex(pageBg.g2)].filter((x): x is [number, number, number] => !!x);
+      if (bgs.length) {
+        const cs = getComputedStyle(root);
+        const adj = (k: string, min: number) => {
+          const cur = cs.getPropertyValue(k).trim();
+          const next = ensureContrast(cur, bgs, min);
+          if (next !== cur) root.style.setProperty(k, next);
+        };
+        adj('--top-fg', 5.5);      // 선택 안 된 메뉴 (투명도 .78이 곱해지므로 여유 있게)
+        adj('--top-hv', 7);        // 마우스 올림
+        adj('--top-brand', 7);     // 지금 메뉴
+      }
     }
   }, [draft, pageColor, pageBg, loaded]);
 
