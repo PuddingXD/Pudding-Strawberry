@@ -7,7 +7,7 @@
 //  · 문서 = 항목 하나, 필드는 { data, authorId, visibility, sort }
 //  · 관리자 판정은 meta/owner 문서 — 첫 로그인 계정이 소유자로 등록된다(규칙이 1회만 허용)
 import {
-  Backend, BackendCheck, BackendConfig, BackendUser, ListItem, diffList, metaOf,
+  Backend, BackendCheck, BackendConfig, BackendUser, ListItem, diffList, editorIdsOf, metaOf,
 } from './types';
 import { visFloorOf } from '../visFloor';
 import { stableRows } from '../order';
@@ -347,10 +347,25 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
       const chunk = <X,>(arr: X[], n: number) =>
         Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n));
       // 자리만 바뀐 항목 — sort만 고친다 (본문까지 다시 보내지 않게, 위 diffList 주석 참조)
+      /* 회원이 새 글을 맨 앞에 쓰면 **남의 글**들의 자리(sort)도 한 칸씩 밀리는데, 보안 규칙은 남의 글 수정을
+         막는다 — 그 한 건 때문에 배치 전체가 거부돼 「저장하지 못했습니다」가 뜨던 원인 (v2.1 사용자 제보 —
+         회원이 갤러리에 글을 쓸 때). 자리만 바뀐 것은 순서 정렬용일 뿐이고, 값이 겹치면 최신순으로 갈리므로
+         (lib/order.ts) 내가 고칠 수 있는 글만 다시 보내고 나머지는 건너뛴다. 관리자는 전부 보낸다. */
+      const mineOnly = (m: { id: string }) => {
+        const it = next.find(x => x.id === m.id);
+        if (!it || !uid) return false;
+        return it.authorId === uid || editorIdsOf(it).includes(uid);
+      };
       for (const part of chunk(moves, 400)) {
-        const batch = writeBatch(db);
-        part.forEach(({ id, sort }) => batch.update(doc(db, coll, id), { sort, updatedAt: Date.now() }));
-        await batch.commit();
+        const send = async (list: typeof part) => {
+          const batch = writeBatch(db);
+          list.forEach(({ id, sort }) => batch.update(doc(db, coll, id), { sort, updatedAt: Date.now() }));
+          await batch.commit();
+        };
+        try { await send(part); } catch {
+          const mine = part.filter(mineOnly);
+          if (mine.length) { try { await send(mine); } catch { /* 순서만의 문제 — 글 저장은 이미 끝났다 */ } }
+        }
       }
       for (const part of chunk(deletes, 400)) {
         const batch = writeBatch(db);
