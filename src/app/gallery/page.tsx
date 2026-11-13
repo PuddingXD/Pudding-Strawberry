@@ -35,6 +35,12 @@ function BackupPageInner() {
   const [menuSet, , menuLoaded] = useMenuSettings();
   const [view, setView] = useState<'gal' | 'list'>('gal');
   const [viewInit, setViewInit] = useState(false);
+  // 썸네일 크기 (v2.1 사용자 요청) — 작게 5칸 · 보통 3칸 · 크게 2칸, 보는 사람 기기에 기억
+  const [gsize, setGsize] = useState<'s' | 'm' | 'l'>('m');
+  useEffect(() => {
+    try { const v = localStorage.getItem('ohome.gal.size'); if (v === 's' || v === 'l') setGsize(v); } catch { /* 무시 */ }
+  }, []);
+  const pickSize = (v: 's' | 'm' | 'l') => { setGsize(v); try { localStorage.setItem('ohome.gal.size', v); } catch { /* 무시 */ } };
   useEffect(() => {
     if (menuLoaded && !viewInit) { setView(menuSet.backupView); setViewInit(true); }
   }, [menuLoaded, viewInit, menuSet.backupView]);
@@ -103,6 +109,13 @@ function BackupPageInner() {
         </div>
         {/* 오른쪽: 갤러리/리스트 보기 전환 · 검색 · 글쓰기 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {view === 'gal' && (
+            <div className="seg" data-tip="썸네일 크기">
+              <button className={gsize === 's' ? 'on' : ''} onClick={() => pickSize('s')}>작게</button>
+              <button className={gsize === 'm' ? 'on' : ''} onClick={() => pickSize('m')}>보통</button>
+              <button className={gsize === 'l' ? 'on' : ''} onClick={() => pickSize('l')}>크게</button>
+            </div>
+          )}
           <div className="seg">
             <button className={view === 'gal' ? 'on' : ''} onClick={() => setView('gal')}>갤러리</button>
             <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>리스트</button>
@@ -117,7 +130,7 @@ function BackupPageInner() {
 
       {/* 갤러리/리스트 모두 렌더해 두고 display로만 전환 (v1.9) —
           전환 때마다 재마운트되며 이미지가 다시 로드·등장하던 깜빡임 제거 */}
-      <div className="g3" style={{ display: view === 'gal' && visible.length > 0 ? undefined : 'none' }}>
+      <div className={`g3 ${gsize === 's' ? 'g3-s' : gsize === 'l' ? 'g3-l' : ''}`} style={{ display: view === 'gal' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map((p, si) => {
             const i = start + si;   // 정렬은 전체 기준 위치로
             const folded = p.fold && !unveiled[p.id];
