@@ -387,13 +387,26 @@ export function Pager({ page, total, onChange, keep }: { page: number; total: nu
       document.getElementById('appMain')?.scrollTo({ top: 0 });
     }
   };
-  const pages = Array.from({ length: total }, (_, i) => i + 1);
+  // 번호가 많으면 줄여서 — 앞쪽 「1 2 3 4 … 39」 · 가운데 「1 … 7 8 9 10 11 12 13 … 39」 · 뒤쪽 「1 … 36 37 38 39」 (v2.1 사용자 요청)
+  const keepNums = new Set<number>([1, total]);
+  if (total <= 7) { for (let i = 1; i <= total; i++) keepNums.add(i); }
+  else if (page <= 4) { for (let i = 1; i <= Math.max(4, page + 1); i++) keepNums.add(i); }
+  else if (page >= total - 3) { for (let i = Math.min(total - 3, page - 1); i <= total; i++) keepNums.add(i); }
+  else { for (let i = page - 3; i <= page + 3; i++) keepNums.add(i); }
+  const nums = [...keepNums].filter(n => n >= 1 && n <= total).sort((a, b) => a - b);
+  const items: (number | string)[] = [];
+  nums.forEach((n, i) => {
+    const prev = nums[i - 1];
+    if (prev !== undefined && n - prev === 2) items.push(prev + 1);          // 하나만 비면 점 대신 그 번호
+    else if (prev !== undefined && n - prev > 2) items.push(`gap${i}`);
+    items.push(n);
+  });
   return (
     <div className="pager">
       <button disabled={page <= 1} onClick={() => go(page - 1)}>‹</button>
-      {pages.map(p => (
-        <button key={p} className={p === page ? 'on' : ''} onClick={() => go(p)}>{p}</button>
-      ))}
+      {items.map(p => typeof p === 'string'
+        ? <span key={p} className="pg-gap">…</span>
+        : <button key={p} className={p === page ? 'on' : ''} onClick={() => go(p)}>{p}</button>)}
       <button disabled={page >= total} onClick={() => go(page + 1)}>›</button>
     </div>
   );
