@@ -378,6 +378,16 @@ export function SearchBar({ placeholder = '검색', light, onSearch }: {
 
 /* ---------- 페이지네이션 (v1.6) ---------- */
 export function Pager({ page, total, onChange, keep }: { page: number; total: number; onChange: (p: number) => void; keep?: boolean }) {
+  // 좁은 화면(모바일)은 번호를 더 줄여 한 줄에 딱 맞게 (v2.1 사용자 요청)
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia('(max-width: 620px)');
+    const on = () => setNarrow(mq.matches);
+    on();
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
   if (total <= 1) return null;
   // 페이지를 넘기면 목록 맨 위로 (keep이면 제자리 — 설정 화면처럼 긴 화면 안의 작은 목록용)
   const go = (p: number) => {
@@ -389,7 +399,13 @@ export function Pager({ page, total, onChange, keep }: { page: number; total: nu
   };
   // 번호가 많으면 줄여서 — 앞쪽 「1 2 3 4 … 39」 · 가운데 「1 … 7 8 9 10 11 12 13 … 39」 · 뒤쪽 「1 … 36 37 38 39」 (v2.1 사용자 요청)
   const keepNums = new Set<number>([1, total]);
-  if (total <= 7) { for (let i = 1; i <= total; i++) keepNums.add(i); }
+  if (narrow) {
+    // 모바일: 「‹ 1 2 3 4 … 39 ›」 · 「‹ 1 … 9 10 11 … 39 ›」 · 「‹ 1 … 36 37 38 39 ›」 — 최대 7칸 + 화살표
+    if (total <= 5) { for (let i = 1; i <= total; i++) keepNums.add(i); }
+    else if (page <= 3) { for (let i = 1; i <= 4; i++) keepNums.add(i); }
+    else if (page >= total - 2) { for (let i = total - 3; i <= total; i++) keepNums.add(i); }
+    else { for (let i = page - 1; i <= page + 1; i++) keepNums.add(i); }
+  } else if (total <= 7) { for (let i = 1; i <= total; i++) keepNums.add(i); }
   else if (page <= 4) { for (let i = 1; i <= Math.max(4, page + 1); i++) keepNums.add(i); }
   else if (page >= total - 3) { for (let i = Math.min(total - 3, page - 1); i <= total; i++) keepNums.add(i); }
   else { for (let i = page - 3; i <= page + 3; i++) keepNums.add(i); }

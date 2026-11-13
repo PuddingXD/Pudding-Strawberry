@@ -788,6 +788,7 @@ a{color:inherit;text-decoration:none}
 .pager button:hover{color:var(--btn-dark,var(--ink))}
 .pager button.on{background:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff);border-color:transparent}
 .pager button:disabled{opacity:.35;pointer-events:none}
+@media(max-width:620px){.pager{flex-wrap:nowrap;gap:2px}.pager button{min-width:28px;padding:0 4px}.pager .pg-gap{min-width:16px}}
 
 /* 모달/오버레이 (7장 — alert/confirm 대체) */
 .modal-ov{position:fixed;inset:0;background:rgba(15,17,20,.62);backdrop-filter:blur(3px);z-index:90;display:grid;place-items:center;animation:fade .16s}
