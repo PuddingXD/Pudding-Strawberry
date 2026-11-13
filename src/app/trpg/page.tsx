@@ -111,6 +111,19 @@ function TrpgPageInner() {
     const r = q.get('rel');
     if (r) setRelFilter(q.get('au') ? `${r}:${q.get('au')}` : r);
   }, []);
+  // 로그 본문에서 W를 누르면 ?add=1로 넘어온다 — 등록 권한이 있으면 ADD LOG 창을 한 번만 연다 (v2.1)
+  const addAuto = useRef(false);
+  useEffect(() => {
+    if (!canAdd || addAuto.current) return;
+    if (new URLSearchParams(window.location.search).get('add') !== '1') return;
+    addAuto.current = true;
+    setAddOpen(true);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('add');
+      window.history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch { /* 무시 */ }
+  }, [canAdd]);
   const [nDate, setNDate] = useState('');
   const [nMode, setNMode] = useState<'file' | 'paste'>('paste');
   const [nBody, setNBody] = useState('');

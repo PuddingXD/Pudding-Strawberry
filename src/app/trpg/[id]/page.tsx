@@ -17,7 +17,8 @@ import { applyLogSides, rpSpeakers, rpLogHtml, type RpLogSrc } from '@/lib/rpLog
 import type { RpMessage } from '@/lib/rpStore';
 import { useMenuSettings } from '@/lib/menuStore';
 import { useMembers } from '@/lib/members';
-import { canEditTrpg, trpgEditorIds } from '@/lib/trpgPerm';
+import { canEditTrpg, trpgEditorIds, canAddTrpg } from '@/lib/trpgPerm';
+import { WriteHere } from '@/components/shell/Shortcuts';
 import { logViewChars, renderLogSrc } from '@/lib/rpLogSrc';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TagInput } from '@/components/ui/TagInput';
@@ -567,8 +568,13 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
     l.id);
   const pnOf = (x: TrpgLog | null) => (x ? { href: logPath(x), title: x.title } : null);
 
+  // W 단축키 → 이 로그 게시판의 ADD LOG (v2.1) — 목록 페이지가 ?add=1을 받으면 추가 창을 연다
+  const wBase = sectionHref('trpg', l.secId ?? MAIN_SEC);
+  const wHref = canAddTrpg(menuSet, l.secId ?? MAIN_SEC, { loggedIn: !!user, isAdmin, id: user?.id })
+    ? `${wBase}${wBase.includes('?') ? '&' : '?'}add=1` : null;
   return (
     <section className="page">
+      <WriteHere href={wHref} />
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <p>{logNo(l)}{[l.writer, l.withText].filter(Boolean).map(x => ` · ${x}`).join('')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}{l.tags?.length ? ` · ${l.tags.map(t => '#' + t).join(' ')}` : ''}</p>

@@ -6,10 +6,12 @@ import React, { useState } from 'react';
 import { PrevNext, pickByList, pickNeighbors, keyedById } from '@/components/ui/PrevNext';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
-import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
+import { sectionHref, MAIN_SEC, useSectionTitle, secQuery } from '@/lib/sectionStore';
+import { useMenuSettings } from '@/lib/menuStore';
+import { WriteHere } from '@/components/shell/Shortcuts';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { TrpgReview, REVIEW_KEY, REVIEW_SEED, starText, ratersOf, canEditReview, reviewLinkViews } from '@/lib/reviewStore';
+import { TrpgReview, REVIEW_KEY, REVIEW_SEED, starText, ratersOf, canEditReview, reviewLinkViews, canWriteReview } from '@/lib/reviewStore';
 import { TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
 import { useBoardSettings, reviewCatsOf, boardBadgeStyle } from '@/lib/boardStore';
 import { ConfirmModal } from '@/components/ui/Modal';
@@ -22,6 +24,7 @@ function ReviewDetailInner() {
   const { user, isAdmin } = useAuth();
   const [rows, setRows, loaded] = useLocalList<TrpgReview>(REVIEW_KEY, REVIEW_SEED);
   const { st: boardSet } = useBoardSettings();
+  const [menuW] = useMenuSettings();   // W 단축키 → 글쓰기 (v2.1)
   const [delAsk, setDelAsk] = useState(false);
   const [logs] = useLocalList<TrpgLog>('ohome.trpg.v1', TRPG_SEED);   // 연결한 로그의 제목·주소 (v2.1)
   const r = rows.find(x => x.id === id);
@@ -50,8 +53,11 @@ function ReviewDetailInner() {
   // 연결한 로그 — 보는 사람이 볼 수 없는 로그는 빠진다 (reviewLinkViews)
   const linkViews = reviewLinkViews(r.logs, logs, isAdmin);
 
+  const wSec = r.secId ?? MAIN_SEC;
+  const wHref = canWriteReview(menuW, wSec, { loggedIn: !!user, isAdmin, id: user?.id }) ? `/treview/write${secQuery('treview', wSec)}` : null;
   return (
     <section className="page rv-detail">
+      <WriteHere href={wHref} />
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <div className="head-actions">

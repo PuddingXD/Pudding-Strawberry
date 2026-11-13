@@ -5,7 +5,9 @@ import { NavLink } from '@/components/ui/NavLink';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
-import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
+import { sectionHref, MAIN_SEC, useSectionTitle, secQuery } from '@/lib/sectionStore';
+import { useMenuSettings, canWriteAt, canGalleryWrite, writeKeyOf } from '@/lib/menuStore';
+import { WriteHere } from '@/components/shell/Shortcuts';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, fmtDate } from '@/lib/postStore';
 import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED, sortBackup } from '@/lib/galleryStore';
@@ -22,6 +24,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isAdmin } = useAuth();
+  const [menuW] = useMenuSettings();   // 글쓰기 권한 — W 단축키가 이 게시판 글쓰기로 보낼지 판단 (v2.1)
   const [posts, setPosts, loaded] = useLocalList<BackupPost>(feed ? FEED_KEY : 'ohome.backup.v1', feed ? FEED_SEED : BACKUP_SEED);
   const [cur, setCur] = useState(0);
   const [delAsk, setDelAsk] = useState(false);
@@ -130,8 +133,13 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   );
   const navOf = (x: BackupPost | null) => (x ? { href: `/${kind}/${x.id}`, title: x.title } : null);
 
+  const wSec = p.secId ?? MAIN_SEC;
+  const wViewer = { loggedIn: !!user, isAdmin, id: user?.id };
+  const wHref = (feed ? canWriteAt(menuW, writeKeyOf('/feed', wSec), wViewer) : canGalleryWrite(menuW, wSec, wViewer))
+    ? `/${kind}/write${secQuery(kind, wSec)}` : null;
   return (
     <section className="page">
+      <WriteHere href={wHref} />
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <p>

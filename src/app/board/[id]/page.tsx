@@ -6,7 +6,8 @@ import { createPortal } from 'react-dom';
 import { nowIso } from '@/lib/order';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
-import { extraBoardHref, useMenuSettings, canReadSecret } from '@/lib/menuStore';
+import { extraBoardHref, useMenuSettings, canReadSecret, canWriteAt } from '@/lib/menuStore';
+import { WriteHere } from '@/components/shell/Shortcuts';
 import { LockIcon } from '@/components/ui/LockIcon';
 import { useAuth } from '@/lib/auth';
 import {
@@ -234,8 +235,11 @@ export default function BoardDetailPage() {
     </div>
   );
 
+  // W 단축키 → 이 게시판 글쓰기 (v2.1) — 목록의 WRITE 버튼과 같은 권한 판정
+  const wHref = canWriteAt(menuSet, boardKey, { loggedIn: !!user, isAdmin, id: user?.id }, 'member', board.permWrite) ? `/board/write?b=${board.id}` : null;
   return (
     <section className="page">
+      <WriteHere href={wHref} />
       <div className="page-head">
         <PageTitle href={boardHref(board.id)}>{boardTitle}</PageTitle>
         {/* 썰 백업은 작성자 없이 (사용자 요청) */}
