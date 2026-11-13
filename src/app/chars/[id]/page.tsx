@@ -285,7 +285,7 @@ function CharDetailInner() {
           const cur = Math.min(artIdx, arts.length - 1);
           return (
             <div className="profile-center" ref={artBoxRef}
-              style={{ cursor: arts.length > 1 ? 'pointer' : undefined }}
+              style={{ cursor: arts.length > 1 ? 'var(--cur-pointer,pointer)' : undefined }}
               onClick={() => { if (arts.length > 1) setArtIdx(i => (i + 1) % arts.length); }}
               /* 대표 아트 우클릭 → 이 화면에 보일 위치 조정 (관리자, v2.0 사용자 확정) */
               onContextMenu={e => {

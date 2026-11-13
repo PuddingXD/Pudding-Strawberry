@@ -248,7 +248,7 @@ function EmptyCard({ isAdmin, onAdd }: { isAdmin: boolean; onAdd: () => void }) 
   return (
     <div className="panel mini-prof" style={{
       display: 'grid', placeItems: 'center', minHeight: 320,
-      border: '2px dashed var(--line)', background: 'rgba(252,252,253,.6)', cursor: isAdmin ? 'pointer' : undefined,
+      border: '2px dashed var(--line)', background: 'rgba(252,252,253,.6)', cursor: isAdmin ? 'var(--cur-pointer,pointer)' : undefined,
     }} onClick={() => { if (isAdmin) onAdd(); }}>
       <div style={{ textAlign: 'center', color: 'var(--faint)', fontSize: 12.5, padding: 20 }}>
         {isAdmin ? <><b style={{ fontSize: 20, display: 'block', marginBottom: 6 }}>＋</b>멤버 추가<br /><small>내 캐릭터 또는 상대 캐릭터</small></> : '멤버 미정'}
@@ -1076,7 +1076,7 @@ function RelDetailInner() {
                 </div>
               );
             })}
-            <div className="single" ref={artBoxRef} style={{ cursor: auArts.length > 1 ? 'pointer' : undefined }}
+            <div className="single" ref={artBoxRef} style={{ cursor: auArts.length > 1 ? 'var(--cur-pointer,pointer)' : undefined }}
               onClick={() => { const n = auArts.length; if (n > 1) setArtIdx(i => (i + 1) % n); }}
               onContextMenu={e => {
                 if (!isAdmin || !curArt) return;
@@ -1178,7 +1178,7 @@ function RelDetailInner() {
 
           {/* 우: 그룹 일러 — 여러 장이면 클릭 넘김 + 도트 */}
           <div className="multi-illust" ref={artBoxRef}
-            style={{ cursor: auArts.length > 1 ? 'pointer' : undefined }}
+            style={{ cursor: auArts.length > 1 ? 'var(--cur-pointer,pointer)' : undefined }}
             onClick={() => { const n = auArts.length; if (n > 1) setArtIdx(i => (i + 1) % n); }}
             onContextMenu={e => {
               if (!isAdmin || !curArt) return;

@@ -109,7 +109,7 @@ function DotoriPageInner() {
           const i = start + si;   // 정렬은 전체 기준 위치로
           return (
           <div key={it.id} className="panel dt-card" {...sort(i)}
-            style={{ cursor: canEdit(it) ? 'pointer' : undefined, ...(sort(i) as { style?: React.CSSProperties }).style }}
+            style={{ cursor: canEdit(it) ? 'var(--cur-pointer,pointer)' : undefined, ...(sort(i) as { style?: React.CSSProperties }).style }}
             onContextMenu={e => {
               if (!isAdmin) return;
               e.preventDefault();

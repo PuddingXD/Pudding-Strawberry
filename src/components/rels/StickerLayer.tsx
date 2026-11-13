@@ -35,7 +35,7 @@ function Img({ id, sticker, edit, live, onDown, onResize, onRot, onResetRot, onD
       {edit && (
         <>
           <span title="삭제" onPointerDown={e => e.stopPropagation()} onClick={onDel}
-            style={{ position: 'absolute', top: -10, right: -10, width: 20, height: 20, borderRadius: '50%', background: '#fff', color: '#a63a45', border: '1px solid #c96a73', display: 'grid', placeItems: 'center', fontSize: 11, cursor: 'pointer', lineHeight: 1 }}>✕</span>
+            style={{ position: 'absolute', top: -10, right: -10, width: 20, height: 20, borderRadius: '50%', background: '#fff', color: '#a63a45', border: '1px solid #c96a73', display: 'grid', placeItems: 'center', fontSize: 11, cursor: 'var(--cur-pointer,pointer)', lineHeight: 1 }}>✕</span>
           <span title="드래그로 기울기 · 더블클릭 = 초기화" onPointerDown={onRot} onDoubleClick={onResetRot}
             style={{ position: 'absolute', left: -7, top: -7, width: 15, height: 15, borderRadius: '50%', background: '#c96a73', border: '2px solid #fff', cursor: 'crosshair', boxShadow: '0 2px 6px rgba(0,0,0,.35)' }} />
           <span title="크기 조절" onPointerDown={onResize}

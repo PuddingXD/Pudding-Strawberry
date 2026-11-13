@@ -75,7 +75,7 @@ export function BannerWidget({ conf }: { conf: WidgetConf }) {
   };
 
   return (
-    <div className={`banner ${conf.settings.noBorder ? 'no-bd' : ''}`} style={{ cursor: s.link && !editOn ? 'pointer' : undefined }} onClick={go}>
+    <div className={`banner ${conf.settings.noBorder ? 'no-bd' : ''}`} style={{ cursor: s.link && !editOn ? 'var(--cur-pointer,pointer)' : undefined }} onClick={go}>
       {slides.map((sl, i) => (
         <div key={sl.id} className={`slide ${i === Math.min(cur, slides.length - 1) ? 'on' : ''}`}>
           {sl.imgId
@@ -157,7 +157,7 @@ export function MemoWidget({ conf }: { conf: WidgetConf }) {
   const text = (conf.settings.text as string) ?? '';
   useEditEvent(conf.id, () => { setDraft(text); setOpen(true); });   // 편집모드 우클릭 → 설정 (v1.9)
   return (
-    <div className="panel widget" style={{ cursor: isAdmin ? 'pointer' : undefined }}
+    <div className="panel widget" style={{ cursor: isAdmin ? 'var(--cur-pointer,pointer)' : undefined }}
       onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) { setDraft(text); setOpen(true); } }}>
       <h4>MEMO {isAdmin && <span className="more">관리 ›</span>}</h4>
       <p style={{ fontSize: 12, lineHeight: 1.7, color: '#3a3f47', whiteSpace: 'pre-line' }}>{text || '메모가 비어 있습니다'}</p>
@@ -243,7 +243,7 @@ export function LatestWidget() {
         {[0, 1, 2].map(i => {
           const it = latest[i];
           return (
-            <div key={it?.id ?? i} style={{ aspectRatio: '1', borderRadius: 9, overflow: 'hidden', position: 'relative', cursor: it ? 'pointer' : undefined }}
+            <div key={it?.id ?? i} style={{ aspectRatio: '1', borderRadius: 9, overflow: 'hidden', position: 'relative', cursor: it ? 'var(--cur-pointer,pointer)' : undefined }}
               onClick={() => { if (it) router.push(it.href); }}>
               <BlobImg fileRef={it?.ref} ph={it?.ph || phFallback[i]} />
             </div>
@@ -348,7 +348,7 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
   const dColor = conf.settings.color as string | undefined;
   useEditEvent(conf.id, () => setOpen(true));   // 편집모드 우클릭 → 설정 (v1.9)
   return (
-    <div className="panel widget" style={{ cursor: isAdmin ? 'pointer' : undefined }}
+    <div className="panel widget" style={{ cursor: isAdmin ? 'var(--cur-pointer,pointer)' : undefined }}
       onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) setOpen(true); }}>
       <h4>D-DAY {isAdmin && <span className="more">관리 ›</span>}</h4>
       {items.map(it => {
@@ -385,7 +385,7 @@ export function TodoWidget({ conf }: { conf: WidgetConf }) {
   };
 
   return (
-    <div className="panel widget" style={{ cursor: isAdmin ? 'pointer' : undefined }}
+    <div className="panel widget" style={{ cursor: isAdmin ? 'var(--cur-pointer,pointer)' : undefined }}
       onClick={e => {
         if (!isAdmin || editOn) return;
         if ((e.target as HTMLElement).closest('.k-check') || (e.target as HTMLElement).closest('.modal-ov')) return;
