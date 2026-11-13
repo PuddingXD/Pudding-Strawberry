@@ -16,6 +16,7 @@ import { useCursorSettings, CursorState, effectiveStates } from '@/lib/cursorSto
 import { useAuth } from '@/lib/auth';
 import { getBlob } from '@/lib/blobStore';
 import { parseAni, isCur } from '@/lib/aniCursor';
+import { fitCurBlob } from '@/lib/curFit';
 
 // 상태 → 전역 CSS 변수 (v1.9) — globals.css·인라인 스타일의 cursor:var(--cur-pointer,pointer) /
 // var(--cur-grab,grab) 사용처 전부에 자동 적용. 셀렉터 나열로 못 잡던 div+onClick 요소
@@ -107,21 +108,29 @@ export function CursorLayer() {
         const ani = parseAni(buf);
         if (ani && ani.steps.length > 1) {
           // 움직이는 커서 — 프레임마다 규칙을 미리 다 적어 둔다 (위 주석). .ani 프레임은 .cur라 핫스팟이 들어 있다
-          const frameUrls = ani.frames.map(f => { const u = URL.createObjectURL(f); urls.push(u); return u; });
+          // 프레임이 128px를 넘으면 브라우저가 무시한다 — 큰 크기를 걸러낸 그림으로 (lib/curFit)
+          const fitted = await Promise.all(ani.frames.map(f => fitCurBlob(f)));
+          if (cancelled) return;
+          const frameUrls = fitted.map(f => { const u = URL.createObjectURL(f.blob); urls.push(u); return u; });
+          const frameHs = fitted.map(f => (f.hs === '__keep__' ? '' : f.hs));
           const stepUrls = ani.steps.map(i => frameUrls[i]);
           const attr = attrOf(key);
           stepUrls.forEach((u, k) => {
             const cond = `html[${attr}="${k}"]`;
-            parts.push(`${scoped(rule.sel, cond)}{cursor:url("${u}"), ${rule.fallback} !important}`);
-            if (vn) parts.push(`${cond}{${vn}:url("${u}"), ${rule.fallback}}`);
+            const h = frameHs[ani.steps[k]];
+            parts.push(`${scoped(rule.sel, cond)}{cursor:url("${u}")${h}, ${rule.fallback} !important}`);
+            if (vn) parts.push(`${cond}{${vn}:url("${u}")${h}, ${rule.fallback}}`);
           });
           anims.push({ key, urls: stepUrls, delays: ani.delays });
         } else {
           // 멈춘 커서 (프레임이 하나뿐인 .ani 포함). .cur는 내장 핫스팟 사용 — CSS 좌표를 붙이면 무시되는 브라우저가 있어 생략
           const one = ani ? ani.frames[ani.steps[0]] : blob;
-          const url = URL.createObjectURL(one);
+          const fit = await fitCurBlob(one);
+          if (cancelled) return;
+          const url = URL.createObjectURL(fit.blob);
           urls.push(url);
-          const hs = ani || isCur(buf) ? '' : ` ${entry.hx} ${entry.hy}`;
+          // .cur는 내장 핫스팟 · 줄여 그린 그림은 옮긴 좌표 · 그 밖(png 등)은 설정한 핫스팟
+          const hs = fit.hs === '__keep__' ? (ani || isCur(buf) ? '' : ` ${entry.hx} ${entry.hy}`) : fit.hs;
           parts.push(`${rule.sel}{cursor:url("${url}")${hs}, ${rule.fallback} !important}`);
           if (vn) parts.push(`:root{${vn}:url("${url}")${hs}, ${rule.fallback}}`);
         }
