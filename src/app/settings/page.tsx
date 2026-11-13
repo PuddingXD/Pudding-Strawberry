@@ -37,6 +37,7 @@ import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
 import { useSiteDraft } from '@/lib/siteStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCursorSettings, CursorState, CURSOR_STATE_LABEL, CursorScope, scopeStates, withScopeStates } from '@/lib/cursorStore';
+import { Cand, candsFromDrop, candsFromInput, matchCursors } from '@/lib/cursorMatch';
 import { RelQuestionSet, CP_LABEL, useRelqSets } from '@/lib/relqStore';
 import { SymbolInput } from '@/components/ui/SymbolInput';
 import { allBlobs, putBlobAs, useBlobUrl, getBlob } from '@/lib/blobStore';
@@ -1818,6 +1819,33 @@ function CursorPane() {
   const members = useMembers();
   const [scope, setScope] = useState<CursorScope>('base');
   const [pick, setPick] = useState('');
+  const toast = useToast();
+  // ZIP·폴더·여러 파일을 한 번에 — 파일 이름으로 알맞은 칸을 찾아 맞춘다 (v2.1 사용자 요청)
+  const [hover, setHover] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<{ done: string[]; skipped: string[] } | null>(null);
+  const bulkFile = useRef<HTMLInputElement>(null);
+  const bulkDir = useRef<HTMLInputElement>(null);
+  const applyBulk = async (cands: Cand[]) => {
+    if (!cands.length) { toast('올릴 수 있는 커서 파일(.ani .cur .png …)이 없습니다'); return; }
+    setBusy(true);
+    try {
+      const { matched, skipped } = await matchCursors(cands);
+      let next = { ...scopeStates(st, scope) };
+      const done: string[] = [];
+      for (const m of matched) {
+        const { blob } = await fitCursorImage(m.cand.file);
+        next = { ...next, [m.state]: { imgId: await putBlob(blob), hx: 0, hy: 0 } };
+        done.push(`${CURSOR_STATE_LABEL[m.state].label} ← ${m.cand.file.name}`);
+      }
+      if (matched.length) patch(withScopeStates(st, scope, next));
+      setReport({ done, skipped });
+      toast(matched.length ? `${matched.length}개 칸에 맞춰 등록했습니다` : '이름으로 맞는 칸을 찾지 못했습니다');
+    } catch (e) {
+      toast(`커서를 불러오지 못했습니다 — ${e instanceof Error ? e.message : String(e)}`);
+    }
+    setBusy(false);
+  };
   const nameOf = (s: CursorScope) =>
     s === 'base' ? '일반' : s === 'admin' ? '관리자' : s === 'member' ? '회원 전체'
       : (members.find(m => `u:${m.id}` === s)?.nickname ?? s.slice(2));
@@ -1866,6 +1894,40 @@ function CursorPane() {
           </button>
         )}
       </div>
+      {/* 한 번에 올리기 — 윈도우 커서 세트(ZIP·폴더)를 끌어 놓으면 파일 이름으로 칸을 찾아 맞춘다 */}
+      <div
+        onDragOver={e => { e.preventDefault(); setHover(true); }}
+        onDragLeave={() => setHover(false)}
+        onDrop={async e => { e.preventDefault(); setHover(false); await applyBulk(await candsFromDrop(e.dataTransfer)); }}
+        style={{
+          border: `2px dashed ${hover ? 'var(--accent)' : 'var(--line)'}`, borderRadius: 12, padding: '14px 16px', margin: '0 0 12px',
+          background: hover ? 'rgba(127,127,127,.08)' : 'transparent', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap',
+        }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <b style={{ fontSize: 13 }}>{nameOf(scope)} 커서 한 번에 올리기</b>
+          <div className="hint" style={{ margin: '4px 0 0' }}>
+            커서 세트의 <b>ZIP · 폴더 · 파일 여러 개</b>를 여기에 끌어 놓거나 아래 버튼으로 열면, 파일 이름(normal select · link select ·
+            diagonal resize 1 …)을 보고 알맞은 칸에 자동으로 맞춥니다. 설치용 .inf가 있으면 그 대응표를 먼저 씁니다.
+            이미 등록된 칸은 새 파일로 바뀝니다.
+          </div>
+        </div>
+        <input ref={bulkFile} type="file" multiple hidden accept=".zip,.ani,.cur,.ico,.inf,image/png,image/gif,image/webp"
+          onChange={async e => { const c = await candsFromInput(e.target.files); e.target.value = ''; await applyBulk(c); }} />
+        <input ref={bulkDir} type="file" multiple hidden {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+          onChange={async e => { const c = await candsFromInput(e.target.files); e.target.value = ''; await applyBulk(c); }} />
+        <button className="btn btn-ghost" style={{ height: 33, padding: '0 12px', fontSize: 11 }} disabled={busy}
+          onClick={() => bulkFile.current?.click()}>파일·ZIP 열기</button>
+        <button className="btn btn-ghost" style={{ height: 33, padding: '0 12px', fontSize: 11 }} disabled={busy}
+          onClick={() => bulkDir.current?.click()}>폴더 열기</button>
+        {busy && <span className="hint">맞추는 중…</span>}
+      </div>
+      {report && (
+        <div className="hint" style={{ margin: '0 0 12px', lineHeight: 1.7 }}>
+          <b>맞춘 결과</b> — {report.done.length ? report.done.join(' · ') : '없음'}
+          {report.skipped.length > 0 && (<><br /><b>건너뜀</b> — {report.skipped.join(' · ')}</>)}
+          <br /><button className="btn btn-ghost" style={{ height: 26, padding: '0 10px', fontSize: 10, marginTop: 4 }} onClick={() => setReport(null)}>닫기</button>
+        </div>
+      )}
       {(Object.keys(CURSOR_STATE_LABEL) as CursorState[]).map(s => <CursorRow key={`${scope}-${s}`} state={s} scope={scope} />)}
     </div>
   );
@@ -3041,6 +3103,19 @@ function TrpgPane() {
       statusOrder: [...statusKeys, k],
     });
   };
+  // 드래그로 순서 바꾸기 (v2.1 사용자 요청) — 손잡이(⠿)를 끌어 다른 줄 위에 놓으면 그 자리로
+  const [dragK, setDragK] = useState<string | null>(null);
+  const [overK, setOverK] = useState<string | null>(null);
+  const dropOn = (target: string) => {
+    const from = dragK;
+    setDragK(null); setOverK(null);
+    if (!from || from === target) return;
+    const order = statusKeys.filter(x => x !== from);
+    const at = order.indexOf(target);
+    // 아래로 끌었으면 대상 뒤에, 위로 끌었으면 대상 앞에
+    order.splice(statusKeys.indexOf(from) < statusKeys.indexOf(target) ? at + 1 : at, 0, from);
+    patch({ statusOrder: order });
+  };
   const removeStatus = (k: string) => {
     const rest = Object.fromEntries(Object.entries(settings.statuses).filter(([x]) => x !== k));
     patch({ statuses: rest, statusOrder: statusKeys.filter(x => x !== k) });
@@ -3071,8 +3146,24 @@ function TrpgPane() {
       {statusKeys.map(k => {
         const st = settings.statuses[k];
         return (
-          <div key={k} className="set-row" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="l">
+          <div key={k} className="set-row" style={{
+            alignItems: 'center', flexWrap: 'wrap', opacity: dragK === k ? 0.45 : 1,
+            boxShadow: dragK && overK === k && dragK !== k
+              ? (statusKeys.indexOf(dragK) < statusKeys.indexOf(k) ? 'inset 0 -3px 0 var(--accent)' : 'inset 0 3px 0 var(--accent)') : undefined,
+          }}
+            onDragOver={e => { if (dragK) { e.preventDefault(); if (overK !== k) setOverK(k); } }}
+            onDrop={e => { e.preventDefault(); dropOn(k); }}>
+            <div className="l" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span draggable className="drag-h" data-tip="끌어서 순서 변경"
+                style={{ fontSize: 16, lineHeight: 1, padding: '2px 4px' }}
+                onDragStart={e => {
+                  setDragK(k);
+                  e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', k);
+                  const row = (e.currentTarget as HTMLElement).closest('.set-row');
+                  if (row) e.dataTransfer.setDragImage(row, 24, 20);
+                }}
+                onDragEnd={() => { setDragK(null); setOverK(null); }}>⠿</span>
               <span className="dt-badge" style={{ ...dotoriBadgeStyle(st), position: 'static' }}>{st.label || '상태'}</span>
             </div>
             <div className="cp-group" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>

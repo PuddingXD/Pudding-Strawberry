@@ -9,6 +9,11 @@ import { useToast } from '@/components/ui/Toast';
 export function UploadBusy() {
   const n = useUploading();
   const toast = useToast();
+  // 올리는 동안 전체 화면 커서를 「대기」로 (커서 설정의 busy 칸 — 등록해 둔 사람에게만 보인다)
+  useEffect(() => {
+    document.documentElement.classList.toggle('cur-busy', n > 0);
+    return () => document.documentElement.classList.remove('cur-busy');
+  }, [n > 0]);   // eslint-disable-line react-hooks/exhaustive-deps
   // 20MB 초과 — 올리기 전에 막고 이유를 알린다
   useEffect(() => {
     const h = (e: Event) => {

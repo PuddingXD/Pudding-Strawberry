@@ -49,6 +49,16 @@ const RULES: Record<CursorState, { sel: string; fallback: string }> = {
   rsNesw: { sel: '.cur-rs-nesw', fallback: 'nesw-resize' },
   rsEw: { sel: '.cur-rs-ew', fallback: 'ew-resize' },
   rsNs: { sel: '.cur-rs-ns', fallback: 'ns-resize' },
+  // 윈도우 커서 세트의 나머지 — data-cur="…"를 단 요소에도 적용된다
+  help: { sel: 'abbr[title], .cur-help, [data-cur="help"]', fallback: 'help' },
+  busy: { sel: 'html.cur-busy, html.cur-busy *, [data-cur="busy"]', fallback: 'wait' },
+  working: { sel: '[aria-busy="true"], .cur-working, [data-cur="working"]', fallback: 'progress' },
+  precision: { sel: 'canvas, .cur-precision, [data-cur="precision"]', fallback: 'crosshair' },
+  unavailable: { sel: 'button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"], [data-cur="unavailable"]', fallback: 'not-allowed' },
+  alternate: { sel: '.cur-alt, [data-cur="alternate"]', fallback: 'auto' },
+  handwriting: { sel: '.postit textarea, .postit [contenteditable="true"], [data-cur="handwriting"]', fallback: 'text' },
+  location: { sel: '.doc-toc, .doc-tab, [data-cur="location"]', fallback: 'pointer' },
+  person: { sel: '.mini-prof, .user-chip, .avatar, [data-cur="person"]', fallback: 'pointer' },
 };
 
 interface AnimState { key: CursorState; urls: string[]; delays: number[] }

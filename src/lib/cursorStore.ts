@@ -7,7 +7,9 @@ import { getRawSetting, setSetting } from './settingStore';
 // 이동·크기조절 커서 분리 (v1.9 사용자 요청) — 이동/드래그 하나로 퉁치지 않고
 // 윈도우 커서 세트처럼 이동 + 크기조절 4방향을 각각 등록
 export type CursorState = 'default' | 'pointer' | 'text' | 'active' | 'grab'
-  | 'rsNwse' | 'rsNesw' | 'rsEw' | 'rsNs';
+  | 'rsNwse' | 'rsNesw' | 'rsEw' | 'rsNs'
+  // 윈도우 커서 세트의 나머지 (v2.1 사용자 요청 — 세트 15종을 다 올릴 수 있게)
+  | 'help' | 'busy' | 'working' | 'precision' | 'unavailable' | 'alternate' | 'handwriting' | 'location' | 'person';
 
 export interface CursorEntry { imgId: string; hx: number; hy: number } // 핫스팟 (px)
 
@@ -48,6 +50,15 @@ export const CURSOR_STATE_LABEL: Record<CursorState, { label: string; desc: stri
   rsNesw: { label: '크기조절 ↙', desc: '대각선 크기 조절 2 (선택)' },
   rsEw: { label: '크기조절 ↔', desc: '가로 크기 조절 (선택)' },
   rsNs: { label: '크기조절 ↕', desc: '세로 크기 조절 (선택)' },
+  help: { label: '도움말 (help select)', desc: '도움말·약어 표시가 있는 글자 위 (선택)' },
+  busy: { label: '대기 (busy)', desc: '업로드 등 기다려야 하는 동안 화면 전체 (선택)' },
+  working: { label: '백그라운드 작업 (working in background)', desc: '불러오는 중 표시가 있는 곳 위 (선택)' },
+  precision: { label: '정밀 선택 (precision select)', desc: '그림 자르기 등 캔버스 위 (선택)' },
+  unavailable: { label: '사용 불가 (unavailable)', desc: '비활성(눌러도 반응 없는) 버튼 위 (선택)' },
+  alternate: { label: '대체 선택 (alternate select)', desc: '예약 — 요소에 data-cur="alternate"를 달면 적용 (선택)' },
+  handwriting: { label: '손글씨 (handwriting)', desc: '스티커 메모 입력칸 위 (선택)' },
+  location: { label: '위치 선택 (location select)', desc: '문서 목차·문서 탭 위 (선택)' },
+  person: { label: '사람 선택 (person select)', desc: '프로필·아바타 위 (선택)' },
 };
 
 export const DEFAULT_CURSOR_SETTINGS: CursorSettings = { enabled: true, states: {} };
