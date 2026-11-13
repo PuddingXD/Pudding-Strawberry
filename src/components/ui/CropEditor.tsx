@@ -56,7 +56,7 @@ export function CropImg({ src, crop, alt, fitDefault }: { src: string; crop?: Cr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
   return (
-    <div ref={wrapRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+    <div ref={wrapRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', ...(crop && crop.scale < 1 ? { background: 'var(--crop-bg,#2c313a)' } : null) }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt ?? ''} draggable={false}
         onLoad={e => { const im = e.currentTarget; natRef.current = { w: im.naturalWidth, h: im.naturalHeight }; compute(); }}
@@ -98,7 +98,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   const blank: CropValue = fitProp ? { x: 0, y: 0, scale: 1, fit: true } : { x: 0, y: 0, scale: 1 };
   const [crop, setCrop] = useState<CropValue>(initial ?? blank);
   const fitMode = !!crop.fit;
-  const minS = fitMode ? 0.5 : 1;
+  const minS = 0.5;   // 1배보다 작게(축소)도 — 빈 곳은 판 색(--crop-bg)이 채운다 (v2.1 사용자 요청)
   const frameRef = useRef<HTMLDivElement>(null);
   const zoomRef = useRef<HTMLDivElement>(null);
   const [natR, setNatR] = useState<number | null>(null);  // 원본 가로/세로 비
@@ -148,7 +148,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   const setZoomFromPointer = (clientX: number) => {
     const r = zoomRef.current!.getBoundingClientRect();
     const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-    setCrop(c => clamp({ ...c, scale: minS + t * (maxScale - minS) })); // 1x ~ 최대 (높이 맞춤은 0.5x ~)
+    setCrop(c => clamp({ ...c, scale: minS + t * (maxScale - minS) })); // 0.5x ~ 최대
   };
 
   const onZoomDrag = (e: React.PointerEvent) => {

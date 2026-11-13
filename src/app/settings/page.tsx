@@ -17,7 +17,7 @@ import { DiaryPost, DIARY_SEED } from '@/lib/diaryStore';
 import { newId } from '@/lib/postStore';
 import {
   useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf, feedCatsOf, roadCatsOf, feedHideAuthorOf,
-  useBoards, Board, BoardSkin, BOARD_SKIN_LABEL, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
+  useBoards, Board, BoardSkin, BOARD_SKIN_LABEL, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, galleryColsOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
 } from '@/lib/boardStore';
 import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle, threadCats, threadCatsPatch } from '@/lib/threadStore';
 import { useTrpgSettings, dotoriStatusKeys, dotoriBadgeOn, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
@@ -697,7 +697,7 @@ function BoardPane() {
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
     patchFeedCat, addFeedCat, removeFeedCat, setFeedCats, setFeedHideAuthor,
     patchRoadCat, addRoadCat, removeRoadCat, setRoadCats,
-  setPerPage, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats,
+  setPerPage, setGalleryCols, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats,
   } = useBoardSettings();
   const { boards, setBoards, patchBoard } = useBoards();
   const [catBoard, setCatBoard] = useState(MAIN_BOARD_ID);   // 말머리 편집 대상 게시판
@@ -966,6 +966,10 @@ function BoardPane() {
           <KStep value={perPageOf(st, row.k)} min={1} max={60} suffix="개" onChange={v => setPerPage(row.k, v)} />
         </div>
       ))}
+      <div className="set-row" style={{ alignItems: 'center' }}>
+        <div className="l"><b>갤러리 보기 한 줄 칸 수</b><small>많을수록 썸네일이 작아집니다 · 기본 3칸 (2~8)</small></div>
+        <KStep value={galleryColsOf(st)} min={2} max={8} suffix="칸" onChange={v => setGalleryCols(v)} />
+      </div>
 
       <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
       {/* 갤러리·다이어리 등도 여러 개로 (v2.0 사용자 요청) — 목록이 몇 개인지는 여기 한곳에서 */}

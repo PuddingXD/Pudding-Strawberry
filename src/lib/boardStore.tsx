@@ -63,12 +63,19 @@ export interface BoardSettings {
   reviewStars?: { a?: string; b?: string };
   /** 한 페이지에 보일 글 수 (v2.1 사용자 요청) — 갤러리 보기 / 갤러리 리스트 보기 / 큰 그림 / 로드비. 비우면 기본값 */
   perPage?: { gallery?: number; galleryList?: number; feed?: number; road?: number; board?: number };
+  /** 갤러리 보기 한 줄 칸 수 (v2.1 사용자 요청) — 클릭 버튼 대신 환경설정에서. 많을수록 썸네일이 작아진다. 기본 3 */
+  galleryCols?: number;
 }
 export const PER_PAGE_DEFAULT = { gallery: 12, galleryList: 20, feed: 6, road: 4, board: 8 } as const;
 /** 한 페이지 글 수 — 정한 값(1~60), 없으면 기본값 */
 export const perPageOf = (s: BoardSettings, k: keyof typeof PER_PAGE_DEFAULT): number => {
   const v = s.perPage?.[k];
   return v && v >= 1 ? Math.min(60, Math.round(v)) : PER_PAGE_DEFAULT[k];
+};
+/** 갤러리 보기 한 줄 칸 수 — 2~8, 기본 3 */
+export const galleryColsOf = (s: BoardSettings): number => {
+  const v = s.galleryCols;
+  return v && v >= 2 ? Math.min(8, Math.round(v)) : 3;
 };
 const DEFAULTS: BoardSettings = {
   system: DEFAULT_BOARD_SYSTEM, cats: DEFAULT_BOARD_CATS,
@@ -221,10 +228,11 @@ export function useBoardSettings() {
     apply(s => ({ ...s, reviewStars: { ...s.reviewStars, ...p } })), [apply]);
   const setPerPage = useCallback((k: keyof typeof PER_PAGE_DEFAULT, v: number | undefined) =>
     apply(s => ({ ...s, perPage: { ...s.perPage, [k]: v } })), [apply]);
+  const setGalleryCols = useCallback((v: number) => apply(s => ({ ...s, galleryCols: v })), [apply]);
   return {
     patchSheetCat, addSheetCat, removeSheetCat, setSheetCats,
     patchPlaylogCat, addPlaylogCat, removePlaylogCat, setPlaylogCats,
-    setPerPage, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats, setReviewStars,
+    setPerPage, setGalleryCols, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats, setReviewStars,
     st, loaded, patchSystem, patchCat, addCat, removeCat, setCats, patchGallery,
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
     patchFeedCat, addFeedCat, removeFeedCat, setFeedCats, setFeedHideAuthor,
