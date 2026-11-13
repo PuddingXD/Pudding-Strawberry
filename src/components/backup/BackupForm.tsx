@@ -64,7 +64,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
   const tt = useSectionTitle(kind, initial ? (initial.secId ?? MAIN_SEC) : sec.id, isNew ? 'WRITE' : 'EDIT');
   const [title, setTitle] = useState(initial?.title ?? '');
   // 큰 그림 게시판은 유형을 고르지 않는다 — 늘 세로 나열(이미지 사이 갭, 클릭 확대)
-  const [type, setType] = useState<'log' | 'single' | 'vlist' | 'pair'>(initial?.type ?? (feed ? 'vlist' : 'log'));
+  const [type, setType] = useState<'log' | 'single' | 'vlist' | 'pair'>(initial?.type ?? (feed ? 'vlist' : 'single'));
   const [files, setFiles] = useState<UpFile[]>(() =>
     (initial?.images ?? []).map((ref, i) => ({
       id: newId(), name: `이미지 ${i + 1}`, ref, original: true,
@@ -217,14 +217,14 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
           {!feed && <div className="form-row">
             <label className="k-label" style={{ width: 60 }}>유형</label>
             <div style={{ display: 'flex', gap: '8px 18px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <KRadio name="wtype" value="log" current={type} onChange={v => setType(v as 'log')}
-                label="로그" />
               <KRadio name="wtype" value="single" current={type} onChange={v => setType(v as 'single')}
                 label="화살표" />
-              <KRadio name="wtype" value="vlist" current={type} onChange={v => setType(v as 'vlist')}
-                label="세로" />
               <KRadio name="wtype" value="pair" current={type} onChange={v => setType(v as 'pair')}
                 label="나란히" />
+              <KRadio name="wtype" value="vlist" current={type} onChange={v => setType(v as 'vlist')}
+                label="세로" />
+              <KRadio name="wtype" value="log" current={type} onChange={v => setType(v as 'log')}
+                label="로그" />
             </div>
           </div>}
           <label className="k-label">이미지</label>
