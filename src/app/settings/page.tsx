@@ -36,7 +36,7 @@ import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection, SECTI
 import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
 import { useSiteDraft } from '@/lib/siteStore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCursorSettings, CursorState, CURSOR_STATE_LABEL, CursorScope, scopeStates, withScopeStates } from '@/lib/cursorStore';
+import { useCursorSettings, CursorState, CURSOR_STATE_LABEL, CursorScope, scopeStates, withScopeStates, effectiveStates } from '@/lib/cursorStore';
 import { Cand, candsFromDrop, candsFromInput, matchCursors } from '@/lib/cursorMatch';
 import { RelQuestionSet, CP_LABEL, useRelqSets } from '@/lib/relqStore';
 import { SymbolInput } from '@/components/ui/SymbolInput';
@@ -1816,6 +1816,8 @@ function CursorRow({ state, scope }: { state: CursorState; scope: CursorScope })
 
 function CursorPane() {
   const [st, patch] = useCursorSettings();
+  const { user: me, isAdmin: meAdmin } = useAuth();
+  const nowEff = effectiveStates(st, me ? { id: me.id, admin: meAdmin } : null);
   const members = useMembers();
   const [scope, setScope] = useState<CursorScope>('base');
   const [pick, setPick] = useState('');
@@ -1874,6 +1876,10 @@ function CursorPane() {
         보는 사람에 따라 커서를 다르게 보일 수 있어요. <b>일반</b>은 아래에서 따로 정하지 않은 모든 사람(방문자 포함)에게 보이고,
         관리자·회원 전체·회원 한 명씩 정한 커서는 그 사람이 로그인했을 때만 보입니다. 정하지 않은 상태는 일반 커서가 보입니다.
         우선순위는 <b>회원 한 명 &gt; 관리자/회원 전체 &gt; 일반</b>입니다.
+      </p>
+      <p className="hint" style={{ margin: '0 0 8px' }}>
+        지금 이 계정({me ? `${me.id} · ${meAdmin ? '관리자' : '회원'}` : '로그아웃 상태'})에 실제로 적용되는 칸: <b>{Object.keys(nowEff).length}개</b>
+        {Object.keys(nowEff).length ? ` (${Object.keys(nowEff).map(k => CURSOR_STATE_LABEL[k as CursorState]?.label.split(' ')[0] ?? k).join(', ')})` : ''}
       </p>
       <div className="mini-seg" style={{ flexWrap: 'wrap', margin: '0 0 10px' }}>
         {(['base', 'admin', 'member', ...userScopes] as CursorScope[]).map(sc => (
