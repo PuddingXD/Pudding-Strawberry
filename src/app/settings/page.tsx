@@ -36,7 +36,7 @@ import { useSections, sectionsOf, sectionMenuEntries, MAIN_SEC, inSection, SECTI
 import { useCustomLinks, linkEntries, toInternalPath } from '@/lib/linkStore';
 import { useSiteDraft } from '@/lib/siteStore';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCursorSettings, CursorState, CURSOR_STATE_LABEL } from '@/lib/cursorStore';
+import { useCursorSettings, CursorState, CURSOR_STATE_LABEL, CursorScope, scopeStates, withScopeStates } from '@/lib/cursorStore';
 import { RelQuestionSet, CP_LABEL, useRelqSets } from '@/lib/relqStore';
 import { SymbolInput } from '@/components/ui/SymbolInput';
 import { allBlobs, putBlobAs, useBlobUrl, getBlob } from '@/lib/blobStore';
@@ -1746,10 +1746,12 @@ async function fitCursorImage(f: File): Promise<{ blob: Blob; resized: boolean }
 }
 
 /** 마우스 커서 탭 (5.1 v1.1) — 상태별 이미지 + 핫스팟 + 전체 on/off */
-function CursorRow({ state }: { state: CursorState }) {
+function CursorRow({ state, scope }: { state: CursorState; scope: CursorScope }) {
   const [st, patch] = useCursorSettings();
   const toast = useToast();
-  const entry = st.states[state];
+  const mine = scopeStates(st, scope);            // 이 구분(일반·관리자·회원…)이 정한 커서
+  const entry = mine[state];
+  const inherited = scope !== 'base' && !entry && !!st.states[state];   // 이 구분은 안 정함 → 일반 커서가 보인다
   // .ani는 <img>로 표시되지 않아 첫 프레임(.cur)을 뽑아 미리보기 (v1.9)
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -1765,9 +1767,9 @@ function CursorRow({ state }: { state: CursorState }) {
     });
     return () => { cancelled = true; if (obj) URL.revokeObjectURL(obj); };
   }, [entry?.imgId]);
-  const inputId = `curFile-${state}`;
+  const inputId = `curFile-${scope}-${state}`;
   const setEntry = (p: Partial<{ imgId: string; hx: number; hy: number }>) =>
-    patch({ states: { ...st.states, [state]: { imgId: entry?.imgId ?? '', hx: 0, hy: 0, ...entry, ...p } } });
+    patch(withScopeStates(st, scope, { ...mine, [state]: { imgId: entry?.imgId ?? '', hx: 0, hy: 0, ...entry, ...p } }));
   return (
     <div className="set-row" style={{ flexWrap: 'wrap' }}>
       <div className="l" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -1778,7 +1780,7 @@ function CursorRow({ state }: { state: CursorState }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {url ? <img src={url} alt="" style={{ maxWidth: 32, maxHeight: 32 }} /> : <span style={{ color: 'var(--faint)', fontSize: 14 }}>✛</span>}
         </span>
-        <div><b>{CURSOR_STATE_LABEL[state].label}</b><small>{CURSOR_STATE_LABEL[state].desc}</small></div>
+        <div><b>{CURSOR_STATE_LABEL[state].label}</b><small>{CURSOR_STATE_LABEL[state].desc}{inherited ? ' · 지정 안 함 → 일반 커서가 보임' : ''}</small></div>
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input id={inputId} type="file" accept="image/png,image/gif,image/webp,image/x-icon,.cur,.ani" style={{ display: 'none' }}
@@ -1800,9 +1802,9 @@ function CursorRow({ state }: { state: CursorState }) {
             <KStep value={entry.hy} min={0} max={32} step={1} onChange={v => setEntry({ hy: v })} />
             <button className="btn btn-ghost" style={{ height: 33, padding: '0 12px', fontSize: 11 }}
               onClick={() => {
-                const next = { ...st.states };
+                const next = { ...mine };
                 delete next[state];
-                patch({ states: next });
+                patch(withScopeStates(st, scope, next));
               }}>REMOVE</button>
           </>
         )}
@@ -1813,6 +1815,21 @@ function CursorRow({ state }: { state: CursorState }) {
 
 function CursorPane() {
   const [st, patch] = useCursorSettings();
+  const members = useMembers();
+  const [scope, setScope] = useState<CursorScope>('base');
+  const [pick, setPick] = useState('');
+  const nameOf = (s: CursorScope) =>
+    s === 'base' ? '일반' : s === 'admin' ? '관리자' : s === 'member' ? '회원 전체'
+      : (members.find(m => `u:${m.id}` === s)?.nickname ?? s.slice(2));
+  // 회원 한 명씩 지정한 구분 (이미 만들어 둔 것)
+  const userScopes = Object.keys(st.roles ?? {}).filter(k => k.startsWith('u:'));
+  const addable = members.filter(m => m.role !== 'admin' && !userScopes.includes(`u:${m.id}`));
+  const dropScope = (s: CursorScope) => {
+    const roles = { ...(st.roles ?? {}) };
+    delete roles[s];
+    patch({ roles });
+    setScope('base');
+  };
   return (
     <div className="set-sec">
       <h3>마우스 커서</h3>
@@ -1824,7 +1841,32 @@ function CursorPane() {
         <div className="l"><b>커스텀 커서 사용</b><small>끄면 전부 기본 커서로 (등록 이미지는 보존)</small></div>
         <KToggle checked={st.enabled} onChange={v => patch({ enabled: v })} />
       </div>
-      {(Object.keys(CURSOR_STATE_LABEL) as CursorState[]).map(s => <CursorRow key={s} state={s} />)}
+      {/* 누가 보느냐에 따라 다른 커서 (v2.1 사용자 요청) — 지정하지 않은 상태는 일반 커서로 */}
+      <p className="hint" style={{ margin: '4px 0 6px' }}>
+        보는 사람에 따라 커서를 다르게 보일 수 있어요. <b>일반</b>은 아래에서 따로 정하지 않은 모든 사람(방문자 포함)에게 보이고,
+        관리자·회원 전체·회원 한 명씩 정한 커서는 그 사람이 로그인했을 때만 보입니다. 정하지 않은 상태는 일반 커서가 보입니다.
+        우선순위는 <b>회원 한 명 &gt; 관리자/회원 전체 &gt; 일반</b>입니다.
+      </p>
+      <div className="mini-seg" style={{ flexWrap: 'wrap', margin: '0 0 10px' }}>
+        {(['base', 'admin', 'member', ...userScopes] as CursorScope[]).map(sc => (
+          <button key={sc} className={scope === sc ? 'on' : ''} onClick={() => setScope(sc)}>{nameOf(sc)}</button>
+        ))}
+      </div>
+      <div className="form-row" style={{ gap: 8, margin: '0 0 8px' }}>
+        <KSelect minWidth={170} value={pick} onChange={setPick}
+          options={[{ value: '', label: '회원 한 명 지정하기…' }, ...addable.map(m => ({ value: m.id, label: m.nickname }))]} />
+        <button className="btn btn-ghost" style={{ height: 33, padding: '0 12px', fontSize: 11 }} disabled={!pick}
+          onClick={() => { patch({ roles: { ...(st.roles ?? {}), [`u:${pick}`]: {} } }); setScope(`u:${pick}`); setPick(''); }}>추가</button>
+        {scope !== 'base' && (
+          <button className="btn btn-ghost" style={{ height: 33, padding: '0 12px', fontSize: 11, marginLeft: 'auto' }}
+            onClick={() => (scope === 'admin' || scope === 'member'
+              ? patch({ roles: { ...(st.roles ?? {}), [scope]: {} } })
+              : dropScope(scope))}>
+            {scope === 'admin' || scope === 'member' ? `${nameOf(scope)} 커서 모두 비우기` : `${nameOf(scope)} 구분 삭제`}
+          </button>
+        )}
+      </div>
+      {(Object.keys(CURSOR_STATE_LABEL) as CursorState[]).map(s => <CursorRow key={`${scope}-${s}`} state={s} scope={scope} />)}
     </div>
   );
 }

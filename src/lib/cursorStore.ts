@@ -11,9 +11,31 @@ export type CursorState = 'default' | 'pointer' | 'text' | 'active' | 'grab'
 
 export interface CursorEntry { imgId: string; hx: number; hy: number } // 핫스팟 (px)
 
+export type CursorStates = Partial<Record<CursorState, CursorEntry>>;
+
+/** 커서를 다르게 보일 구분 — 'base' = 일반(지정하지 않은 모두) · 'admin' = 관리자 · 'member' = 로그인한 회원 전체 · 'u:<회원 아이디>' = 그 회원 하나 */
+export type CursorScope = string;
+
 export interface CursorSettings {
   enabled: boolean;
-  states: Partial<Record<CursorState, CursorEntry>>;
+  states: CursorStates;                      // 일반 (기본 — 구분을 지정하지 않은 모두)
+  roles?: Record<CursorScope, CursorStates>; // 관리자·회원별로 덮어쓸 커서 (v2.1 사용자 요청)
+}
+
+export const scopeStates = (st: CursorSettings, scope: CursorScope): CursorStates =>
+  scope === 'base' ? st.states : (st.roles?.[scope] ?? {});
+
+export const withScopeStates = (st: CursorSettings, scope: CursorScope, states: CursorStates): Partial<CursorSettings> =>
+  scope === 'base' ? { states } : { roles: { ...(st.roles ?? {}), [scope]: states } };
+
+/** 지금 보는 사람에게 실제로 보일 커서 — 상태마다 「그 회원 > 관리자/회원 전체 > 일반」 순으로 찾고, 없으면 다음 순서 */
+export function effectiveStates(st: CursorSettings, who: { id: string; admin: boolean } | null): CursorStates {
+  const out: CursorStates = { ...st.states };
+  if (who && st.roles) {
+    Object.assign(out, st.roles[who.admin ? 'admin' : 'member'] ?? {});
+    Object.assign(out, st.roles[`u:${who.id}`] ?? {});
+  }
+  return out;
 }
 
 export const CURSOR_STATE_LABEL: Record<CursorState, { label: string; desc: string }> = {

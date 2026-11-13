@@ -11,8 +11,9 @@
 // (html[data-cur-상태="프레임 번호"] 조건), 재생은 <html>의 data 속성만 바꾼다. 스타일시트는 그대로라 그림을
 // 다시 불러오지 않고, 프레임 그림은 시작 전에 미리 풀어 둔다. 동시에 넘어가는 프레임은 한 번에 바꾸고,
 // 탭이 가려져 있거나 마우스 커서가 없는 기기(폰·태블릿)에서는 재생하지 않는다.
-import { useEffect } from 'react';
-import { useCursorSettings, CursorState } from '@/lib/cursorStore';
+import { useEffect, useMemo } from 'react';
+import { useCursorSettings, CursorState, effectiveStates } from '@/lib/cursorStore';
+import { useAuth } from '@/lib/auth';
 import { getBlob } from '@/lib/blobStore';
 import { parseAni, isCur } from '@/lib/aniCursor';
 
@@ -63,11 +64,15 @@ const PRELOAD_MS = 1500;
 
 export function CursorLayer() {
   const [st] = useCursorSettings();
+  const { user, isAdmin } = useAuth();
+  // 보는 사람(관리자·회원·일반)에 따라 다른 커서 — 아래 effect는 이 값이 바뀔 때만 다시 만든다
+  const uid = user?.id;
+  const eff = useMemo(() => effectiveStates(st, uid ? { id: uid, admin: isAdmin } : null), [st, uid, isAdmin]);
 
   useEffect(() => {
     const styleId = 'ohome-cursor-style';
     const root = document.documentElement;
-    if (!st.enabled || Object.keys(st.states).length === 0) {
+    if (!st.enabled || Object.keys(eff).length === 0) {
       document.getElementById(styleId)?.remove();
       return;
     }
@@ -80,8 +85,8 @@ export function CursorLayer() {
     (async () => {
       const parts: string[] = [];
       const anims: AnimState[] = [];
-      for (const key of Object.keys(st.states) as CursorState[]) {
-        const entry = st.states[key];
+      for (const key of Object.keys(eff) as CursorState[]) {
+        const entry = eff[key];
         if (!entry) continue;
         const blob = await getBlob(entry.imgId);
         if (!blob || cancelled) continue;
@@ -169,7 +174,7 @@ export function CursorLayer() {
       urls.forEach(u => URL.revokeObjectURL(u));
       document.getElementById(styleId)?.remove();
     };
-  }, [st]);
+  }, [st.enabled, eff]);
 
   return null;
 }
