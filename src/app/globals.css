@@ -985,12 +985,12 @@ body.main-fixed #appMain,body.edit-on #appMain{overflow-x:auto}
    가운데 1fr 열이 항상 610px(10px 배수)이 되어 10px 격자가 정확히 맞음 */
 body.edit-on .page-main-wrap{width:1180px;min-width:1180px;margin-left:max(0px, calc(50% - 590px));margin-right:0}
 body.edit-on .main-grid{grid-template-columns:230px 1fr 260px}
-.menu-list{padding:14px;display:none} /* PC에서는 상단 메뉴로 충분 — 모바일 전용 (v1.8) */
+.menu-list{padding:14px;display:none;background:var(--wg-bg);color:var(--wg-fg);border:var(--wg-bd-w) solid var(--wg-bd)} /* PC에서는 상단 메뉴로 충분 — 모바일 전용 (v1.8). 배경·글자·테두리는 다른 위젯과 같은 값 (v2.1 사용자 요청) */
 .wgt-hide-pc{display:none}
 @media (max-width:620px){.wgt-hide-pc{display:block}}
 /* 모바일 제외 위젯 (v1.9 — 환경설정 토글은 모바일 표시만 제어, PC에는 그대로) */
 @media (max-width:620px){.wgt.wgt-hide-m{display:none !important}}
-.menu-list a{display:block;padding:10px 12px;font-size:calc(13px*var(--fs,1));color:var(--ink);border-radius:8px;cursor:var(--cur-pointer,pointer);transition:.15s}
+.menu-list a{display:block;padding:10px 12px;font-size:calc(13px*var(--fs,1));color:var(--wg-fg,var(--ink));border-radius:8px;cursor:var(--cur-pointer,pointer);transition:.15s}
 .menu-list a:hover{background:#eef0f2}
 .menu-list a small{color:var(--faint);float:right;font-size:calc(10px*var(--fs,1));margin-top:2px}
 .menu-list .mgrp > a::after{content:"▾";float:right;font-size:calc(9px*var(--fs,1));color:var(--faint);margin-top:3px;transition:.2s}
