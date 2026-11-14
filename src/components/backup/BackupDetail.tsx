@@ -19,6 +19,47 @@ import { Lightbox } from '@/components/ui/Lightbox';
 import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
 import { useBoardSettings, boardBadgeStyle, feedCatsOf, galleryCatsOf, feedHideAuthorOf } from '@/lib/boardStore';
 
+// 파일 id/URL 모두 지원 — blobStore에서 로드 (새로고침에도 유지)
+// natural: 고정 프레임 안에서 확대 없이 원본 크기 그대로 가운데 (단일형 — 프레임보다 크면 축소만)
+/** auto: 맨 위 영상이면 소리 없이 자동 재생 (v2.1 사용자 요청 — 브라우저 정책상 소리를 켠 채로는 자동 재생이 막힌다. 컨트롤로 켤 수 있다).
+ *  컴포넌트 밖으로 뺐다 — 안에 있으면 댓글 입력 같은 화면 갱신마다 영상이 새로 만들어져 처음부터 다시 재생됐다 */
+function Img({ im, ratio, natural, stage, auto }: { im: { url?: string; ph?: string }; ratio?: string; natural?: boolean; stage?: boolean; auto?: boolean }) {
+  const u = useBlobUrl(im.url);
+  // 자동 재생 — autoPlay 속성만으로는 React에서 muted가 늦게 적용돼 막히는 일이 있어, 직접 소리를 끄고 play()를 부른다
+  const vref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = vref.current;
+    if (!auto || !v) return;
+    v.muted = true;
+    const go = () => { v.play().catch(() => { /* 브라우저가 막으면 컨트롤로 */ }); };
+    if (v.readyState >= 2) go(); else v.addEventListener('loadeddata', go, { once: true });
+    return () => v.removeEventListener('loadeddata', go);
+  }, [auto, u]);
+  // 화살표 보기 무대 — 무대 높이에 맞춤 (가로로 넓어 폭이 모자라면 그만큼만 줄어든다)
+  const stageSt: React.CSSProperties = { height: '100%', width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' };
+  if (u && stage) {
+    return isVideoRef(im.url)
+      ? <video ref={vref} src={u} controls playsInline preload={auto ? 'auto' : 'metadata'} {...(auto ? { autoPlay: true, muted: true } : null)} style={stageSt} />
+      // eslint-disable-next-line @next/next/no-img-element
+      : <img src={u} alt="" style={stageSt} />;
+  }
+  if (u && isVideoRef(im.url)) {
+    // 영상 — 직접 재생 (소리·전체화면은 컨트롤로). 사진과 같은 폭 규칙
+    return <video ref={vref} src={u} controls playsInline preload={auto ? 'auto' : 'metadata'} {...(auto ? { autoPlay: true, muted: true } : null)} style={natural
+      ? { maxWidth: '100%', maxHeight: '100%', display: 'block' }
+      : { maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} />;
+  }
+  if (u) {
+    // eslint-disable-next-line @next/next/no-img-element
+    // 원본보다 크게 늘리지 않는다 — 폭이 모자랄 때만 줄이고, 작은 그림은 작은 그대로 (v2.0 사용자 확정)
+    return <img src={u} alt="" style={natural
+      ? { maxWidth: '100%', maxHeight: '100%', display: 'block' }
+      : { maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} />;
+  }
+  return <div className={`ph ${im.ph ?? ''}`}
+    style={natural ? { width: '100%', height: '100%' } : { aspectRatio: ratio ?? '16/10' }}><span>IMAGE</span></div>;
+}
+
 export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   const feed = kind === 'feed';
   const { id } = useParams<{ id: string }>();
@@ -97,35 +138,6 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   // 큰 그림 게시판 — 작성자 이름 숨기기 (환경설정 > 게시판 관리, v2.1)
   const hideAuthor = feed && feedHideAuthorOf(boardSet, p.secId ?? MAIN_SEC);
 
-  // 파일 id/URL 모두 지원 — blobStore에서 로드 (새로고침에도 유지)
-  // natural: 고정 프레임 안에서 확대 없이 원본 크기 그대로 가운데 (단일형 — 프레임보다 크면 축소만)
-  const Img = ({ im, ratio, natural, stage }: { im: { url?: string; ph?: string }; ratio?: string; natural?: boolean; stage?: boolean }) => {
-    const u = useBlobUrl(im.url);
-    // 화살표 보기 무대 — 무대 높이에 맞춤 (가로로 넓어 폭이 모자라면 그만큼만 줄어든다)
-    const stageSt: React.CSSProperties = { height: '100%', width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' };
-    if (u && stage) {
-      return isVideoRef(im.url)
-        ? <video src={u} controls playsInline preload="metadata" style={stageSt} />
-        // eslint-disable-next-line @next/next/no-img-element
-        : <img src={u} alt="" style={stageSt} />;
-    }
-    if (u && isVideoRef(im.url)) {
-      // 영상 — 직접 재생 (소리·전체화면은 컨트롤로). 사진과 같은 폭 규칙
-      return <video src={u} controls playsInline preload="metadata" style={natural
-        ? { maxWidth: '100%', maxHeight: '100%', display: 'block' }
-        : { maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} />;
-    }
-    if (u) {
-      // eslint-disable-next-line @next/next/no-img-element
-      // 원본보다 크게 늘리지 않는다 — 폭이 모자랄 때만 줄이고, 작은 그림은 작은 그대로 (v2.0 사용자 확정)
-      return <img src={u} alt="" style={natural
-        ? { maxWidth: '100%', maxHeight: '100%', display: 'block' }
-        : { maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto' }} />;
-    }
-    return <div className={`ph ${im.ph ?? ''}`}
-      style={natural ? { width: '100%', height: '100%' } : { aspectRatio: ratio ?? '16/10' }}><span>IMAGE</span></div>;
-  };
-
   const nb = pickNeighbors(
     (feed ? posts : sortBackup(posts)).filter(x => (x.secId ?? MAIN_SEC) === (p.secId ?? MAIN_SEC)
       && !(x.visibility === 'private' && !isAdmin) && !(x.visibility === 'member' && !user)),
@@ -171,7 +183,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
         {p.type === 'log' ? (
           /* 로그형 — 웹툰식 세로 스크롤 · 이미지 사이 틈 없이 이어 붙임 (만화 연결) */
           <div style={{ borderRadius: 10, overflow: 'hidden' }}>
-            {imgs.map((im, i) => <Img key={i} im={im} />)}
+            {imgs.map((im, i) => <Img key={i} im={im} auto={i === 0} />)}
           </div>
         ) : p.type === 'pair' ? (
           /* 나란히 (이미지 2개씩) — 약간의 공백을 두고 가로로 2개, 클릭 확대 */
@@ -179,7 +191,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
             {imgs.map((im, i) => (
               <div key={i} className="g-pair-i" style={{ cursor: im.url ? 'zoom-in' : undefined }}
                 onClick={() => { if (im.url) { setCur(i); setLbOpen(true); } }}>
-                <Img im={im} ratio="4/3" />
+                <Img im={im} ratio="4/3" auto={i === 0} />
               </div>
             ))}
           </div>
@@ -189,7 +201,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
             {imgs.map((im, i) => (
               <div key={i} style={{ borderRadius: 10, overflow: 'hidden', cursor: im.url ? 'zoom-in' : undefined }}
                 onClick={() => { if (im.url) { setCur(i); setLbOpen(true); } }}>
-                <Img im={im} />
+                <Img im={im} auto={i === 0} />
               </div>
             ))}
           </div>
@@ -199,7 +211,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
             <div className="single-viewer" ref={stageRef} style={stageH ? { height: stageH } : undefined}>
               <div style={{ cursor: imgs[cur].url ? 'zoom-in' : undefined, height: stageH ? '100%' : undefined }}
               onClick={() => { if (imgs[cur].url) setLbOpen(true); }}>
-              <Img im={imgs[cur]} stage={!!stageH} />
+              <Img im={imgs[cur]} stage={!!stageH} auto={cur === 0} />
               </div>
               {imgs.length > 1 && (
                 <>
