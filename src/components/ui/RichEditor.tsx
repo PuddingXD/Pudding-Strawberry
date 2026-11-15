@@ -272,6 +272,7 @@ function FontBtn({ fonts, curId, onPick }: {
 function UniBtn({ onPick }: { onPick: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
+  const [sample, setSample] = useState('');   // 미리보기 글 — 비워 두면 서체 이름만 보인다
   return (
     <>
       <button ref={btn} type="button" data-tip="유니코드 글꼴 (선택한 영문·숫자에만 적용)" className={`re-btn ${open ? 'on' : ''}`}
@@ -281,10 +282,12 @@ function UniBtn({ onPick }: { onPick: (id: string) => void }) {
       {open && (
         <Pop anchor={btn.current} onClose={() => setOpen(false)}>
           <div className="re-fontlist">
+            <input className="re-uni-in" value={sample} onChange={e => setSample(e.target.value)}
+              placeholder="미리보기 글자 (선택)" onMouseDown={e => e.stopPropagation()} />
             <button type="button" className="re-fontitem" onClick={() => { onPick(''); setOpen(false); }}>원래대로 (일반 글자)</button>
             {UNI_STYLES.map(s => (
               <button key={s.id} type="button" className="re-fontitem" onClick={() => { onPick(s.id); setOpen(false); }}>
-                {toUni('Teddy', s.id)} <span style={{ opacity: .55, fontSize: 11 }}>{s.name}</span>
+                {sample.trim() && <>{toUni(sample.trim(), s.id)}{' '}</>}<span style={sample.trim() ? { opacity: .55, fontSize: 11 } : undefined}>{s.name}</span>
               </button>
             ))}
           </div>
