@@ -329,6 +329,8 @@ export interface PlayRecord {
   /** 시트 게시판 체크 칸 — 왼쪽: 관리자가 체크 / 오른쪽: 등록한 회원이 체크 */
   chkAdmin?: boolean;
   chkMember?: boolean;
+  /** 시트 게시판 상단 고정 — 1부터 매긴 고정 순서 (작을수록 위). 없으면 고정 안 함 */
+  pin?: number;
 }
 
 export const PLAYLOG_SEED: PlayRecord[] = [];

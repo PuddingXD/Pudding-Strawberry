@@ -1555,6 +1555,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table col.c-pt{width:82px}
 .pl-table col.c-url{width:36px}    /* 맨 끝 클립 칸 */
 .pl-table col.c-mng{width:58px}
+.pl-table col.c-mng-e{width:136px}
+.sh-table .sh-pin{display:inline-flex;vertical-align:-2px;margin-right:5px;color:var(--accent)}
+.sh-table tr.sh-pin-row{cursor:grab}
+.pl-table .td-mng button.on{color:var(--accent)}
 .pl-table col.c-with{width:112px}   /* 22%에서 10px가량 룰 칸으로 — col에는 calc가 안 먹혀 %로 환산 (v2.0) */
 .pl-table th{font-size:calc(10px*var(--fs,1));letter-spacing:.14em;color:var(--faint);font-weight:600;text-align:center;padding:10px 6px;border-bottom:1.5px solid var(--line)}
 .pl-table th.sortable{cursor:var(--cur-pointer,pointer);user-select:none}

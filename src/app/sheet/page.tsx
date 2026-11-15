@@ -29,6 +29,15 @@ function ClipIcon() {
   );
 }
 
+/** 고정 핀 (선 아이콘 — 이모지 아님) */
+function PinIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" style={{ width: size, height: size, stroke: 'currentColor', fill: 'none', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0 }}>
+      <path d="M9 4h6l-1 6 3 3H7l3-3-1-6zM12 13v7" />
+    </svg>
+  );
+}
+
 function SheetPageInner() {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
@@ -47,6 +56,8 @@ function SheetPageInner() {
   const [desc, setDesc] = useState(false);               // 정렬 방향
   const [page, setPage] = useState(1);
   const [delFor, setDelFor] = useState<PlayRecord | null>(null);
+  const [editMode, setEditMode] = useState(false);       // 관리자 편집 모드 — 고정·고정 순서 바꾸기
+  const [dragId, setDragId] = useState<string | null>(null);
 
   // 등록 권한 — 환경설정 「권한」에서 (기본: 관리자) · 수정·삭제는 등록한 본인과 관리자
   const [menuSet] = useMenuSettings();
@@ -71,6 +82,30 @@ function SheetPageInner() {
   const toggle = (r: PlayRecord, f: 'chkAdmin' | 'chkMember') =>
     setRecords(records.map(x => (x.id === r.id ? { ...x, [f]: !x[f] } : x)));
 
+  // 상단 고정 (관리자) — 고정한 순서대로 맨 위에 놓이고, 고정끼리는 편집 모드에서 끌어서(또는 ▲▼) 순서를 바꾼다
+  const pinnedAll = records.filter(r => r.pin != null).sort((a, b) => (a.pin ?? 0) - (b.pin ?? 0));
+  const togglePin = (r: PlayRecord) => {
+    if (r.pin != null) {
+      const rest = pinnedAll.filter(x => x.id !== r.id).map(x => x.id);
+      setRecords(records.map(x => {
+        if (x.id === r.id) { const { pin: _p, ...o } = x; void _p; return o as PlayRecord; }
+        const i = rest.indexOf(x.id);
+        return i < 0 ? x : { ...x, pin: i + 1 };
+      }));
+    } else {
+      setRecords(records.map(x => (x.id === r.id ? { ...x, pin: pinnedAll.length + 1 } : x)));
+    }
+  };
+  // fromId를 toId 자리로 옮긴다 (끌어놓기·▲▼ 공용)
+  const movePin = (fromId: string, toId: string) => {
+    const ids = pinnedAll.map(x => x.id);
+    const fi = ids.indexOf(fromId), ti = ids.indexOf(toId);
+    if (fi < 0 || ti < 0 || fi === ti) return;
+    ids.splice(fi, 1);
+    ids.splice(ti, 0, fromId);
+    setRecords(records.map(x => { const i = ids.indexOf(x.id); return i < 0 ? x : { ...x, pin: i + 1 }; }));
+  };
+
   if (!loaded) return <section className="page" />;
 
   const curCat = cats.some(c => c.label === cat) ? cat : '';   // 지워져 없어진 말머리면 ALL로
@@ -83,6 +118,10 @@ function SheetPageInner() {
   const catIdx = (r: PlayRecord) => { const i = cats.findIndex(c => c.label === r.withText.trim()); return i < 0 ? 9999 : i; };
   const byTime = (a: PlayRecord, b: PlayRecord) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);   // 최신(나중에 등록한) 시트가 위
   const sorted = [...filtered].sort((a, b) => {
+    const pa = a.pin != null, pb = b.pin != null;   // 고정한 시트는 정렬과 상관없이 맨 위 (고정 순서대로)
+    if (pa && pb) return (a.pin ?? 0) - (b.pin ?? 0);
+    if (pa) return -1;
+    if (pb) return 1;
     if (!sortKey) return byTime(a, b);
     const c = sortKey === 'with'
       ? catIdx(a) - catIdx(b) || a.withText.localeCompare(b.withText, 'ko')
@@ -102,6 +141,13 @@ function SheetPageInner() {
     setPage(1);
   };
   const arrow = (k: 'with' | 'name') => (sortKey === k ? (desc ? ' ▾' : ' ▴') : '');
+  const showMng = canAdd || (isAdmin && editMode);
+  const shownPinned = shown.filter(r => r.pin != null);   // ▲▼ — 지금 보이는 고정 시트 안에서 한 칸씩
+  const stepPin = (r: PlayRecord, dir: -1 | 1) => {
+    const i = shownPinned.findIndex(x => x.id === r.id);
+    const t = shownPinned[i + dir];
+    if (t) movePin(r.id, t.id);
+  };
   const catOf = (r: PlayRecord) => cats.find(c => c.label === r.withText.trim());
 
   return (
@@ -122,6 +168,7 @@ function SheetPageInner() {
         {/* 오른쪽: 검색 · 추가 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="시트 이름·말머리 검색" onSearch={v => { setQ(v); setPage(1); }} />
+          {isAdmin && <button type="button" className={`btn ${editMode ? 'btn-dark' : 'btn-ghost'}`} onClick={() => setEditMode(m => !m)}>{editMode ? '편집 완료' : '편집 모드'}</button>}
           {canAdd && <NavLink className="btn btn-dark" href={'/sheet/new' + secQuery('sheet', sec.id)}>＋ ADD SHEET</NavLink>}
         </div>
       </div>
@@ -133,7 +180,7 @@ function SheetPageInner() {
             {show('name') && <col />}
             {show('check') && <col className="c-shc" />}
             {show('url') && <col className="c-shu" />}
-            {canAdd && <col className="c-mng" />}
+            {showMng && <col className={editMode && isAdmin ? 'c-mng-e' : 'c-mng'} />}
           </colgroup>
           <thead>
             <tr>
@@ -141,14 +188,22 @@ function SheetPageInner() {
               {show('name') && <th className="sortable" onClick={() => clickSort('name')}>Name{arrow('name')}</th>}
               {show('check') && <th>Check</th>}
               {show('url') && <th>Url</th>}
-              {canAdd && <th aria-label="관리" />}
+              {showMng && <th aria-label="관리" />}
             </tr>
           </thead>
           <tbody>
             {shown.map(r => (
-              <tr key={r.id}>
+              <tr key={r.id}
+                className={editMode && isAdmin && r.pin != null ? 'sh-pin-row' : undefined}
+                style={dragId === r.id ? { opacity: .45 } : undefined}
+                draggable={editMode && isAdmin && r.pin != null}
+                onDragStart={() => setDragId(r.id)}
+                onDragOver={e => { if (dragId && r.pin != null) e.preventDefault(); }}
+                onDrop={e => { e.preventDefault(); if (dragId) movePin(dragId, r.id); setDragId(null); }}
+                onDragEnd={() => setDragId(null)}>
                 {show('with') && <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>}
                 {show('name') && <td className="td-sc">
+                  {r.pin != null && <span className="sh-pin" aria-label="고정"><PinIcon /></span>}
                   {r.url
                     ? <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer">{r.scenario}</a>
                     : r.scenario}
@@ -164,8 +219,19 @@ function SheetPageInner() {
                 {show('url') && <td className="td-url">
                   {r.url && <a href={safeHref(r.url)} target="_blank" rel="noopener noreferrer" aria-label="시트 열기 (새 탭)"><ClipIcon /></a>}
                 </td>}
-                {canAdd && (
+                {showMng && (
                   <td className="td-mng">
+                    {editMode && isAdmin && (
+                      <>
+                        <button type="button" className={r.pin != null ? 'on' : ''} data-tip={r.pin != null ? '고정 해제' : '맨 위에 고정'} onClick={() => togglePin(r)}><PinIcon size={13} /></button>
+                        {r.pin != null && (
+                          <>
+                            <button type="button" data-tip="위로" onClick={() => stepPin(r, -1)}>▲</button>
+                            <button type="button" data-tip="아래로" onClick={() => stepPin(r, 1)}>▼</button>
+                          </>
+                        )}
+                      </>
+                    )}
                     {canEdit(r) && (
                       <>
                         <button onClick={() => router.push(`/sheet/${r.id}/edit`)} data-tip="편집">✎</button>
@@ -177,7 +243,7 @@ function SheetPageInner() {
               </tr>
             ))}
             {shown.length === 0 && (
-              <tr><td colSpan={Math.max(1, cols.length) + (canAdd ? 1 : 0)} style={{ textAlign: 'center', padding: 32, color: 'var(--faint)' }}>
+              <tr><td colSpan={Math.max(1, cols.length) + (showMng ? 1 : 0)} style={{ textAlign: 'center', padding: 32, color: 'var(--faint)' }}>
                 {query || curCat ? '검색 결과가 없습니다' : '등록된 시트가 없습니다'}
               </td></tr>
             )}
