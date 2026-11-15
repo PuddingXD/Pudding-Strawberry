@@ -13,11 +13,10 @@ import { PlayRecord, PLAYLOG_SEED } from '@/lib/galleryStore';
 import { SHEET_KEY, sheetsOf, sheetSetter, headsOf } from '@/lib/sheetStore';
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf, SHEET_COLS } from '@/lib/menuStore';
 import { useBoardSettings, sheetCatsOf, boardBadgeStyle } from '@/lib/boardStore';
-import { SearchBar, Pager } from '@/components/ui/Kit';
+import { SearchBar } from '@/components/ui/Kit';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
-const PAGE_SIZE = 15;
 type SortKey = 'with' | 'name' | null;   // null = 기본(등록한 순서)
 
 /** 클립 픽토그램 (선 아이콘 — 이모지 아님) */
@@ -54,7 +53,6 @@ function SheetPageInner() {
   const [cat, setCat] = useState('');                    // '' = ALL (말머리 모아보기)
   const [sortKey, setSortKey] = useState<SortKey>(null);
   const [desc, setDesc] = useState(false);               // 정렬 방향
-  const [page, setPage] = useState(1);
   const [delFor, setDelFor] = useState<PlayRecord | null>(null);
   const [editMode, setEditMode] = useState(false);       // 관리자 편집 모드 — 고정·고정 순서 바꾸기
   const [dragId, setDragId] = useState<string | null>(null);
@@ -128,17 +126,14 @@ function SheetPageInner() {
       : a.scenario.localeCompare(b.scenario, 'ko');
     return (desc ? -c : c) || byTime(a, b);
   });
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const cur = Math.min(page, totalPages);
-  const shown = sorted.slice((cur - 1) * PAGE_SIZE, cur * PAGE_SIZE);
+  const shown = sorted;   // 페이지를 나누지 않고 전부 아래로 쭉 보여 준다
 
-  const pickCat = (c: string) => { setCat(c); setPage(1); };
+  const pickCat = (c: string) => { setCat(c); };
   // 같은 머리글을 누를 때마다: 오름차순 → 내림차순 → 기본(최신 등록순)
   const clickSort = (k: 'with' | 'name') => {
     if (k !== sortKey) { setSortKey(k); setDesc(false); }
     else if (!desc) setDesc(true);
     else { setSortKey(null); setDesc(false); }
-    setPage(1);
   };
   const arrow = (k: 'with' | 'name') => (sortKey === k ? (desc ? ' ▾' : ' ▴') : '');
   const showMng = canAdd || (isAdmin && editMode);
@@ -167,7 +162,7 @@ function SheetPageInner() {
         </div>
         {/* 오른쪽: 검색 · 추가 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <SearchBar placeholder="시트 이름·말머리 검색" onSearch={v => { setQ(v); setPage(1); }} />
+          <SearchBar placeholder="시트 이름·말머리 검색" onSearch={v => { setQ(v); }} />
           {isAdmin && <button type="button" className={`btn ${editMode ? 'btn-dark' : 'btn-ghost'}`} onClick={() => setEditMode(m => !m)}>{editMode ? '편집 완료' : '편집 모드'}</button>}
           {canAdd && <NavLink className="btn btn-dark" href={'/sheet/new' + secQuery('sheet', sec.id)}>＋ ADD SHEET</NavLink>}
         </div>
@@ -259,10 +254,6 @@ function SheetPageInner() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
-        <Pager page={cur} total={totalPages} onChange={setPage} />
       </div>
 
       <ConfirmModal open={delFor !== null} title="시트를 삭제하시겠습니까?"
