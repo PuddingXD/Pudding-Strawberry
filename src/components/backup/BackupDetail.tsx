@@ -181,7 +181,8 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.desc) }} />
         )}
 
-        {p.type === 'log' ? (
+        {/* 이미지 없이 본문만 있는 글 — 빈 그림 칸(검은 네모)을 아예 그리지 않는다 */}
+        {p.images.length === 0 ? null : p.type === 'log' ? (
           /* 로그형 — 웹툰식 세로 스크롤 · 이미지 사이 틈 없이 이어 붙임 (만화 연결) */
           <div style={{ borderRadius: 10, overflow: 'hidden' }}>
             {imgs.map((im, i) => <Img key={i} im={im} auto={i === 0} />)}
