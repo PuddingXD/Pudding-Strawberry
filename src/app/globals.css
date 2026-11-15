@@ -2131,7 +2131,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .g-pair-i{min-width:0;border-radius:10px;overflow:hidden}
 
 /* ---------- 시트 게시판 (/sheet) ---------- */
-.pl-table.sh-table col.c-shh{width:171px}
+.pl-table.sh-table col.c-shh{width:128px}
 .pl-table.sh-table col.c-shc{width:78px}
 .pl-table.sh-table col.c-shu{width:56px}
 .sh-table .sh-heads{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
