@@ -2133,10 +2133,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .g-pair-i{min-width:0;border-radius:10px;overflow:hidden}
 
 /* ---------- 시트 게시판 (/sheet) ---------- */
-/* 시트 표는 가운데 정렬된 840px 안에 — With·Check가 Name 가까이 붙어 휑하지 않고, 제목이 화면 가운데쯤에 온다 */
-.pl-table.sh-table{max-width:840px;margin-left:auto;margin-right:auto}
-.pl-table.sh-table col.c-shh{width:128px}
-.pl-table.sh-table col.c-shc{width:78px}
+/* 시트 게시판은 다른 페이지(1180px)보다 조금 넓게 */
+.page.page-sheet{max-width:1380px}
+.pl-table.sh-table col.c-shh{width:22%}
+.pl-table.sh-table col.c-shc{width:22%}
 .pl-table.sh-table col.c-shu{width:56px}
 .sh-table .sh-heads{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:nowrap;min-width:0;max-width:100%}
 .sh-table .sh-head-chip{min-width:0;overflow:hidden;text-overflow:ellipsis;display:block !important;text-align:center;white-space:nowrap;line-height:calc(11px*var(--fs,1))}

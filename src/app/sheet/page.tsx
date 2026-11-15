@@ -151,7 +151,7 @@ function SheetPageInner() {
   const catOf = (label: string) => cats.find(c => c.label === label);
 
   return (
-    <section className="page">
+    <section className="page page-sheet">
       <div className="page-head">
         <PageTitle>{sec.id === 'main' ? 'SHEETS' : sec.name}</PageTitle>
         <EditableDesc k="sheet-desc" def="구글 스프레드시트 모음 — 말머리별로 모아보기" />
