@@ -631,15 +631,17 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
         {l.catchphrase && (
           <p style={{ fontSize: 11.5, color: 'var(--faint)', letterSpacing: '.14em', marginBottom: 16 }}>{/* 목록 티켓에서 줄을 나누려고 넣은 <br>은 여기선 한 줄로 */}{l.catchphrase.replace(/<br\s*\/?>/gi, ' ')}</p>
         )}
-        {/* 본문 맨 위 이미지·영상 — HTML·글 본문과 별개, 엔터 한 번 친 정도(한 줄)의 간격 (v2.1 사용자 요청) */}
+        {/* 본문 맨 위 이미지·영상 — HTML·글 본문과 별개, 엔터 한 번 친 정도(한 줄)의 간격 — 제목과 사이에도 한 줄 (v2.1 사용자 요청) */}
         {topUrl && (
-          <div style={{ margin: '0 0 1.7em', textAlign: 'center' }}>
+          <div style={{ margin: '1.1em 0 1.7em', textAlign: 'center' }}>
             {(isVideoRef(bd?.topMediaId) || /\.(mp4|webm|mov|m4v|ogv)$/i.test(bd?.topMediaName ?? ''))
               ? <video src={topUrl} controls playsInline preload="metadata" style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} />
               // eslint-disable-next-line @next/next/no-img-element
               : <img src={topUrl} alt="" style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} />}
           </div>
         )}
+        {/* 상단 이미지·영상이 없어도 제목과 본문(HTML 포함) 사이에 한 줄 간격 (v2.1 사용자 요청) */}
+        {!topUrl && <div aria-hidden style={{ height: '1.1em' }} />}
         {editing && !bd?.src ? (
           /* 원본 발화가 없는 로그(파일·직접 작성) — 본문 글을 그대로 고친다 */
           <div className="lsrc-wrap">
