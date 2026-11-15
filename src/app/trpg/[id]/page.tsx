@@ -515,10 +515,13 @@ var ps=cs.position;if(ps==='fixed')s.setProperty('position','absolute','importan
 document.addEventListener('DOMContentLoaded',function(){u();r(1)});addEventListener('load',function(){u();r(1)});setTimeout(function(){u();r(1)},1500);setTimeout(function(){u();r(1)},4000);addEventListener('resize',function(){r(1)});
 // **이미지·폰트는 첫 그림 뒤에 붙으면서 높이를 바꾼다** (v2.0 사용자 발견 — 긴 로그 아래 빈 공간).
 // 개별 이미지의 load/error까지 잡으려면 캡처 단계로 들어야 한다(이 이벤트들은 위로 올라오지 않는다).
-addEventListener('load',function(){r(1)},true);
-addEventListener('error',function(){r(1)},true);
+// 그림이 수천 장인 로그(롤20 채팅 로그 등)는 load/error가 장마다 와서, 매번 문서 전체 배치를 다시 재고 바깥에 알리느라 홈페이지가 멈췄다 (v2.1 사용자 제보) —
+// 한 번에 모아 0.15초에 한 번만 잰다
+var ct=0;function rq(){if(ct)return;ct=setTimeout(function(){ct=0;r(1)},150)}
+addEventListener('load',rq,true);
+addEventListener('error',rq,true);
 try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){r(1)});}catch(e5){}
-var ut=0;try{new MutationObserver(function(){r(0);if(!ut)ut=setTimeout(function(){ut=0;u();r(0)},300);}).observe(document.documentElement,{childList:true,subtree:true,attributes:true});}catch(e4){}
+var ut=0,mt=0;try{new MutationObserver(function(){if(!mt)mt=setTimeout(function(){mt=0;r(0)},100);if(!ut)ut=setTimeout(function(){ut=0;u();r(0)},300);}).observe(document.documentElement,{childList:true,subtree:true,attributes:true});}catch(e4){}
 // 0.4초마다 확인하고, 2초마다는 값이 같아도 다시 알린다 (숨김 상태에선 레이아웃이 0이라 스킵됨)
 setInterval(function(){n++;r(n%5===0);},400);
 r(1);})();
