@@ -140,7 +140,7 @@ function DotoriPageInner() {
                   {(it.links ?? []).map(l => {
                     const href = safeHref(normalizeInternalLink(l.url));
                     return href === '#' ? null : (
-                      <a key={l.id} href={href} target="_blank" rel="noopener noreferrer" data-tip={l.url}>↗ {l.title || '링크'}</a>
+                      <a key={l.id} href={href} target="_blank" rel="noopener noreferrer" data-tip={l.url.length > 36 ? `${l.url.slice(0, 36)}…` : l.url}>↗ {l.title || '링크'}</a>
                     );
                   })}
                 </div>
