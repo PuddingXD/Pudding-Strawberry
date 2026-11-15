@@ -15,6 +15,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import { putBlob } from '@/lib/blobStore';
 import { useToast } from '@/components/ui/Toast';
 import { useFonts } from '@/lib/fontStore';
+import { UNI_STYLES, toUni, fromUni } from '@/lib/uniFont';
 
 /* ───────── 표 확장 — 셀 배경색·세로 정렬 · 행 높이 · 표 정렬을 저장 가능하게 ───────── */
 const MAX_TABLE = 10;   // 표 최대 10 × 10
@@ -259,6 +260,35 @@ function FontBtn({ fonts, curId, onPick }: {
               <button key={f.id} type="button" className={`re-fontitem ${curId === f.id ? 'on' : ''}`}
                 style={f.fam ? { fontFamily: f.fam } : undefined}
                 onClick={() => { onPick(f.id); setOpen(false); }}>{f.name}</button>
+            ))}
+          </div>
+        </Pop>
+      )}
+    </>
+  );
+}
+
+/** 유니코드 장식 글꼴 — 선택한 영문·숫자를 𝐁𝐨𝐥𝐝 · 𝕯𝖔𝖚𝖇𝖑𝖊 같은 문자로 바꾼다 (폰트가 아니라 글자 자체라 어디서나 보인다) */
+function UniBtn({ onPick }: { onPick: (id: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const [sample, setSample] = useState('');   // 미리보기 글 — 비워 두면 서체 이름만 보인다
+  return (
+    <>
+      <button ref={btn} type="button" data-tip="유니코드 글꼴 (선택한 영문·숫자에만 적용)" className={`re-btn ${open ? 'on' : ''}`}
+        onMouseDown={e => e.preventDefault()} onClick={() => setOpen(o => !o)}>
+        <span style={{ fontSize: 13 }}>{'𝐀'}</span><span className="re-fontbtn-c">▾</span>
+      </button>
+      {open && (
+        <Pop anchor={btn.current} onClose={() => setOpen(false)}>
+          <div className="re-fontlist">
+            <input className="re-uni-in" value={sample} onChange={e => setSample(e.target.value)}
+              placeholder="미리보기 글자 (선택)" onMouseDown={e => e.stopPropagation()} />
+            <button type="button" className="re-fontitem" onClick={() => { onPick(''); setOpen(false); }}>원래대로 (일반 글자)</button>
+            {UNI_STYLES.map(s => (
+              <button key={s.id} type="button" className="re-fontitem" onClick={() => { onPick(s.id); setOpen(false); }}>
+                {sample.trim() && <>{toUni(sample.trim(), s.id)}{' '}</>}<span style={sample.trim() ? { opacity: .55, fontSize: 11 } : undefined}>{s.name}</span>
+              </button>
             ))}
           </div>
         </Pop>
@@ -562,6 +592,25 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
     if (fam) C().setFontFamily(fam).run();
   };
 
+  /* 유니코드 글꼴 — 선택한 글자를 문자째 바꾼다 (서식은 유지). id가 비면 원래 영문으로 되돌린다 */
+  const pickUni = (id: string) => {
+    const { from, to, empty } = editor.state.selection;
+    if (empty) { toast('바꿀 글자를 먼저 드래그해서 선택해 주세요'); return; }
+    const tr = editor.state.tr;
+    const edits: { a: number; b: number; text: string; marks: any }[] = [];   // eslint-disable-line @typescript-eslint/no-explicit-any
+    editor.state.doc.nodesBetween(from, to, (node, pos) => {
+      if (!node.isText) return;
+      const a = Math.max(from, pos), b = Math.min(to, pos + node.nodeSize);
+      const piece = (node.text as string).slice(a - pos, b - pos);
+      const out = id ? toUni(piece, id) : fromUni(piece);
+      if (out !== piece) edits.push({ a, b, text: out, marks: node.marks });
+    });
+    if (!edits.length) return;
+    for (const e of edits.reverse()) tr.replaceWith(e.a, e.b, editor.schema.text(e.text, e.marks));
+    editor.view.dispatch(tr);
+    editor.commands.focus();
+  };
+
   /* 표 도구 줄 — 커서가 표 안에 있을 때만 */
   const inTable = editor.isActive('table');
   const tbl = inTable ? findAround(editor.state, 'table') : null;
@@ -765,6 +814,7 @@ export function RichEditor({ value, onChange, placeholder, doc, size }: {
         <span className="re-sep" />
         {/* 글꼴 — 환경설정에 등록해 둔 폰트를 그대로 (읽는 화면에서도 같은 폰트로 보인다) */}
         <FontBtn fonts={fonts.map(f => ({ id: f.id, name: f.name, fam: familyOf(f.id) }))} curId={curFontId} onPick={pickFont} />
+        <UniBtn onPick={pickUni} />
         <ColorBtn title="글자색" label="A" current={String(editor.getAttributes('textStyle').color ?? '')}
           onPick={c => C().setColor(c).run()} onClear={() => C().unsetColor().run()} />
         <ColorBtn title="글자 배경색" label={<span style={{ background: '#ffe066', padding: '0 3px', borderRadius: 2 }}>A</span>}
