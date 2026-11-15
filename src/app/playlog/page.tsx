@@ -13,11 +13,10 @@ import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf, PLAYLOG_COLS }
 import { useMainStore } from '@/lib/mainStore';
 import { useBoardSettings, playlogCatsOf, boardBadgeStyle } from '@/lib/boardStore';
 import { useCardSort, mergeOrder } from '@/lib/cardSort';
-import { SearchBar, Pager } from '@/components/ui/Kit';
+import { SearchBar } from '@/components/ui/Kit';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
-const PAGE_SIZE = 15;
 type SortKey = 'with' | 'scenario' | 'writer' | 'date';
 
 /** 클립 픽토그램 (선 아이콘 — 이모지 아님) */
@@ -44,7 +43,6 @@ function PlaylogPageInner() {
   const [desc, setDesc] = useState(true);           // 정렬 방향 (Date는 최신이 위)
   const { st: boardSet } = useBoardSettings();
   const cats = playlogCatsOf(boardSet, sec.id);
-  const [page, setPage] = useState(1);
   const [delFor, setDelFor] = useState<PlayRecord | null>(null);
 
   // 표시 열 — 환경설정 > 메뉴 관리에서 PC/모바일 각각 선택 (4.16 v1.8)
@@ -98,15 +96,12 @@ function PlaylogPageInner() {
     if (editOn) return;
     if (k === sortKey) setDesc(d => !d);
     else { setSortKey(k); setDesc(k === 'date'); }   // 날짜는 최신순부터, 글자는 가나다순부터
-    setPage(1);
   };
   const arrow = (k: SortKey) => (editOn ? (k === 'date' ? ' ⠿' : '') : sortKey === k ? (desc ? ' ▾' : ' ▴') : '');
-  const pickCat = (c: string) => { setCat(c); setPage(1); };
+  const pickCat = (c: string) => { setCat(c); };
   const catOf = (r: PlayRecord) => cats.find(c => c.label === r.withText.trim());
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  // 편집모드: 저장 순서 전체 표시 (드래그 인덱스와 1:1 매칭)
-  const curPage = Math.min(page, totalPages);
-  const shown = editOn ? records : sorted.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+  // 페이지를 나누지 않고 전부 아래로 쭉 — 편집모드는 저장 순서 전체 표시 (드래그 인덱스와 1:1 매칭)
+  const shown = editOn ? records : sorted;
 
   // 모바일 전용 — URL 열이 없으므로 Scenario 밑줄 탭으로 로그 이동 (Playtime 열은 삭제)
   const openLogMobile = (r: PlayRecord) => {
@@ -130,7 +125,7 @@ function PlaylogPageInner() {
         </div>
         {/* 오른쪽: 검색 · 추가 */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <SearchBar placeholder="시나리오·라이터·With 검색" onSearch={v => { setQ(v); setPage(1); }} />
+          <SearchBar placeholder="시나리오·라이터·With 검색" onSearch={v => { setQ(v); }} />
           {canAdd && <NavLink className="btn btn-dark" href={'/playlog/new' + secQuery('playlog', sec.id)}>＋ ADD RECORD</NavLink>}
         </div>
       </div>
@@ -199,10 +194,6 @@ function PlaylogPageInner() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
-        {!editOn && <Pager page={curPage} total={totalPages} onChange={setPage} />}
       </div>
 
       <ConfirmModal open={delFor !== null} title="기록을 삭제하시겠습니까?"
