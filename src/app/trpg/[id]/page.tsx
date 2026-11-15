@@ -631,9 +631,9 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
         {l.catchphrase && (
           <p style={{ fontSize: 11.5, color: 'var(--faint)', letterSpacing: '.14em', marginBottom: 16 }}>{/* 목록 티켓에서 줄을 나누려고 넣은 <br>은 여기선 한 줄로 */}{l.catchphrase.replace(/<br\s*\/?>/gi, ' ')}</p>
         )}
-        {/* 본문 맨 위 이미지·영상 — HTML·글 본문과 별개, 엔터 한 번 친 정도(한 줄)의 간격 — 제목과 사이에도 한 줄 (v2.1 사용자 요청) */}
+        {/* 본문 맨 위 이미지·영상 — HTML·글 본문과 별개, 엔터 한 번 친 정도(한 줄)의 간격 — 제목과 사이에도 한 줄 — HTML 본문은 문서 자체 위쪽 여백(약 23px)이 있어 그만큼 더해 이미지 없을 때와 같게 맞춘다 (v2.1 사용자 요청) */}
         {topUrl && (
-          <div style={{ margin: '1.1em 0 1.7em', textAlign: 'center' }}>
+          <div style={{ margin: `${html ? 37 : 14}px 0 1.7em`, textAlign: 'center' }}>
             {(isVideoRef(bd?.topMediaId) || /\.(mp4|webm|mov|m4v|ogv)$/i.test(bd?.topMediaName ?? ''))
               ? <video src={topUrl} controls playsInline preload="metadata" style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} />
               // eslint-disable-next-line @next/next/no-img-element
