@@ -2131,14 +2131,16 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .g-pair-i{min-width:0;border-radius:10px;overflow:hidden}
 
 /* ---------- 시트 게시판 (/sheet) ---------- */
-.pl-table.sh-table col.c-shh{width:256px}
+.pl-table.sh-table col.c-shh{width:171px}
 .pl-table.sh-table col.c-shc{width:78px}
 .pl-table.sh-table col.c-shu{width:56px}
+.sh-table .sh-heads{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sh-table .sh-heads>span{margin-right:4px;vertical-align:middle}
 .sh-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:calc(11px*var(--fs,1));padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:var(--cur-pointer,pointer);transition:.13s}
 .sh-chip:hover{border-color:var(--accent);color:var(--accent)}
 .sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
 @media (max-width:620px){
-  .pl-table.sh-table col.c-shh{width:112px}
+  .pl-table.sh-table col.c-shh{width:76px}
   .pl-table.sh-table col.c-shc{width:56px}
   .pl-table.sh-table col.c-shu{width:34px}
   .pl-table.sh-table th,.pl-table.sh-table td{padding-left:3px;padding-right:3px}

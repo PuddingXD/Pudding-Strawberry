@@ -201,7 +201,7 @@ function SheetPageInner() {
                 onDragOver={e => { if (dragId && r.pin != null) e.preventDefault(); }}
                 onDrop={e => { e.preventDefault(); if (dragId) movePin(dragId, r.id); setDragId(null); }}
                 onDragEnd={() => setDragId(null)}>
-                {show('with') && <td><span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>{headsOf(r).map(h => <span key={h} style={boardBadgeStyle(catOf(h))}>{h}</span>)}</span></td>}
+                {show('with') && <td><div className="sh-heads">{headsOf(r).map(h => <span key={h} style={boardBadgeStyle(catOf(h))}>{h}</span>)}</div></td>}
                 {show('name') && <td className="td-sc">
                   {r.pin != null && <span className="sh-pin" aria-label="고정"><PinIcon /></span>}
                   {r.url
