@@ -4,6 +4,7 @@
 export interface UniStyle {
   id: string;
   name: string;
+  sample?: string;                      // 목록 미리보기 기본 단어 (없으면 서체 이름)
   upper?: number;                       // 'A'에 해당하는 코드포인트 (26자 연속)
   lower?: number;                       // 'a'
   digit?: number;                       // '0' (10자 연속) — 없으면 숫자는 그대로
@@ -14,15 +15,15 @@ export interface UniStyle {
 const cp = (n: number) => String.fromCodePoint(n);
 
 export const UNI_STYLES: UniStyle[] = [
-  { id: 'bold', name: 'Math bold', upper: 0x1D400, lower: 0x1D41A, digit: 0x1D7CE },
-  { id: 'fraktur-bold', name: 'Math bold Fraktur', upper: 0x1D56C, lower: 0x1D586 },
-  { id: 'bold-italic', name: 'Math bold italic', upper: 0x1D468, lower: 0x1D482 },
-  { id: 'script-bold', name: 'Math bold script', upper: 0x1D4D0, lower: 0x1D4EA },
-  { id: 'double', name: 'Math double-struck', upper: 0x1D538, lower: 0x1D552, digit: 0x1D7D8,
+  { id: 'bold', name: 'Math bold', sample: 'Memory', upper: 0x1D400, lower: 0x1D41A, digit: 0x1D7CE },
+  { id: 'mono', name: 'Math monospace', sample: 'Behind', upper: 0x1D670, lower: 0x1D68A, digit: 0x1D7F6 },
+  { id: 'sans-bold', name: 'Math sans bold', sample: 'Hebell', upper: 0x1D5D4, lower: 0x1D5EE, digit: 0x1D7EC },
+  { id: 'script-bold', name: 'Math bold script', sample: 'Euel', upper: 0x1D4D0, lower: 0x1D4EA },
+  { id: 'double', name: 'Math double-struck', sample: 'Get Out', upper: 0x1D538, lower: 0x1D552, digit: 0x1D7D8,
     holes: { C: 'ℂ', H: 'ℍ', N: 'ℕ', P: 'ℙ', Q: 'ℚ', R: 'ℝ', Z: 'ℤ' } },
-  { id: 'mono', name: 'Math monospace', upper: 0x1D670, lower: 0x1D68A, digit: 0x1D7F6 },
-  { id: 'sans', name: 'Math sans', upper: 0x1D5A0, lower: 0x1D5BA, digit: 0x1D7E2 },
-  { id: 'sans-bold', name: 'Math sans bold', upper: 0x1D5D4, lower: 0x1D5EE, digit: 0x1D7EC },
+  { id: 'sans', name: 'Math sans', sample: 'AISE', upper: 0x1D5A0, lower: 0x1D5BA, digit: 0x1D7E2 },
+  { id: 'bold-italic', name: 'Math bold italic', upper: 0x1D468, lower: 0x1D482 },
+  { id: 'fraktur-bold', name: 'Math bold Fraktur', upper: 0x1D56C, lower: 0x1D586 },
   { id: 'sans-bold-italic', name: 'Math sans bold italic', upper: 0x1D63C, lower: 0x1D656, digit: 0x1D7EC },
   { id: 'sans-italic', name: 'Math sans italic', upper: 0x1D608, lower: 0x1D622 },
   { id: 'regional', name: 'Regional Indicator', regional: true },
