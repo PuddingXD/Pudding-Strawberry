@@ -1496,14 +1496,21 @@ function RelDetailInner() {
         {!au?.hideRp && (
         <div className="panel widget" style={{ margin: 0, ...(au?.hideLog ? { gridColumn: '1/-1' } : null) }}>
           <h4>역극 <NavLink className="more" href="/rp">더보기 ›</NavLink></h4>
-          {relRooms.length > 0 ? relRooms.map(rm => (
-            <NavBox key={rm.id} tag="div" href="/rp" className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
-              <span>{rm.title}</span>
-              <b style={{ fontSize: 11, color: 'var(--faint)' }}>
-                {rm.status === 'done' ? (rm.isPublic ? '완결 · 공개' : '완결') : '진행중'}
-              </b>
-            </NavBox>
-          )) : (
+          {relRooms.length > 0 ? (() => {
+            // 가장 최근 방 하나만 — 나머지는 「외 n개」 (줄이 늘어나 옆 칸까지 길어지는 것을 막는다)
+            const top = [...relRooms].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
+            return (
+              <>
+                <NavBox key={top.id} tag="div" href="/rp" className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                  <b style={{ fontSize: 11, color: 'var(--faint)', flexShrink: 0 }}>
+                    {top.status === 'done' ? (top.isPublic ? '완결 · 공개' : '완결') : '진행중'}
+                  </b>
+                </NavBox>
+                {relRooms.length > 1 && <p className="hint" style={{ margin: '4px 0 0', textAlign: 'right' }}>외 {relRooms.length - 1}개</p>}
+              </>
+            );
+          })() : (
             <p className="hint" style={{ margin: 0 }}>이 자관 기반으로 진행된 역극이 여기에 표시됩니다</p>
           )}
         </div>
@@ -1511,13 +1518,20 @@ function RelDetailInner() {
         {!au?.hideLog && (
         <div className="panel widget" style={{ margin: 0, ...(au?.hideRp ? { gridColumn: '1/-1' } : null) }}>
           <h4>로그 <NavLink className="more" href={`/trpg?rel=${rel.id}&au=${auId}`}>더보기 ›</NavLink></h4>
-          {relLogs.length > 0 ? relLogs.map(l => (
-            <NavBox key={l.id} tag="div" href={logPath(l)} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
-              {/* 번호 없이 제목만 — 연동 리스트에서는 순번이 의미가 없다 (사용자 확정) */}
-              <span>{l.title}</span>
-              <b style={{ fontSize: 11, color: 'var(--faint)' }}>{l.date?.replace(/-/g, '.') ?? ''}</b>
-            </NavBox>
-          )) : <p className="hint" style={{ margin: 0 }}>연동된 로그가 없습니다 — 로그 등록 시 자관을 선택하면 여기에 표시</p>}
+          {relLogs.length > 0 ? (() => {
+            // 가장 최근 로그 하나만 (날짜 최신순, 날짜가 같거나 없으면 목록 앞쪽) — 나머지는 「외 n개」
+            const top = relLogs.map((l, i) => ({ l, i })).sort((a, b) => (b.l.date ?? '').localeCompare(a.l.date ?? '') || a.i - b.i)[0].l;
+            return (
+              <>
+                <NavBox key={top.id} tag="div" href={logPath(top)} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
+                  {/* 번호 없이 제목만 — 연동 리스트에서는 순번이 의미가 없다 (사용자 확정) */}
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                  <b style={{ fontSize: 11, color: 'var(--faint)', flexShrink: 0 }}>{top.date?.replace(/-/g, '.') ?? ''}</b>
+                </NavBox>
+                {relLogs.length > 1 && <p className="hint" style={{ margin: '4px 0 0', textAlign: 'right' }}>외 {relLogs.length - 1}개</p>}
+              </>
+            );
+          })() : <p className="hint" style={{ margin: 0 }}>연동된 로그가 없습니다 — 로그 등록 시 자관을 선택하면 여기에 표시</p>}
         </div>
         )}
       </div>
