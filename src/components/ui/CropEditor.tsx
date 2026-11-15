@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { useBlobUrl, isVideoRef, VideoThumb } from '@/lib/blobStore';
+import { useBoardSettings } from '@/lib/boardStore';
 
 /** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율 */
 export interface CropValue {
@@ -66,13 +67,19 @@ export function CropImg({ src, crop, alt, fitDefault }: { src: string; crop?: Cr
 }
 
 /** 파일 참조 + 크롭을 적용해 표시하는 썸네일 (없으면 플레이스홀더) */
-export function CroppedBlobImg({ fileRef, crop, ph, phStyle, label, alt, fitDefault }: {
+export function CroppedBlobImg({ fileRef: fileRefIn, crop: cropIn, ph, phStyle, label, alt, fitDefault, thumbDefault }: {
   fileRef?: string; crop?: CropValue; ph?: string; label?: string; alt?: string;
   /** 크롭을 안 잡았을 때 높이 맞춤으로 (사용자 요청 — 자캐 상세 아트) */
   fitDefault?: boolean;
   /** 자리표시자 배경 직접 지정 (커플홈 — 캐릭터 테마색, lib/color의 phStyle) */
   phStyle?: React.CSSProperties;
+  /** 이미지가 없을 때 환경설정의 「기본 썸네일 이미지」를 대신 보인다 (게시판 썸네일용) */
+  thumbDefault?: boolean;
 }) {
+  const { st: boardSet } = useBoardSettings();
+  const useDflt = !!thumbDefault && !fileRefIn && !!boardSet.defaultThumb;
+  const fileRef = useDflt ? boardSet.defaultThumb : fileRefIn;
+  const crop = useDflt ? undefined : cropIn;
   const url = useBlobUrl(fileRef);
   if (!url) {
     return <div className={`ph ${ph ?? ''}`} style={{ width: '100%', height: '100%', ...phStyle }}>{label && <span>{label}</span>}</div>;

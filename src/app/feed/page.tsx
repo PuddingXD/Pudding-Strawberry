@@ -19,7 +19,9 @@ import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 
 /** 대표(첫) 이미지 — 원본보다 크게 늘리지 않는다: 폭이 모자랄 때만 줄이고, 작은 그림은 작은 그대로 가운데 */
-function FeedImg({ fileRef, ph }: { fileRef?: string; ph?: string }) {
+function FeedImg({ fileRef: fileRefIn, ph }: { fileRef?: string; ph?: string }) {
+  const { st: boardSet } = useBoardSettings();
+  const fileRef = fileRefIn || boardSet.defaultThumb;   // 썸네일이 없으면 환경설정의 기본 썸네일
   const url = useBlobUrl(fileRef);
   if (!url) return <div className={`ph ${ph ?? 'cool'}`} style={{ aspectRatio: '16/10' }}><span>IMAGE</span></div>;
   // 영상이면 첫 장면 (목록에서는 재생하지 않고, 글을 열면 재생)

@@ -118,7 +118,7 @@ function DotoriPageInner() {
             }}
             onClick={() => { if (canEdit(it) && !editOn) router.push(`/dotori/${it.id}/edit`); }}>
             <div className="th">
-              <CroppedBlobImg fileRef={it.imgId} crop={it.thumbCrop} ph={it.ph} />
+              <CroppedBlobImg fileRef={it.imgId} crop={it.thumbCrop} ph={it.ph} thumbDefault />
               {canEdit(it) && (
                 <div className="hv-actions dt-actions" onClick={e => e.stopPropagation()}>
                   <button className="del" onClick={() => setDelFor(it)}>DELETE</button>

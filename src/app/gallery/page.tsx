@@ -126,7 +126,7 @@ function BackupPageInner() {
               <NavBox key={p.id} className="panel g-item" {...sort(i)} href={folded || editOn ? undefined : `/gallery/${p.id}`}>
                 <div className={`thumb ${folded ? 'veil' : ''}`} onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}>
                   <div style={{ position: 'absolute', inset: 0 }}>
-                    <CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} />
+                    <CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} thumbDefault />
                   </div>
                   {/* 유형 뱃지(로그/단일 …)는 리스트에서 뺐다 (v2.0 사용자 요청) — 상세에는 그대로 */}
                   {folded && (
@@ -154,7 +154,7 @@ function BackupPageInner() {
       <div className="panel flush" style={{ display: view === 'list' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map(p => (
             <NavBox key={p.id} className="list-item" href={`/gallery/${p.id}`}>
-              <div className="th" style={{ position: 'relative' }} onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} /></div>
+              <div className="th" style={{ position: 'relative' }} onContextMenu={(e: React.MouseEvent) => onCtx(e, p)}><CroppedBlobImg fileRef={p.thumbId ?? p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} thumbDefault /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <b>
                   {p.title}

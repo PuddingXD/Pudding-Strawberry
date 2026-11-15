@@ -697,8 +697,10 @@ function BoardPane() {
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
     patchFeedCat, addFeedCat, removeFeedCat, setFeedCats, setFeedHideAuthor,
     patchRoadCat, addRoadCat, removeRoadCat, setRoadCats,
-  setPerPage, setGalleryCols, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats,
+  setPerPage, setGalleryCols, setDefaultThumb, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats,
   } = useBoardSettings();
+  const dfltThumbUrl = useBlobUrl(st.defaultThumb);
+  const boardToast = useToast();
   const { boards, setBoards, patchBoard } = useBoards();
   const [catBoard, setCatBoard] = useState(MAIN_BOARD_ID);   // 말머리 편집 대상 게시판
   /* 갤러리 말머리도 갤러리마다 따로 (v2.0 사용자 요청) — 어느 갤러리 것을 고칠지 고른다.
@@ -969,6 +971,33 @@ function BoardPane() {
       <div className="set-row" style={{ alignItems: 'center' }}>
         <div className="l"><b>갤러리 보기 한 줄 칸 수</b><small>많을수록 썸네일이 작아집니다 · 기본 3칸 (2~8)</small></div>
         <KStep value={galleryColsOf(st)} min={2} max={8} suffix="칸" onChange={v => setGalleryCols(v)} />
+      </div>
+      {/* 기본 썸네일 이미지 — 썸네일이 있는 게시판(갤러리·큰 그림·TRPG 리뷰·도토리)에서 썸네일 없는 글에 대신 보인다 */}
+      <div className="set-row" style={{ alignItems: 'center' }}>
+        <div className="l"><b>기본 썸네일 이미지</b><small>썸네일이 없는 글에 대신 보여요 (갤러리·큰 그림·TRPG 리뷰·도토리) · 비우면 기본 회색 칸</small></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 64, height: 48, borderRadius: 8, border: '1px solid var(--line)', overflow: 'hidden', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+            {dfltThumbUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={dfltThumbUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <span style={{ fontSize: 10, color: 'var(--faint)' }}>없음</span>}
+          </span>
+          <input id="dfltThumbFile" type="file" accept="image/*" style={{ display: 'none' }}
+            onChange={async e => {
+              const f = e.target.files?.[0];
+              e.target.value = '';
+              if (!f) return;
+              try { setDefaultThumb(await putBlob(f)); } catch (err) {
+                boardToast(`이미지를 저장소에 올리지 못했습니다 — ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }} />
+          <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11 }}
+            onClick={() => document.getElementById('dfltThumbFile')?.click()}>{st.defaultThumb ? 'CHANGE' : 'UPLOAD'}</button>
+          {st.defaultThumb && (
+            <button className="btn btn-ghost" style={{ height: 35, padding: '0 14px', fontSize: 11 }}
+              onClick={() => setDefaultThumb(undefined)}>REMOVE</button>
+          )}
+        </div>
       </div>
 
       <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />

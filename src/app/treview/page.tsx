@@ -119,7 +119,7 @@ function ReviewPageInner() {
               <NavBox tag="article" key={r.id} className="panel tc-card rv-card" href={`/treview/${r.id}`}>
                 {/* 16:9 타일 — 대표 이미지, 없으면 자리표시자 · 우클릭 = 썸네일 수정 */}
                 <div className="rv-img" onContextMenu={e => onCtx(e, r)}>
-                  <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" label={r.thumbId ? undefined : 'REVIEW'} />
+                  <CroppedBlobImg fileRef={r.thumbId} crop={r.thumbCrop} ph="cool" label={r.thumbId ? undefined : 'REVIEW'} thumbDefault />
                   {r.category && <span className="rv-badge" style={boardBadgeStyle(badgeOf(r.category))}>{r.category}</span>}
                 </div>
                 <div className="bd">

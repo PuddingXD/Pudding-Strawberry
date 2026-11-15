@@ -66,6 +66,8 @@ export interface BoardSettings {
   perPage?: { gallery?: number; galleryList?: number; feed?: number; road?: number; board?: number };
   /** 갤러리 보기 한 줄 칸 수 (v2.1 사용자 요청) — 클릭 버튼 대신 환경설정에서. 많을수록 썸네일이 작아진다. 기본 3 */
   galleryCols?: number;
+  /** 기본 썸네일 이미지 (파일 id) — 썸네일이 있는 게시판에서 썸네일이 없는 글에 대신 보인다 */
+  defaultThumb?: string;
 }
 export const PER_PAGE_DEFAULT = { gallery: 12, galleryList: 20, feed: 6, road: 4, board: 8 } as const;
 /** 한 페이지 글 수 — 정한 값(1~60), 없으면 기본값 */
@@ -230,10 +232,11 @@ export function useBoardSettings() {
   const setPerPage = useCallback((k: keyof typeof PER_PAGE_DEFAULT, v: number | undefined) =>
     apply(s => ({ ...s, perPage: { ...s.perPage, [k]: v } })), [apply]);
   const setGalleryCols = useCallback((v: number) => apply(s => ({ ...s, galleryCols: v })), [apply]);
+  const setDefaultThumb = useCallback((v: string | undefined) => apply(s => ({ ...s, defaultThumb: v })), [apply]);
   return {
     patchSheetCat, addSheetCat, removeSheetCat, setSheetCats,
     patchPlaylogCat, addPlaylogCat, removePlaylogCat, setPlaylogCats,
-    setPerPage, setGalleryCols, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats, setReviewStars,
+    setPerPage, setGalleryCols, setDefaultThumb, patchReviewCat, addReviewCat, removeReviewCat, setReviewCats, setReviewStars,
     st, loaded, patchSystem, patchCat, addCat, removeCat, setCats, patchGallery,
     patchGalleryCat, addGalleryCat, removeGalleryCat, setGalleryCats,
     patchFeedCat, addFeedCat, removeFeedCat, setFeedCats, setFeedHideAuthor,
