@@ -118,7 +118,7 @@ function PlaylogPageInner() {
       <div className="toolrow">
         {/* 왼쪽: 말머리 모아보기 ALL / 말머리… (시트 게시판과 같다 — 많으면 탭째 다음 줄로) */}
         <div className="seg cat-tabs">
-          <button className={curCat === '' ? 'on' : ''} onClick={() => pickCat('')}>ALL</button>
+          <button className={curCat === '' ? 'on' : ''} onClick={() => pickCat('')}>전체</button>
           {cats.map(c => (
             <button key={c.id} className={curCat === c.label ? 'on' : ''} onClick={() => pickCat(c.label)}>{c.label}</button>
           ))}

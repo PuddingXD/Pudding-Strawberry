@@ -328,7 +328,7 @@ function RoadviewPageInner() {
       {cats.length > 0 && (
         <div className="loadb-cats">
           <div className="seg cat-tabs">
-            <button className={cat === '' ? 'on' : ''} onClick={() => setCat('')}>ALL</button>
+            <button className={cat === '' ? 'on' : ''} onClick={() => setCat('')}>전체</button>
             {cats.map(c => (
               <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
             ))}

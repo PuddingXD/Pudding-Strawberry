@@ -46,7 +46,7 @@ export function SheetForm({ initial, secId, onSave, onCancel }: {
         <Field label="With (말머리 — 여러 개 선택 가능)"><CatPickMulti cats={cats} value={heads} onChange={setHeads} /></Field>
         <Field label="Name (시트 이름)"><KInput value={name} onChange={e => setName(e.target.value)} /></Field>
         <Field label="Url (시트 링크)"><KInput value={url} onChange={e => setUrl(e.target.value)} /></Field>
-        <p className="hint" style={{ margin: 0 }}>새 시트는 표 맨 위에 추가됩니다 · 말머리를 고르지 않으면 ALL에만 보입니다</p>
+        <p className="hint" style={{ margin: 0 }}>새 시트는 표 맨 위에 추가됩니다 · 말머리를 고르지 않으면 「전체」에만 보입니다</p>
       </div>
 
       <div>

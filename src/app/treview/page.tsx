@@ -97,7 +97,7 @@ function ReviewPageInner() {
       <div className="toolrow">
         {/* 말머리 탭 — 많으면 탭째 다음 줄로 (cat-tabs, 루넬갠홈에서 이식) */}
         <div className="seg cat-tabs">
-          <button className={cat === '' ? 'on' : ''} onClick={() => setCat('')}>ALL</button>
+          <button className={cat === '' ? 'on' : ''} onClick={() => setCat('')}>전체</button>
           {cats.map(c => (
             <button key={c.id} className={cat === c.label ? 'on' : ''} onClick={() => setCat(c.label)}>{c.label}</button>
           ))}
