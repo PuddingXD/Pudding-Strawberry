@@ -77,6 +77,15 @@ export function setPageText(k: string, v: string) {
   try { setSetting(STORAGE_KEY, map); } catch { /* 무시 */ }
 }
 
+/** 열람 권한이 없을 때 보여줄 안내 문구 — 환경설정 > TRPG 「열람 권한 없음 안내」에서 바꾼다 */
+export const DENIED_KEY = 'denied-desc';
+export const DENIED_DEF = '열람 권한이 없습니다';
+export function useDeniedText(): string {
+  const [t, setT] = useState(DENIED_DEF);
+  useEffect(() => { setT(getPageText(DENIED_KEY, DENIED_DEF) || DENIED_DEF); }, []);
+  return t;
+}
+
 /** always — 헤더 표시 옵션(제목만/안 띄움)에도 숨지 않는 상태·안내 문구용 (예: 역극 비로그인 안내, v1.9) */
 export function EditableDesc({ k, def, always }: { k: string; def: string; always?: boolean }) {
   const { isAdmin } = useAuth();

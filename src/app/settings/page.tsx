@@ -3100,6 +3100,8 @@ function TrpgPane() {
   const [ms, patchMenu] = useMenuSettings();   // 플레이기록 표시 열 (4.16 — 저장 위치는 메뉴 설정)
   // 비밀번호 걸린 로그의 안내 문구 (pagetext 'trpg-lock-desc')
   const [lockDesc, setLockDesc] = useState('');
+  const [deniedDesc, setDeniedDesc] = useState('');
+  useEffect(() => { setDeniedDesc(getPageText('denied-desc', '열람 권한이 없습니다')); }, []);
   useEffect(() => { setLockDesc(getPageText('trpg-lock-desc', '비밀번호를 입력하면 열람할 수 있습니다')); }, []);
   const patchStatus = (k: DotoriStatus, p: Partial<(typeof settings.statuses)[DotoriStatus]>) =>
     patch({ statuses: { ...settings.statuses, [k]: { ...settings.statuses[k], ...p } } });
@@ -3149,6 +3151,13 @@ function TrpgPane() {
         <KInput value={lockDesc}
           onChange={e => { setLockDesc(e.target.value); setPageText('trpg-lock-desc', e.target.value); }}
           placeholder="비밀번호를 입력하면 열람할 수 있습니다" style={{ width: 300 }} />
+      </div>
+
+      <div className="set-row" style={{ alignItems: 'center' }}>
+        <div className="l"><b>열람 권한 없음 안내</b><small>권한이 없는 글·로그·리뷰를 열었을 때 (비우면 기본 문구)</small></div>
+        <KInput value={deniedDesc}
+          onChange={e => { setDeniedDesc(e.target.value); setPageText('denied-desc', e.target.value); }}
+          placeholder="열람 권한이 없습니다" style={{ width: 300 }} />
       </div>
 
       <h3>도토리 상태 카테고리</h3>

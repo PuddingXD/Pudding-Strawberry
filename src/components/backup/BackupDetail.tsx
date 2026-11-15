@@ -14,7 +14,7 @@ import { BackupPost, BACKUP_SEED, FEED_KEY, FEED_SEED, sortBackup } from '@/lib/
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useBlobUrl, isVideoRef, blobUrlOf } from '@/lib/blobStore';
 import { sanitizeHtml } from '@/lib/sanitize';
-import { PageTitle } from '@/components/ui/PageText';
+import { PageTitle, useDeniedText } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { PrevNext, pickNeighbors, useScrollTopOnChange } from '@/components/ui/PrevNext';
 import { useBoardSettings, boardBadgeStyle, feedCatsOf, galleryCatsOf, feedHideAuthorOf } from '@/lib/boardStore';
@@ -113,12 +113,13 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
   }, [singleKey]);
   // 큰 글씨 — 추가 섹션이면 그 이름, 눌렀을 때도 그 목록으로 (v2.0 사용자 제보)
   const tt = useSectionTitle(kind, p?.secId, feed ? 'WORKS' : 'GALLERY');
+  const deniedText = useDeniedText();
   if (blocked) return blocked;
   if (!loaded) return <section className="page" />;
   if (!p || (p.visibility === 'private' && !isAdmin) || (p.visibility === 'member' && !user)) {
     return (
       <section className="page">
-        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>게시물을 찾을 수 없거나 열람 권한이 없습니다</p></div>
+        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>{p ? deniedText : '게시물을 찾을 수 없습니다'}</p></div>
       </section>
     );
   }

@@ -16,6 +16,7 @@ import { Relation, REL_SEED, Character, CHAR_SEED, charGrant } from '@/lib/charS
 import { applyLogSides, rpSpeakers, rpLogHtml, type RpLogSrc } from '@/lib/rpLog';
 import type { RpMessage } from '@/lib/rpStore';
 import { useMenuSettings } from '@/lib/menuStore';
+import { useDeniedText } from '@/components/ui/PageText';
 import { useMembers } from '@/lib/members';
 import { canEditTrpg, trpgEditorIds, canAddTrpg } from '@/lib/trpgPerm';
 import { WriteHere } from '@/components/shell/Shortcuts';
@@ -116,12 +117,13 @@ function TrpgDetailInner() {
   // 이 로그를 볼 수 없으면(없거나, 권한도 비밀번호도 없으면) 홈으로 — 예전엔 이 자리에 "열람 권한이
   // 없습니다" 문구만 남아 있었는데, 로그아웃 등으로 권한을 잃은 직후엔 계속 그 화면에 머무를 이유가
   // 없다는 사용자 요청으로 홈으로 보낸다 (v2.0)
+  const deniedText = useDeniedText();
   const leavingRef = useRef(false);   // 삭제해서 떠나는 중 — 「없는 로그 → 홈」으로 튕기지 않고 목록으로 가게 (커플홈)
   useEffect(() => {
     if (!loaded) return;
     if (!l) { if (!leavingRef.current) router.replace('/'); return; }
-    if (!baseAllowed && !unlocked && !l.password) router.replace('/');
-  }, [loaded, l, baseAllowed, unlocked, router]);
+    // 권한이 없을 때는 홈으로 보내지 않고 안내 문구를 띄운다 (아래 렌더)
+  }, [loaded, l, router]);
   const tryUnlock = () => {
     if (l?.password && pwTry === l.password) {
       setUnlocked(true);
@@ -414,7 +416,11 @@ function TrpgDetailInner() {
   if (blocked) return blocked;
   if (!loaded || !l) return <section className="page" />;
   if (!baseAllowed && !unlocked) {
-    if (!l.password) return <section className="page" />;
+    if (!l.password) return (
+      <section className="page">
+        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>{deniedText}</p></div>
+      </section>
+    );
     // 비밀번호 게이트 — 맞으면 이 세션 동안 열람 유지
     return (
       <section className="page">
