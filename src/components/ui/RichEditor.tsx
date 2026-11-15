@@ -287,7 +287,9 @@ function UniBtn({ onPick }: { onPick: (id: string) => void }) {
             <button type="button" className="re-fontitem" onClick={() => { onPick(''); setOpen(false); }}>원래대로 (일반 글자)</button>
             {UNI_STYLES.map(s => (
               <button key={s.id} type="button" className="re-fontitem" onClick={() => { onPick(s.id); setOpen(false); }}>
-                {sample.trim() && <>{toUni(sample.trim(), s.id)}{' '}</>}<span style={sample.trim() ? { opacity: .55, fontSize: 11 } : undefined}>{s.name}</span>
+                {(sample.trim() || s.sample)
+                  ? <>{toUni(sample.trim() || s.sample!, s.id)}{' '}<span style={{ opacity: .55, fontSize: 11 }}>{sample.trim() ? s.name : ''}</span></>
+                  : s.name}
               </button>
             ))}
           </div>
