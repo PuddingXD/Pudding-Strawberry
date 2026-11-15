@@ -1501,13 +1501,15 @@ function RelDetailInner() {
             const top = [...relRooms].sort((a, b) => (b.created ?? '').localeCompare(a.created ?? ''))[0];
             return (
               <>
-                <NavBox key={top.id} tag="div" href="/rp" className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                <NavBox key={top.id} tag="div" href="/rp" className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)', borderBottom: 'none' }}>
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                    {relRooms.length > 1 && <small style={{ fontSize: 10.5, color: 'var(--faint)', flexShrink: 0 }}>외 {relRooms.length - 1}개</small>}
+                  </span>
                   <b style={{ fontSize: 11, color: 'var(--faint)', flexShrink: 0 }}>
                     {top.status === 'done' ? (top.isPublic ? '완결 · 공개' : '완결') : '진행중'}
                   </b>
                 </NavBox>
-                {relRooms.length > 1 && <p className="hint" style={{ margin: '4px 0 0', textAlign: 'right' }}>외 {relRooms.length - 1}개</p>}
               </>
             );
           })() : (
@@ -1523,12 +1525,14 @@ function RelDetailInner() {
             const top = relLogs.map((l, i) => ({ l, i })).sort((a, b) => (b.l.date ?? '').localeCompare(a.l.date ?? '') || a.i - b.i)[0].l;
             return (
               <>
-                <NavBox key={top.id} tag="div" href={logPath(top)} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)' }}>
+                <NavBox key={top.id} tag="div" href={logPath(top)} className="dday-row" style={{ cursor: 'var(--cur-pointer,pointer)', borderBottom: 'none' }}>
                   {/* 번호 없이 제목만 — 연동 리스트에서는 순번이 의미가 없다 (사용자 확정) */}
-                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{top.title}</span>
+                    {relLogs.length > 1 && <small style={{ fontSize: 10.5, color: 'var(--faint)', flexShrink: 0 }}>외 {relLogs.length - 1}개</small>}
+                  </span>
                   <b style={{ fontSize: 11, color: 'var(--faint)', flexShrink: 0 }}>{top.date?.replace(/-/g, '.') ?? ''}</b>
                 </NavBox>
-                {relLogs.length > 1 && <p className="hint" style={{ margin: '4px 0 0', textAlign: 'right' }}>외 {relLogs.length - 1}개</p>}
               </>
             );
           })() : <p className="hint" style={{ margin: 0 }}>연동된 로그가 없습니다 — 로그 등록 시 자관을 선택하면 여기에 표시</p>}
