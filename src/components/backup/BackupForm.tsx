@@ -71,6 +71,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
       crop: i === 0 ? initial?.thumbCrop : undefined,
     })));
   const [desc, setDesc] = useState(initial?.desc ?? '');
+  const [descPos, setDescPos] = useState<'top' | 'bottom'>(initial?.descPos === 'bottom' ? 'bottom' : 'top');
   // 썸네일 (v2.1 사용자 요청) — 본문 첫 이미지에서 잘라 쓰거나, 본문에 안 나오는 썸네일 전용 이미지를 따로 올린다 (택1)
   const [thumbMode, setThumbMode] = useState<'body' | 'own'>(initial?.thumbId ? 'own' : 'body');
   const [ownThumb, setOwnThumb] = useState<UpFile | null>(() => (initial?.thumbId
@@ -176,7 +177,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
         images: imageIds, phList: files.length ? [] : ['cool'],
         thumbCrop, // 대표 이미지(또는 썸네일 전용 이미지) 크롭 (6.1 · v2.1)
         thumbId: ownId,
-        desc, category, tags: parseTags(tagsText), madeDate: madeDate || undefined,
+        desc, descPos: descPos === 'bottom' ? 'bottom' as const : undefined, category, tags: parseTags(tagsText), madeDate: madeDate || undefined,
         date: nowIso(), author: user.nickname, authorId: user.id,
         visibility,
         fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },
@@ -190,7 +191,7 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
         images: imageIds, phList: files.length ? [] : x.phList,
         thumbCrop,
         thumbId: ownId,
-        desc, category, tags: parseTags(tagsText), madeDate: madeDate || undefined, visibility,
+        desc, descPos: descPos === 'bottom' ? 'bottom' as const : undefined, category, tags: parseTags(tagsText), madeDate: madeDate || undefined, visibility,
         fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },
       } : x));
       toast('저장되었습니다');
@@ -301,7 +302,17 @@ export function BackupForm({ initial, kind = 'gallery' }: { initial: BackupPost 
             </div>
           </div>
           <div style={{ marginTop: 14 }}>
-            <label className="k-label">설명</label>
+            <div className="k-label" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+              <span>설명</span>
+              <span style={{ display: 'inline-flex', gap: 12, fontWeight: 400, fontSize: 12 }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'var(--cur-pointer,pointer)' }}>
+                  <input type="radio" name="descPos" checked={descPos === 'top'} onChange={() => setDescPos('top')} />그림 위
+                </label>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'var(--cur-pointer,pointer)' }}>
+                  <input type="radio" name="descPos" checked={descPos === 'bottom'} onChange={() => setDescPos('bottom')} />그림 아래
+                </label>
+              </span>
+            </div>
             <RichEditor value={desc} onChange={setDesc} placeholder='작품 설명을 작성하세요 (선택)' />
           </div>
         </div>

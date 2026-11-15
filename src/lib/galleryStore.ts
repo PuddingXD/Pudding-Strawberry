@@ -42,6 +42,8 @@ export interface BackupPost {
   thumbId?: string;
   phList: string[];          // 데모 플레이스홀더
   desc: string;
+  /** 본문(설명) 위치 — 'bottom'이면 그림 아래, 없으면 그림 위(기존) */
+  descPos?: 'top' | 'bottom';
   category: string;          // 말머리
   madeDate?: string;         // 제작일 (선택)
   date: string;

@@ -176,7 +176,7 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
           {p.title}
           {badgeLabel && <span style={boardBadgeStyle(badge)}>{badgeLabel}</span>}
         </h2>
-        {p.desc && (
+        {p.desc && p.descPos !== 'bottom' && (
           <div className="post-body" style={{ fontSize: 12.5, margin: '0 0 16px' }}
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.desc) }} />
         )}
@@ -233,6 +233,11 @@ export function BackupDetail({ kind }: { kind: 'gallery' | 'feed' }) {
               </div>
             )}
           </>
+        )}
+        {/* 본문을 그림 아래로 둔 글 (작성 화면의 「그림 아래」) */}
+        {p.desc && p.descPos === 'bottom' && (
+          <div className="post-body" style={{ fontSize: 12.5, margin: '16px 0 0' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.desc) }} />
         )}
         {/* 이전글/다음글 — 같은 갤러리(섹션) 안에서, 내가 볼 수 있는 글만 · 본문 카드 안 (사용자 요청) */}
         <PrevNext
