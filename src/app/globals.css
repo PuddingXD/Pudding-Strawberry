@@ -1563,8 +1563,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table td{padding:10px 6px;line-height:calc(20px*var(--fs,1));border-bottom:1px dashed var(--line);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl-table tr:last-child td{border-bottom:none}
 .pl-table .td-sc{font-weight:600}  /* Scenario — 가장 넓고 가운데 정렬 (4.16) */
-.pl-table .td-sc a{border-bottom:1px solid var(--line);transition:.15s}
-.pl-table .td-sc a:hover{color:var(--accent);border-color:var(--accent)}
+.pl-table .td-sc a{border-bottom:none;text-decoration:none;transition:.15s}
+.pl-table .td-sc a:hover{color:var(--accent);text-decoration:none}
 .pl-table.sh-table .td-sc a{border-bottom:none;text-decoration:none}   /* 시트 제목 링크는 밑줄 없이 */
 .pl-table.sh-table .td-sc a:hover{border-bottom:none}
 /* 시트 Check — 빈 네모 2칸(왼쪽 관리자 · 오른쪽 회원), 체크하면 채워진다 */
@@ -1579,7 +1579,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table .td-date{font-size:calc(11.5px*var(--fs,1));color:var(--sub);letter-spacing:.03em}
 /* Playtime 밑줄·탭 이동은 모바일 전용 — PC는 맨 끝 클립 칸이 담당 (4.16) */
 @media (max-width:620px){
-  .pl-table .td-sc.linked{text-decoration:underline;text-underline-offset:3px;cursor:var(--cur-pointer,pointer)}
+  .pl-table .td-sc.linked{text-decoration:none;cursor:var(--cur-pointer,pointer)}
   .pl-table .td-sc.linked:active{color:var(--accent)}
 }
 .pl-table .td-url{position:relative}
