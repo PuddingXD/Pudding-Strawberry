@@ -139,6 +139,9 @@ export interface TrpgLogBody {
   bodyHtml?: boolean;
   originalFileId?: string;
   originalName?: string;
+  /** 본문 맨 위에 따로 보여 줄 이미지·영상 (HTML·글 본문과 별개) — 파일 이름은 영상인지 가리는 데도 쓴다 */
+  topMediaId?: string;
+  topMediaName?: string;
   visibility: Visibility;
   /** 어느 로그 백업 소속인지 (v2.0) — 목록 문서와 따로 저장되므로 소속도 따로 들고 있어야
    *  「메뉴가 비공개면 글도 비공개로」 판정이 본문 문서에도 걸린다. 없으면 기본 섹션. */

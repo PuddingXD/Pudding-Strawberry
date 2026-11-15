@@ -46,6 +46,15 @@ function TrpgPageInner() {
   const logs = filterSection(logsAll, sec.id);
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setLogs = sectionSetter(logsAll, sec.id, setLogsAll);
+  /* № 번호는 티켓 순서와 연동 (v2.1 사용자 요청) — 맨 위 티켓이 가장 큰 번호, 맨 아래가 № 001.
+     새 로그는 맨 앞에 들어가므로 기존 번호는 그대로이고, 순서를 바꾸거나 지우면 번호가 자리를 따라간다.
+     직접 적어 둔 № 텍스트(noText)는 건드리지 않는다. 다른 사람 글의 번호를 고치는 것이라 관리자만 */
+  const withNo = (arr: TrpgLog[]) => arr.map((l, i) => (l.no === arr.length - i ? l : { ...l, no: arr.length - i }));
+  const saveOrdered = (arr: TrpgLog[]) => setLogs(isAdmin ? withNo(arr) : arr);
+  useEffect(() => {
+    if (!isAdmin || !logsLoaded) return;
+    if (logs.some((l, i) => l.no !== logs.length - i)) setLogs(withNo(logs));   // 예전에 순서만 바꿔 둔 것·삭제로 어긋난 것을 한 번 맞춘다
+  }, [isAdmin, logsLoaded, logs]);   // eslint-disable-line react-hooks/exhaustive-deps
   // 본문은 목록과 분리 저장 (v2.0) — 나만보기 로그도 목록엔 뜨게 하려고 목록 문서의 질의 조건이
   // listHidden으로 느슨해졌는데, 본문까지 같이 있으면 그 질의로 본문도 함께 새어 나간다
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -129,6 +138,8 @@ function TrpgPageInner() {
   const [nBody, setNBody] = useState('');
   const [nFileName, setNFileName] = useState('');
   const [nFile, setNFile] = useState<File | null>(null);
+  const [nTop, setNTop] = useState<File | null>(null);   // 본문 맨 위 이미지·영상 (v2.1 사용자 요청)
+  const topRef = useRef<HTMLInputElement>(null);
   /* 디스코드 복사본 자동 판별 (커플홈 사용자 요청 — 따로 「가져오기」 버튼 없이 붙여넣기·직접 작성·파일 첨부에서 알아서):
      본문 글이 HTML이 아니고 parseDiscordLog가 발화를 찾으면 변환 패널을 띄운다. 판별이 틀렸으면 패널에서 「글 그대로」 */
   const dcParsed = useMemo(() => (nBody.trim() ? parseChatLog(nBody) : null), [nBody]);
@@ -221,7 +232,7 @@ function TrpgPageInner() {
   const reorderPage = (nextPage: TrpgLog[]) => {
     const nextVisible = [...visible];
     nextVisible.splice(logStart, nextPage.length, ...nextPage);
-    setLogs(mergeOrder(logs, nextVisible));
+    saveOrdered(mergeOrder(logs, nextVisible));
   };
 
   /* ---------- 번호로 자리 옮기기 (v2.0 사용자 요청) ----------
@@ -235,7 +246,7 @@ function TrpgPageInner() {
     setOrdFor({ id, x: e.clientX, y: e.clientY });
   };
   const applyOrder = (wanted: number) => {
-    if (ordIdx >= 0) setLogs(mergeOrder(logs, moveToOrder(visible, ordIdx, wanted)));
+    if (ordIdx >= 0) saveOrdered(mergeOrder(logs, moveToOrder(visible, ordIdx, wanted)));
     setOrdFor(null);
   };
   const gridDragProps = (i: number): React.HTMLAttributes<HTMLDivElement> => {
@@ -258,7 +269,7 @@ function TrpgPageInner() {
       onDragEnd: () => {
         gridFromRef.current = null;
         setGridPreview(p => {
-          if (p) setLogs(mergeOrder(logs, p));   // 놓는 순간 딱 한 번만 저장
+          if (p) saveOrdered(mergeOrder(logs, p));   // 놓는 순간 딱 한 번만 저장
           return null;
         });
       },
@@ -348,18 +359,20 @@ function TrpgPageInner() {
       // 업로드 원본 파일은 그대로 보관 (4.3 — 백업 목적, IndexedDB → R2 이전 예정)
       originalFileId: nFile ? await putBlob(nFile) : undefined,
       originalName: nFile?.name,
+      topMediaId: nTop ? await putBlob(nTop) : undefined,
+      topMediaName: nTop?.name,
       authorId: user?.id,
       editorIds: log.editorIds,
       visibility: bodyVisibility(log),
       ...secStamp(sec.id),   // 소속 (v2.0) — 본문 문서도 비공개 판정을 받게
     };
-    setLogs([log, ...logs]);
+    saveOrdered([log, ...logs]);
     // 본문 문서는 **뒤에** 붙인다 (v2.0 포크 제보) — 앞에 끼우면 기존 본문 전체의 자리가 밀려
     // 재저장 대상이 되는데, 큰 본문이 쌓인 홈에서는 그 합이 한 번의 쓰기 한도를 넘어 저장이 실패했다.
     // 본문은 id로만 찾으므로 순서는 아무 의미가 없다.
     void putDoc('ohome.trpgbody.v1', body);   // 본문은 한 건만 넣는다 — 목록을 받아 올 필요 없이 (커플홈)
     setAddOpen(false);
-    setNNo(''); setNSlug(''); setNTags([]); setNVis('public'); setNPw(''); setNListHidden(false); setNTitle(''); setNCatch(''); setNWriter(''); setNWith(''); setNBody(''); setNFileName(''); setNDate(''); setNFile(null);
+    setNNo(''); setNSlug(''); setNTags([]); setNVis('public'); setNPw(''); setNListHidden(false); setNTitle(''); setNCatch(''); setNWriter(''); setNWith(''); setNBody(''); setNFileName(''); setNDate(''); setNFile(null); setNTop(null);
     setNThumb(null); setNThumbUrl(''); setNThumbCrop(undefined);
     setDc(DC_DEFAULT);
     toast(dcMode
@@ -635,6 +648,17 @@ function TrpgPageInner() {
                 )}
               </div>
             )}
+          </div>
+          {/* 본문 맨 위에 따로 얹을 이미지·영상 — 아래 본문(HTML·글)과는 별개 (v2.1 사용자 요청) */}
+          <label className="k-label" style={{ margin: '4px 0 0' }}>상단 이미지·영상 (선택)</label>
+          <input ref={topRef} type="file" accept="image/*,video/*" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) setNTop(f); e.target.value = ''; }} />
+          <div className="upzone" style={{ marginBottom: 0 }} onClick={() => topRef.current?.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && /^(image|video)\//.test(f.type)) setNTop(f); }}>
+            {nTop
+              ? <><b>{nTop.name}</b> <span style={{ color: 'var(--accent)', marginLeft: 8, cursor: 'var(--cur-pointer,pointer)' }} onClick={e => { e.stopPropagation(); setNTop(null); }}>✕ 빼기</span></>
+              : <><b style={{ display: 'block', marginBottom: 3 }}>png · jpg · gif · mp4 등을 끌어다 놓거나 클릭</b>본문 맨 위에 한 줄 띄우고 들어갑니다</>}
           </div>
           <div className="mini-seg" style={{ justifySelf: 'start' }}>
             <button className={nMode === 'paste' ? 'on' : ''} onClick={() => setNMode('paste')}>붙여넣기/직접 작성</button>

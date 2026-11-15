@@ -22,7 +22,7 @@ import { WriteHere } from '@/components/shell/Shortcuts';
 import { logViewChars, renderLogSrc } from '@/lib/rpLogSrc';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TagInput } from '@/components/ui/TagInput';
-import { getBlob, putBlob, useBlobUrl } from '@/lib/blobStore';
+import { getBlob, putBlob, useBlobUrl, isVideoRef } from '@/lib/blobStore';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
 import { KInput, KSelect, KDate, KTextarea, KCheck } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
@@ -87,6 +87,7 @@ function TrpgDetailInner() {
   const id = l?.id ?? key;   // 아래는 전부 진짜 id로 (본문 문서·저장·비밀번호 열람 기억)
   // 본문은 **이 로그 한 건만** 읽고 쓴다 (커플홈 사용자 제보 — 전체 본문을 받느라 느렸다). 권한이 없으면 애초에 안 온다 (undefined)
   const [bd, saveBody, removeBody] = useOneDoc<TrpgLogBody>('ohome.trpgbody.v1', l ? l.id : undefined);
+  const topUrl = useBlobUrl(bd?.topMediaId);   // 본문 맨 위 이미지·영상 (v2.1 사용자 요청)
   /* 이 글이 속한 곳이 비공개면 주소로 들어와도 열리지 않게 (v2.0 사용자 요청).
      글 주소에는 섹션이 없어 MenuGuard가 못 막는다 — 글을 읽어 소속을 알아낸 여기서 판정한다.
      **다른 early return보다 먼저 불러야 한다**(훅이므로 렌더마다 개수가 같아야 한다) */
@@ -142,6 +143,9 @@ function TrpgDetailInner() {
   // 본문 표시 방식 (v2.0) — 자동 판별이 직접 쓴 글을 HTML로 오판하는 경우가 있어 직접 고를 수 있게
   const [bodyDisp, setBodyDisp] = useState<'auto' | 'text' | 'html'>('auto');
   const [eFile, setEFile] = useState<File | null>(null);
+  const [eTop, setETop] = useState<File | null>(null);       // 상단 이미지·영상 교체
+  const [eTopDel, setETopDel] = useState(false);              // 상단 이미지·영상 빼기
+  const eTopRef = useRef<HTMLInputElement>(null);
   const [eText, setEText] = useState('');
   const eFileRef = useRef<HTMLInputElement>(null);
   const eThumbRef = useRef<HTMLInputElement>(null);
@@ -289,6 +293,10 @@ function TrpgDetailInner() {
     } else if (bodyMode === 'text' && eText.trim()) {
       bodyPatch = await saveLogBody(eText);
     }
+    // 상단 이미지·영상 — 새 파일이면 교체, 빼기면 비운다, 아니면 그대로
+    const topPatch: Partial<TrpgLogBody> = eTop
+      ? { topMediaId: await putBlob(eTop), topMediaName: eTop.name }
+      : eTopDel ? { topMediaId: undefined, topMediaName: undefined } : {};
     // 썸네일 교체 준비
     let thumbPatch: Partial<TrpgLog> = {};
     if (thumbMode === 'image' && eThumb) {
@@ -327,6 +335,8 @@ function TrpgDetailInner() {
       bodyId: bd?.bodyId ?? l?.bodyId,
       originalFileId: bd?.originalFileId ?? l?.originalFileId,
       originalName: bd?.originalName ?? l?.originalName,
+      topMediaId: bd?.topMediaId, topMediaName: bd?.topMediaName,
+      ...topPatch,
       bodyHtml: bodyDisp === 'auto' ? undefined : bodyDisp === 'html',
       // 원본 발화는 본문을 그대로 둘 때만 유지 — 파일·직접 입력으로 갈아 끼우면 더는 맞지 않는다
       src: bodyMode === 'keep' ? bd?.src : undefined,
@@ -594,6 +604,7 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
               visibility: l.visibility, password: l.password ?? '', listHidden: !!l.listHidden,
             });
             // 본문·썸네일 교체 상태 초기화 (기본: 현재 것 유지)
+            setETop(null); setETopDel(false);
             setBodyMode('keep'); setEFile(null); setEText(bodyText ?? '');
             if (bd?.src) { setEStyle(bd.src.style); setEFmt(bd.src.fmt); setEFaces(bd.src.faces); }
             const bh = bd?.bodyHtml ?? l.bodyHtml;
@@ -619,6 +630,15 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
         }}>{l.title}</h2>
         {l.catchphrase && (
           <p style={{ fontSize: 11.5, color: 'var(--faint)', letterSpacing: '.14em', marginBottom: 16 }}>{/* 목록 티켓에서 줄을 나누려고 넣은 <br>은 여기선 한 줄로 */}{l.catchphrase.replace(/<br\s*\/?>/gi, ' ')}</p>
+        )}
+        {/* 본문 맨 위 이미지·영상 — HTML·글 본문과 별개, 엔터 한 번 친 정도(한 줄)의 간격 (v2.1 사용자 요청) */}
+        {topUrl && (
+          <div style={{ margin: '0 0 1.7em', textAlign: 'center' }}>
+            {(isVideoRef(bd?.topMediaId) || /\.(mp4|webm|mov|m4v|ogv)$/i.test(bd?.topMediaName ?? ''))
+              ? <video src={topUrl} controls playsInline preload="metadata" style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} />
+              // eslint-disable-next-line @next/next/no-img-element
+              : <img src={topUrl} alt="" style={{ maxWidth: '100%', height: 'auto', display: 'inline-block' }} />}
+          </div>
         )}
         {editing && !bd?.src ? (
           /* 원본 발화가 없는 로그(파일·직접 작성) — 본문 글을 그대로 고친다 */
@@ -832,6 +852,27 @@ if(!on){hide();if(tools&&tools.parentNode)tools.parentNode.removeChild(tools)}}}
                 <small className="hint" style={{ margin: 0 }}>바꾸고 저장하면 원본 발화로 다시 그려집니다</small>
               </div>
             </>
+          )}
+          {/* 본문 맨 위 이미지·영상 (v2.1 사용자 요청) — 본문(HTML·글)과 별개 */}
+          <label className="k-label" style={{ margin: '4px 0 0' }}>상단 이미지·영상</label>
+          <input ref={eTopRef} type="file" accept="image/*,video/*" style={{ display: 'none' }}
+            onChange={ev => { const f = ev.target.files?.[0]; if (f) { setETop(f); setETopDel(false); } ev.target.value = ''; }} />
+          <div className="upzone" style={{ marginBottom: 0 }} onClick={() => eTopRef.current?.click()}
+            onDragOver={ev => ev.preventDefault()}
+            onDrop={ev => { ev.preventDefault(); const f = ev.dataTransfer.files?.[0]; if (f && /^(image|video)\//.test(f.type)) { setETop(f); setETopDel(false); } }}>
+            {eTop
+              ? <b>{eTop.name} — 저장 시 이 파일로 바뀝니다</b>
+              : eTopDel
+                ? <b>저장 시 상단 이미지·영상을 뺍니다</b>
+                : bd?.topMediaId
+                  ? <b>{bd.topMediaName ?? '현재 파일'} — 바꾸려면 클릭하거나 끌어다 놓기</b>
+                  : <><b style={{ display: 'block', marginBottom: 3 }}>png · jpg · gif · mp4 등을 끌어다 놓거나 클릭</b>본문 맨 위에 한 줄 띄우고 들어갑니다</>}
+          </div>
+          {(eTop || eTopDel || bd?.topMediaId) && (
+            <div style={{ justifySelf: 'start', display: 'flex', gap: 8 }}>
+              {(eTop || eTopDel) && <button className="btn btn-ghost" onClick={() => { setETop(null); setETopDel(false); }}>되돌리기</button>}
+              {!eTopDel && bd?.topMediaId && <button className="btn btn-ghost" onClick={() => { setETop(null); setETopDel(true); }}>빼기</button>}
+            </div>
           )}
           {/* 본문 교체 — 기본은 현재 본문 유지 */}
           <label className="k-label" style={{ margin: '4px 0 0' }}>본문</label>
