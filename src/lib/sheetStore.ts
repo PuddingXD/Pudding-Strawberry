@@ -36,12 +36,17 @@ export function sheetSetter(all: PlayRecord[], secId: string, setAll: (next: Pla
 }
 
 /** 폼 값 ↔ 저장 모양 */
-export interface SheetFormValue { head: string; name: string; url: string }
+export interface SheetFormValue { heads: string[]; name: string; url: string }
+
+/** 시트의 말머리들 — 여러 개 선택(heads)이 우선, 옛 데이터는 withText 한 개 */
+export const headsOf = (r: { heads?: string[]; withText: string }): string[] =>
+  r.heads && r.heads.length ? r.heads : (r.withText.trim() ? [r.withText.trim()] : []);
 
 export const toRecord = (v: SheetFormValue): Omit<PlayRecord, 'id'> => ({
   date: undefined,                  // 시트 게시판은 Date를 쓰지 않는다 — 기본 정렬은 등록한 순서
   scenario: v.name,
-  withText: v.head,
+  withText: v.heads.join(', '),
+  heads: v.heads,
   url: v.url,
   writer: '', role: '', playtime: '',   // 플레이기록 모양을 맞추기 위한 빈 칸
 });

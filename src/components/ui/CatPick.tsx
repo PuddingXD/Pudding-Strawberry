@@ -4,6 +4,29 @@
 import React from 'react';
 import { BoardBadge, boardBadgeStyle } from '@/lib/boardStore';
 
+/** 말머리 여러 개 고르기 (시트 게시판) — 칩을 눌러 켜고 끈다. 선택한 것은 고른 순서대로 저장된다 */
+export function CatPickMulti({ cats, value, onChange }: { cats: BoardBadge[]; value: string[]; onChange: (v: string[]) => void }) {
+  const legacy = value.filter(v => !cats.some(c => c.label === v));
+  if (cats.length === 0 && legacy.length === 0) {
+    return <p className="hint" style={{ margin: 0 }}>정해 둔 말머리가 없습니다 — 환경설정 &gt; 게시판 관리에서 말머리를 추가하세요 (없어도 등록할 수 있습니다)</p>;
+  }
+  const chip = (label: string, b?: BoardBadge) => {
+    const on = value.includes(label);
+    return (
+      <button key={label} type="button" onClick={() => onChange(on ? value.filter(x => x !== label) : [...value, label])}
+        style={{ ...boardBadgeStyle(b), cursor: 'var(--cur-pointer,pointer)', opacity: on ? 1 : .5, outline: on ? '2px solid var(--accent)' : 'none', outlineOffset: 1 }}>
+        {label}
+      </button>
+    );
+  };
+  return (
+    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+      {cats.map(c => chip(c.label, c))}
+      {legacy.map(l => chip(l))}
+    </div>
+  );
+}
+
 export function CatPick({ cats, value, onChange }: { cats: BoardBadge[]; value: string; onChange: (v: string) => void }) {
   const v = value.trim();
   const legacy = v && !cats.some(c => c.label === v) ? v : '';

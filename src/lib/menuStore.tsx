@@ -115,7 +115,7 @@ export const SHEET_COLS: { key: string; label: string }[] = [
   { key: 'with', label: 'With' },
   { key: 'name', label: 'Name' },
   { key: 'check', label: 'Check' },
-  { key: 'url', label: 'Url' },
+  // Url 열은 없앴다 — Name을 누르면 바로 시트로 이동하므로 (저장된 설정에 'url'이 남아 있어도 아래 필터로 무시된다)
 ];
 
 export const DEFAULT_MENU_SETTINGS: MenuSettings = {

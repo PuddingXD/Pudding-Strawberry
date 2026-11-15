@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useSectionParam, secQuery } from '@/lib/sectionStore';
 import { useLocalList } from '@/lib/postStore';
 import { PlayRecord, PLAYLOG_SEED } from '@/lib/galleryStore';
-import { SHEET_KEY, sheetsOf, sheetSetter } from '@/lib/sheetStore';
+import { SHEET_KEY, sheetsOf, sheetSetter, headsOf } from '@/lib/sheetStore';
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf, SHEET_COLS } from '@/lib/menuStore';
 import { useBoardSettings, sheetCatsOf, boardBadgeStyle } from '@/lib/boardStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
@@ -111,11 +111,11 @@ function SheetPageInner() {
   const curCat = cats.some(c => c.label === cat) ? cat : '';   // 지워져 없어진 말머리면 ALL로
   const query = q.trim().toLowerCase();
   const filtered = records
-    .filter(r => !curCat || r.withText.trim() === curCat)
+    .filter(r => !curCat || headsOf(r).includes(curCat))   // 여러 말머리 중 하나라도 맞으면 그 탭에 보인다
     .filter(r => !query || r.scenario.toLowerCase().includes(query) || r.withText.toLowerCase().includes(query));
 
   // 정렬 — 기본은 최신 등록순(새 시트가 맨 위) · With는 환경설정의 말머리 순서 · Name은 가나다
-  const catIdx = (r: PlayRecord) => { const i = cats.findIndex(c => c.label === r.withText.trim()); return i < 0 ? 9999 : i; };
+  const catIdx = (r: PlayRecord) => { const i = cats.findIndex(c => c.label === headsOf(r)[0]); return i < 0 ? 9999 : i; };   // 정렬은 첫 말머리 기준
   const byTime = (a: PlayRecord, b: PlayRecord) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);   // 최신(나중에 등록한) 시트가 위
   const sorted = [...filtered].sort((a, b) => {
     const pa = a.pin != null, pb = b.pin != null;   // 고정한 시트는 정렬과 상관없이 맨 위 (고정 순서대로)
@@ -148,7 +148,7 @@ function SheetPageInner() {
     const t = shownPinned[i + dir];
     if (t) movePin(r.id, t.id);
   };
-  const catOf = (r: PlayRecord) => cats.find(c => c.label === r.withText.trim());
+  const catOf = (label: string) => cats.find(c => c.label === label);
 
   return (
     <section className="page">
@@ -201,7 +201,7 @@ function SheetPageInner() {
                 onDragOver={e => { if (dragId && r.pin != null) e.preventDefault(); }}
                 onDrop={e => { e.preventDefault(); if (dragId) movePin(dragId, r.id); setDragId(null); }}
                 onDragEnd={() => setDragId(null)}>
-                {show('with') && <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>}
+                {show('with') && <td><span style={{ display: 'inline-flex', gap: 4, flexWrap: 'wrap' }}>{headsOf(r).map(h => <span key={h} style={boardBadgeStyle(catOf(h))}>{h}</span>)}</span></td>}
                 {show('name') && <td className="td-sc">
                   {r.pin != null && <span className="sh-pin" aria-label="고정"><PinIcon /></span>}
                   {r.url

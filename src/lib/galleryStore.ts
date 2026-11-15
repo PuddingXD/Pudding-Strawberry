@@ -331,6 +331,8 @@ export interface PlayRecord {
   chkMember?: boolean;
   /** 시트 게시판 상단 고정 — 1부터 매긴 고정 순서 (작을수록 위). 없으면 고정 안 함 */
   pin?: number;
+  /** 시트 게시판 말머리 (여러 개 선택) — withText에는 쉼표로 이은 값도 같이 저장(검색·옛 데이터 호환) */
+  heads?: string[];
 }
 
 export const PLAYLOG_SEED: PlayRecord[] = [];
