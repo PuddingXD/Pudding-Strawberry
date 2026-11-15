@@ -20,7 +20,7 @@ import {
   useBoards, Board, BoardSkin, BOARD_SKIN_LABEL, BoardPerm, DEFAULT_BOARD_CATS, MAIN_BOARD_ID, boardHref, perPageOf, galleryColsOf, PER_PAGE_DEFAULT, reviewCatsOf, sheetCatsOf, playlogCatsOf,
 } from '@/lib/boardStore';
 import { useThreadSettings, ThreadWork, THREAD_SEED, ThreadCat, threadBadgeStyle, threadCats, threadCatsPatch } from '@/lib/threadStore';
-import { useTrpgSettings, dotoriStatusKeys, dotoriBadgeOn, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
+import { useTrpgSettings, dotoriStatusKeys, dotoriHiddenInAll, DotoriStatus, dotoriBadgeStyle } from '@/lib/galleryStore';
 import { useMemoSettings } from '@/lib/memoStore';
 import {
   useMenuSettings, MenuSettings, MenuPerm, MenuVis, PLAYLOG_COLS, SHEET_COLS,
@@ -3194,7 +3194,6 @@ function TrpgPane() {
               <ColorField value={st.border} onChange={hex => patchStatus(k, { border: hex })} />
               <span className="cp-lb">글씨</span>
               <ColorField value={st.fg} onChange={hex => patchStatus(k, { fg: hex })} />
-              <KCheck label="카드 뱃지" checked={dotoriBadgeOn(settings, k)} onChange={v => patchStatus(k, { badge: v })} />
               <KCheck label="전체에서 숨김" checked={dotoriHiddenInAll(settings, k)} onChange={v => patchStatus(k, { hideInAll: v })} />
               {statusKeys.length > 1 && (
                 <span className="fx" data-tip="상태 삭제"

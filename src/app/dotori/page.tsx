@@ -8,7 +8,7 @@ import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/s
 import { useMenuSettings, canWriteAt, writeKeyOf, writeDefaultOf } from '@/lib/menuStore';
 import { useLocalList } from '@/lib/postStore';
 import {
-  DotoriItem, DotoriStatus, DOTORI_SEED, dotoriStatusKeys, dotoriStatusOf, dotoriBadgeOn, dotoriHiddenInAll, useTrpgSettings, dotoriBadgeStyle,
+  DotoriItem, DotoriStatus, DOTORI_SEED, dotoriStatusKeys, dotoriStatusOf, dotoriStatusesOf, dotoriHiddenInAll, useTrpgSettings,
 } from '@/lib/galleryStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { OrderMenu, orderNoOf, moveToOrder } from '@/components/ui/OrderMenu';
@@ -48,14 +48,15 @@ function DotoriPageInner() {
 
   const query = q.trim().toLowerCase();
   const shown = items
-    .filter(it => (tab === 'all' ? !dotoriHiddenInAll(trpgSet, it.status) : it.status === tab)) // 전체 탭에서 숨길 상태(기본: 완)는 빼고 (4.15 · v2.1)
+    // 여러 상태 중 하나라도 맞으면 그 탭에 보인다 · 전체 탭: 가진 상태가 전부 숨김 대상(기본: 완)일 때만 뺀다 (4.15 · v2.1)
+    .filter(it => (tab === 'all' ? !dotoriStatusesOf(it).every(s => dotoriHiddenInAll(trpgSet, s)) : dotoriStatusesOf(it).includes(tab)))
     .filter(it => !query
       || it.name.toLowerCase().includes(query)
       || it.writer.toLowerCase().includes(query)
       || it.tags.some(t => t.toLowerCase().includes(query)));
 
   const countOf = (t: Tab) =>
-    items.filter(it => (t === 'all' ? !dotoriHiddenInAll(trpgSet, it.status) : it.status === t)).length;
+    items.filter(it => (t === 'all' ? !dotoriStatusesOf(it).every(s => dotoriHiddenInAll(trpgSet, s)) : dotoriStatusesOf(it).includes(t))).length;
 
   // 편집모드 카드 드래그 정렬 (v1.9) — 훅이므로 early return보다 먼저.
   // 정렬은 `shown` 전체 기준으로 다루고 카드에는 전체 기준 위치를 넘긴다(아래) — 페이지 안 위치로
@@ -118,12 +119,6 @@ function DotoriPageInner() {
             onClick={() => { if (canEdit(it) && !editOn) router.push(`/dotori/${it.id}/edit`); }}>
             <div className="th">
               <CroppedBlobImg fileRef={it.imgId} crop={it.thumbCrop} ph={it.ph} />
-              {/* 뱃지 — 공수표·일정 확정만, 이미지 우상단 (4.15) */}
-              {dotoriBadgeOn(trpgSet, it.status) && (
-                <span className="dt-badge" style={dotoriBadgeStyle(dotoriStatusOf(trpgSet, it.status))}>
-                  {dotoriStatusOf(trpgSet, it.status).label}
-                </span>
-              )}
               {canEdit(it) && (
                 <div className="hv-actions dt-actions" onClick={e => e.stopPropagation()}>
                   <button className="del" onClick={() => setDelFor(it)}>DELETE</button>

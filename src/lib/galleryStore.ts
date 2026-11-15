@@ -299,7 +299,9 @@ export interface DotoriItem {
   link?: string;             // 판매처/소개 페이지
   /** 추가 링크 (세팅 배포용 등) — ＋로 최대 DOTORI_LINK_MAX개, 각각 무슨 링크인지 짧은 제목. 카드에 제목 칩으로 보이고 누르면 새 탭 */
   links?: DotoriLink[];
-  status: DotoriStatus;      // 카드에서 바로 전환
+  status: DotoriStatus;      // 대표(첫) 상태 — 옛 데이터·정렬 호환
+  /** 상태(말머리) 여러 개 선택 — 있으면 이쪽이 우선 (각 상태 탭에 모두 보인다) */
+  statuses?: DotoriStatus[];
   imgId?: string;            // 16:9 이미지 (IndexedDB)
   thumbCrop?: CropValue;
   ph: string;                // 이미지 없을 때 플레이스홀더
@@ -309,6 +311,10 @@ export interface DotoriItem {
 }
 
 export const DOTORI_SEED: DotoriItem[] = [];
+
+/** 도토리의 상태들 — 여러 개 선택(statuses)이 우선, 옛 데이터는 status 하나 */
+export const dotoriStatusesOf = (it: { status: DotoriStatus; statuses?: DotoriStatus[] }): DotoriStatus[] =>
+  it.statuses && it.statuses.length ? it.statuses : [it.status];
 
 /* ---------- TRPG 플레이기록 (4.16) — 표 형식 ---------- */
 export interface PlayRecord {

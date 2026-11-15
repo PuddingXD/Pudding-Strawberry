@@ -1,7 +1,8 @@
 ﻿'use client';
 // 도토리 등록/수정 공용 폼 (4.15) — 16:9 이미지 + 시나리오 정보 + 상태
 import React, { useState } from 'react';
-import { DotoriItem, DotoriLink, DOTORI_LINK_MAX, DotoriStatus, dotoriStatusKeys, dotoriStatusOf, useTrpgSettings } from '@/lib/galleryStore';
+import { DotoriItem, DotoriLink, DOTORI_LINK_MAX, DotoriStatus, dotoriStatusKeys, dotoriStatusOf, dotoriStatusesOf, dotoriBadgeStyle, useTrpgSettings } from '@/lib/galleryStore';
+import { boardBadgeStyle } from '@/lib/boardStore';
 import { normalizeInternalLink } from '@/lib/link';
 import { KInput, KSelect } from '@/components/ui/Kit';
 import { DragList } from '@/components/ui/DragList';
@@ -16,7 +17,7 @@ const optsWith = (base: string[], cur: string) => (cur && !base.includes(cur) ? 
 
 export interface DotoriFormValue {
   name: string; writer: string; rule: string; people: string;
-  tags: string[]; link?: string; links?: DotoriLink[]; status: DotoriStatus;
+  tags: string[]; link?: string; links?: DotoriLink[]; status: DotoriStatus; statuses?: DotoriStatus[];
   imgId?: string; thumbCrop?: CropValue;
 }
 
@@ -37,7 +38,7 @@ export function DotoriForm({ initial, onSave, onCancel }: {
   const [links, setLinks] = useState<DotoriLink[]>(initial?.links ?? []);
   const patchLink = (id: string, p: Partial<DotoriLink>) => setLinks(l => l.map(x => (x.id === id ? { ...x, ...p } : x)));
   // 새로 담는 시나리오는 대개 아직 일정이 없다 — 기본값을 「일정 미정」으로 (사용자 확정)
-  const [status, setStatus] = useState<DotoriStatus>(initial?.status ?? 'undecided');
+  const [statuses, setStatuses] = useState<DotoriStatus[]>(initial ? dotoriStatusesOf(initial) : ['undecided']);
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [removed, setRemoved] = useState(false);
@@ -46,10 +47,11 @@ export function DotoriForm({ initial, onSave, onCancel }: {
 
   const save = async () => {
     if (!name.trim()) { toast('시나리오 이름을 입력해 주세요'); return; }
+    if (!statuses.length) { toast('상태를 하나 이상 골라 주세요'); return; }
     onSave({
       name: name.trim(), writer: writer.trim(), rule: rule.trim(), people: people.trim(),
       tags: initial?.tags ?? [],   // 태그 입력은 없앴다 — 예전 글의 값만 그대로 보존
-      link: link.trim() || undefined, status,
+      link: link.trim() || undefined, status: statuses[0], statuses,
       // 주소가 빈 줄은 버린다 — 제목만 있으면 어디로 갈지 모르므로 (풀주소는 사이트 안 주소로 정리)
       links: links.map(x => ({ ...x, title: x.title.trim(), url: normalizeInternalLink(x.url) })).filter(x => x.url).length
         ? links.map(x => ({ ...x, title: x.title.trim(), url: normalizeInternalLink(x.url) })).filter(x => x.url) : undefined,
@@ -121,9 +123,22 @@ export function DotoriForm({ initial, onSave, onCancel }: {
                   onClick={() => setLinks(x => [...x, { id: `l${Date.now().toString(36)}${x.length}`, title: '', url: '' }])}>＋ 링크 추가</button>
               )}
             </div>
-            <KSelect value={status} onChange={v => setStatus(v as DotoriStatus)}
-              options={dotoriStatusKeys(trpgSet).map(s => ({ value: s, label: dotoriStatusOf(trpgSet, s).label }))} />
-            <p className="hint" style={{ margin: 0 }}>뱃지는 공수표·일정 확정만 카드에 표시 — 완은 완 탭에서만 보입니다</p>
+            {/* 상태(말머리) — 여러 개 선택 가능. 고른 상태의 탭마다 이 카드가 보인다 */}
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+              {dotoriStatusKeys(trpgSet).map(s => {
+                const on = statuses.includes(s);
+                const stl = dotoriStatusOf(trpgSet, s);
+                return (
+                  <button key={s} type="button"
+                    onClick={() => setStatuses(on ? statuses.filter(x => x !== s) : [...statuses, s])}
+                    style={{ ...boardBadgeStyle({ id: s, label: stl.label, ...dotoriBadgeStyle(stl) } as never), background: stl.bg, border: `1px solid ${stl.border}`, color: stl.fg,
+                      cursor: 'var(--cur-pointer,pointer)', opacity: on ? 1 : .45, outline: on ? '2px solid var(--accent)' : 'none', outlineOffset: 1 }}>
+                    {stl.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="hint" style={{ margin: 0 }}>상태를 여러 개 고를 수 있어요 — 고른 상태의 탭마다 카드가 보입니다 (완만 고르면 완 탭에서만)</p>
           </div>
         </div>
         <div className="form-actions">
