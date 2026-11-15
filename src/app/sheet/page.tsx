@@ -201,7 +201,17 @@ function SheetPageInner() {
                 onDragOver={e => { if (dragId && r.pin != null) e.preventDefault(); }}
                 onDrop={e => { e.preventDefault(); if (dragId) movePin(dragId, r.id); setDragId(null); }}
                 onDragEnd={() => setDragId(null)}>
-                {show('with') && <td><div className="sh-heads">{headsOf(r).map(h => <span key={h} style={boardBadgeStyle(catOf(h))}>{h}</span>)}</div></td>}
+                {show('with') && <td>{(() => {
+                  // 말머리가 여럿이어도 한 줄·같은 높이 — 첫 말머리 칩 + 「+N」 (전체는 마우스를 올리면 말풍선, 모아보기 탭에는 모두 걸린다)
+                  const hs = headsOf(r);
+                  if (!hs.length) return null;
+                  return (
+                    <div className="sh-heads" data-tip={hs.length > 1 ? hs.join(' · ') : undefined}>
+                      <span className="sh-head-chip" style={boardBadgeStyle(catOf(hs[0]))}>{hs[0]}</span>
+                      {hs.length > 1 && <span className="sh-head-more">+{hs.length - 1}</span>}
+                    </div>
+                  );
+                })()}</td>}
                 {show('name') && <td className="td-sc">
                   {r.pin != null && <span className="sh-pin" aria-label="고정"><PinIcon /></span>}
                   {r.url

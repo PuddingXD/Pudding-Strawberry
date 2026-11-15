@@ -2134,8 +2134,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table.sh-table col.c-shh{width:128px}
 .pl-table.sh-table col.c-shc{width:78px}
 .pl-table.sh-table col.c-shu{width:56px}
-.sh-table .sh-heads{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.sh-table .sh-heads>span{margin-right:4px;vertical-align:middle}
+.sh-table .sh-heads{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:nowrap;min-width:0;max-width:100%}
+.sh-table .sh-head-chip{min-width:0;overflow:hidden;text-overflow:ellipsis;display:block !important;text-align:center;white-space:nowrap;line-height:calc(11px*var(--fs,1))}
+.sh-table .sh-head-more{flex-shrink:0;font-size:calc(10.5px*var(--fs,1));font-weight:700;letter-spacing:.02em;color:var(--faint)}
 .sh-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;font-size:calc(11px*var(--fs,1));padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--sub);background:transparent;cursor:var(--cur-pointer,pointer);transition:.13s}
 .sh-chip:hover{border-color:var(--accent);color:var(--accent)}
 .sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
