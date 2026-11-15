@@ -41,7 +41,6 @@ export function PlaylogForm({ initial, records, secId, onSave, onCancel }: {
   const [scenarioLink, setScenarioLink] = useState(initial?.scenarioLink ?? '');
   const [writer, setWriter] = useState(initial?.writer ?? '');
   const [withText, setWithText] = useState(initial?.withText ?? '');
-  const [playtime, setPlaytime] = useState(initial?.playtime ?? '');
   const [linkMode, setLinkMode] = useState<'url' | 'log'>(initial?.logId ? 'log' : 'url');
   const [url, setUrl] = useState(initial?.url ?? '');
   const [logId, setLogId] = useState(initial?.logId ?? '');
@@ -60,7 +59,7 @@ export function PlaylogForm({ initial, records, secId, onSave, onCancel }: {
       date: date || undefined,
       scenario: scenario.trim(),
       scenarioLink: scenarioLink.trim() || undefined,
-      writer: writer.trim(), withText: withText.trim(), role: initial?.role ?? '', playtime: playtime.trim(),   // Role 입력은 v2.1에서 삭제 — 옛 값만 유지
+      writer: writer.trim(), withText: withText.trim(), role: initial?.role ?? '', playtime: initial?.playtime ?? '',   // Role 입력은 v2.1에서 삭제 — 옛 값만 유지
       url: linkMode === 'url' ? (url.trim() || undefined) : undefined,
       logId: linkMode === 'log' ? (logId || undefined) : undefined,
     });
@@ -69,9 +68,8 @@ export function PlaylogForm({ initial, records, secId, onSave, onCancel }: {
   return (
     <div className="write-grid">
       <div className="panel" style={{ padding: 24, display: 'grid', gap: 12, alignContent: 'start' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
           <Field label="Date (optional)"><KDate value={date} onChange={setDate} placeholder="" style={{ width: '100%' }} /></Field>
-          <Field label="Playtime"><KInput value={playtime} onChange={e => setPlaytime(e.target.value)} /></Field>
         </div>
         <div style={{ position: 'relative' }}>
           <Field label="Scenario">

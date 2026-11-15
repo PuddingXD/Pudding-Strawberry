@@ -1550,7 +1550,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* ---------- TRPG 플레이기록 (4.16) — 표 ---------- */
 .pl-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:calc(12.5px*var(--fs,1))}
 .pl-table col.c-date{width:92px}
-.pl-table col.c-wr{width:90px}
+.pl-table col.c-wr{width:150px}
 .pl-table col.c-role{width:76px}   /* CoC 7th 같은 룰 표기가 들어간다 — 시나리오·With에서 10px씩 가져옴 (v2.0 사용자 요청) */
 .pl-table col.c-pt{width:82px}
 .pl-table col.c-url{width:36px}    /* 맨 끝 클립 칸 */
@@ -1579,8 +1579,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table .td-date{font-size:calc(11.5px*var(--fs,1));color:var(--sub);letter-spacing:.03em}
 /* Playtime 밑줄·탭 이동은 모바일 전용 — PC는 맨 끝 클립 칸이 담당 (4.16) */
 @media (max-width:620px){
-  .pl-table .td-pt.linked{text-decoration:underline;text-underline-offset:3px;cursor:var(--cur-pointer,pointer)}
-  .pl-table .td-pt.linked:active{color:var(--accent)}
+  .pl-table .td-sc.linked{text-decoration:underline;text-underline-offset:3px;cursor:var(--cur-pointer,pointer)}
+  .pl-table .td-sc.linked:active{color:var(--accent)}
 }
 .pl-table .td-url{position:relative}
 .pl-table .td-url a{position:absolute;inset:0;margin:auto;display:grid;place-items:center;width:24px;height:24px;border-radius:7px;color:var(--sub);transition:.14s}

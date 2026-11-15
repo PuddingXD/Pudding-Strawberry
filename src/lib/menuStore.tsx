@@ -107,7 +107,6 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
   { key: 'writer', label: 'Writer' },
   // Role 열은 v2.1에서 뺐다 (사용자 요청 — 커플홈이라 GM/PC 구분이 필요 없다). 옛 저장값(role)은 그대로 두되 보이지 않는다
   { key: 'date', label: 'Date' },
-  { key: 'playtime', label: 'Playtime' },
   { key: 'url', label: 'Url' },
 ];
 
@@ -127,7 +126,7 @@ export const DEFAULT_MENU_SETTINGS: MenuSettings = {
   hidden: [],
   labels: {},
   playlogPc: PLAYLOG_COLS.map(c => c.key),                       // PC 기본 전체 6열
-  playlogMobile: ['date', 'scenario', 'playtime'],               // 모바일 기본 3열 (v1.8 · Role은 v2.1에서 삭제)
+  playlogMobile: ['date', 'scenario'],               // 모바일 기본 3열 (v1.8 · Role은 v2.1에서 삭제)
   roadUpload: 'member', roadComment: 'guest',
   backupView: 'gal',
   calTitle: 'en',

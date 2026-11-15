@@ -1,6 +1,6 @@
 'use client';
 // TRPG 플레이기록 (4.16) — 표 형식 · Date 정렬 · 검색 · 페이지네이션 ·
-// Url 열은 클립 픽토그램(새 탭) · 로그 연결 시 Playtime 클릭으로 로그 이동
+// Url 열은 클립 픽토그램(새 탭) · 로그 연결 시 (모바일) Scenario 클릭으로 로그 이동
 import { NavLink } from '@/components/ui/NavLink';
 import { safeHref } from '@/lib/link';
 import React, { Suspense, useEffect, useState } from 'react';
@@ -18,20 +18,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 
 const PAGE_SIZE = 15;
-type SortKey = 'with' | 'scenario' | 'writer' | 'playtime' | 'date';
-
-/** "4h 30m" · "4시간 30분" · "90m" · "2:30" 같은 자유 표기를 분으로 — 읽을 수 없으면 null(정렬 때 맨 뒤) */
-function playMinutes(t: string): number | null {
-  const s = t.trim().toLowerCase();
-  if (!s) return null;
-  const hm = s.match(/^(\d+):(\d{1,2})$/);
-  if (hm) return +hm[1] * 60 + +hm[2];
-  const h = s.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours|시간)/);
-  const m = s.match(/(\d+)\s*(?:m|min|mins|분)/);
-  if (h || m) return Math.round((h ? parseFloat(h[1]) * 60 : 0) + (m ? +m[1] : 0));
-  const n = s.match(/^\d+(?:\.\d+)?$/);
-  return n ? Math.round(parseFloat(n[0]) * 60) : null;   // 숫자만 쓰면 시간으로 본다
-}
+type SortKey = 'with' | 'scenario' | 'writer' | 'date';
 
 /** 클립 픽토그램 (선 아이콘 — 이모지 아님) */
 function ClipIcon() {
@@ -104,15 +91,7 @@ function PlaylogPageInner() {
     }
     const c = sortKey === 'with' ? catIdx(a) - catIdx(b) || a.withText.localeCompare(b.withText, 'ko')
       : sortKey === 'scenario' ? a.scenario.localeCompare(b.scenario, 'ko')
-      : sortKey === 'playtime' ? 0
       : a.writer.localeCompare(b.writer, 'ko');
-    if (sortKey === 'playtime') {
-      const x = playMinutes(a.playtime), y = playMinutes(b.playtime);
-      if (x === null && y === null) return a.playtime.localeCompare(b.playtime, 'ko');
-      if (x === null) return 1;      // 읽을 수 없는 값은 방향과 상관없이 맨 아래
-      if (y === null) return -1;
-      return desc ? y - x : x - y;
-    }
     return desc ? -c : c;
   });
   const clickSort = (k: SortKey) => {
@@ -129,7 +108,7 @@ function PlaylogPageInner() {
   const curPage = Math.min(page, totalPages);
   const shown = editOn ? records : sorted.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
 
-  // 모바일 전용 — URL 열이 없으므로 Playtime 밑줄 탭으로 로그 이동 (4.16)
+  // 모바일 전용 — URL 열이 없으므로 Scenario 밑줄 탭으로 로그 이동 (Playtime 열은 삭제)
   const openLogMobile = (r: PlayRecord) => {
     if (r.logId && window.matchMedia('(max-width:620px)').matches) router.push(`/trpg/${r.logId}`);
   };
@@ -164,7 +143,6 @@ function PlaylogPageInner() {
             {show('scenario') && <col className="c-sc" />}
             {show('writer') && <col className="c-wr" />}
             {show('date') && <col className="c-date" />}
-            {show('playtime') && <col className="c-pt" />}
             {show('url') && <col className="c-url" />}
             {canAdd && !isMobile && <col className="c-mng" />}
           </colgroup>
@@ -174,7 +152,6 @@ function PlaylogPageInner() {
               {show('scenario') && <th className="sortable" onClick={() => clickSort('scenario')}>Scenario{arrow('scenario')}</th>}
               {show('writer') && <th className="sortable" onClick={() => clickSort('writer')}>Writer{arrow('writer')}</th>}
               {show('date') && <th className="sortable" onClick={() => clickSort('date')}>Date{arrow('date')}</th>}
-              {show('playtime') && <th className="sortable" onClick={() => clickSort('playtime')}>Playtime{arrow('playtime')}</th>}
               {show('url') && <th aria-label="Url" />}
               {canAdd && !isMobile && <th aria-label="관리" />}
             </tr>
@@ -184,7 +161,7 @@ function PlaylogPageInner() {
               <tr key={r.id} {...(editOn ? rowSort(i) : {})}>
                 {show('with') && <td>{r.withText.trim() && <span style={boardBadgeStyle(catOf(r))}>{r.withText.trim()}</span>}</td>}
                 {show('scenario') && (
-                  <td className="td-sc">
+                  <td className={`td-sc ${r.logId && !r.scenarioLink ? 'linked' : ''}`} onClick={() => { if (!r.scenarioLink) openLogMobile(r); }}>
                     {r.scenarioLink
                       ? <a href={r.scenarioLink} target="_blank" rel="noopener noreferrer">{r.scenario}</a>
                       : r.scenario}
@@ -192,12 +169,6 @@ function PlaylogPageInner() {
                 )}
                 {show('writer') && <td>{r.writer}</td>}
                 {show('date') && <td className="td-date">{r.date ? r.date.replace(/-/g, '.') : ''}</td>}
-                {show('playtime') && (
-                  <td className={`td-pt ${r.logId ? 'linked' : ''}`}
-                    onClick={() => openLogMobile(r)}>
-                    {r.playtime}
-                  </td>
-                )}
                 {/* 클립 칸 — 외부 URL 또는 백업 로그 연결 (4.16) */}
                 {show('url') && (
                   <td className="td-url">
