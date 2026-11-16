@@ -1596,7 +1596,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 모바일 기본 4열: Date/Scenario/Role/Playtime (4.16 — 열 선택 설정은 메뉴 관리 구현 시) */
 @media (max-width:620px){.pl-table .hide-m,.pl-table col.c-wr,.pl-table col.c-with,.pl-table col.c-url,.pl-table col.c-mng{display:none}}
 /* TRPG 기록 모바일 — Writer는 조금 줄이고, 그만큼 Scenario(나머지 폭)가 넓어진다 */
-@media (max-width:620px){.pl-table:not(.sh-table) col.c-wr{display:table-column;width:78px}.pl-table:not(.sh-table) col.c-date{width:64px}}
+@media (max-width:620px){.pl-table:not(.sh-table) col.c-wr{display:table-column;width:78px}}
 
 /* ---------- 그림게시판 로드뷰 (4.10) ---------- */
 .roadview-item{display:grid;grid-template-columns:1fr;max-width:672px;margin:0 auto 22px;overflow:hidden;padding:0} /* 큰 그림 카드와 같은 672px — 댓글은 이미지 아래로 (v2.1 사용자 요청 · 예전엔 페이지 폭 + 오른쪽 댓글 390px) */
