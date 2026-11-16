@@ -1595,6 +1595,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .pl-table .td-mng button:hover{background:rgba(127,127,127,.14);color:var(--ink)}
 /* 모바일 기본 4열: Date/Scenario/Role/Playtime (4.16 — 열 선택 설정은 메뉴 관리 구현 시) */
 @media (max-width:620px){.pl-table .hide-m,.pl-table col.c-wr,.pl-table col.c-with,.pl-table col.c-url,.pl-table col.c-mng{display:none}}
+/* TRPG 기록 모바일 — Writer는 조금 줄이고, 그만큼 Scenario(나머지 폭)가 넓어진다 */
+@media (max-width:620px){.pl-table:not(.sh-table) col.c-wr{display:table-column;width:78px}.pl-table:not(.sh-table) col.c-date{width:64px}}
 
 /* ---------- 그림게시판 로드뷰 (4.10) ---------- */
 .roadview-item{display:grid;grid-template-columns:1fr;max-width:672px;margin:0 auto 22px;overflow:hidden;padding:0} /* 큰 그림 카드와 같은 672px — 댓글은 이미지 아래로 (v2.1 사용자 요청 · 예전엔 페이지 폭 + 오른쪽 댓글 390px) */
@@ -2145,8 +2147,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .sh-chip:hover{border-color:var(--accent);color:var(--accent)}
 .sh-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
 @media (max-width:620px){
-  .pl-table.sh-table col.c-shh{width:76px}
+  .pl-table.sh-table col.c-shh{width:28%}   /* With 1 : Name 2 정도 */
   .pl-table.sh-table col.c-shc{width:56px}
+  .pl-table.sh-table col.c-mng{display:table-column;width:50px}   /* 편집 버튼을 오른쪽 끝으로 */
+  .pl-table.sh-table td.td-mng{text-align:right;padding-right:0}
+  .pl-table.sh-table td.td-mng button{margin-left:0;margin-right:0}
   .pl-table.sh-table col.c-shu{width:34px}
   .pl-table.sh-table th,.pl-table.sh-table td{padding-left:3px;padding-right:3px}
 }
